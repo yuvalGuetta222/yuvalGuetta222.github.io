@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Yuval Guetta · Operations & Business Development</title>
+  <meta name="description" content="Yuval Guetta - Business Administration graduate with hands-on experience in operations, resource allocation and B2B business development." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="scroll-progress" id="scrollProgress"></div>
+  <div class="cursor-glow" id="cursorGlow"></div>
+
+  <div class="blobs" aria-hidden="true">
+    <span class="blob blob-a"></span>
+    <span class="blob blob-b"></span>
+    <span class="blob blob-c"></span>
+  </div>
+
+  <header class="nav" id="nav">
+    <a href="#top" class="logo">Yuval<span>.</span></a>
+    <nav class="nav-links" id="navLinks">
+      <a href="#about">About</a>
+      <a href="#experience">Experience</a>
+      <a href="#skills">Skills</a>
+      <a href="#education">Education</a>
+      <a href="#contact" class="nav-cta">Let's talk</a>
+    </nav>
+    <button class="burger" id="burger" aria-label="Open menu"><span></span><span></span></button>
+  </header>
+
+  <main id="top">
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-inner">
+        <p class="eyebrow reveal">Hi there, I'm</p>
+        <h1 class="hero-title">
+          <span class="line"><span class="word">Yuval</span></span>
+          <span class="line"><span class="word accent">Guetta</span></span>
+        </h1>
+        <p class="hero-role reveal">
+          <span class="role-static">I work in</span>
+          <span class="role-rotator" id="roleRotator">Operations</span><span class="caret">|</span>
+        </p>
+        <p class="hero-sub reveal">
+          Business Administration graduate who keeps complex operations running smoothly
+          and turns market research into real business opportunities.
+        </p>
+        <div class="hero-actions reveal">
+          <a href="Yuval_Guetta_CV.pdf" download class="btn btn-primary magnetic">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 19h16"/></svg>
+            Download CV
+          </a>
+          <a href="#contact" class="btn btn-ghost magnetic">Get in touch</a>
+        </div>
+      </div>
+
+      <div class="hero-card reveal" data-tilt>
+        <div class="avatar"><span>YG</span></div>
+        <div class="hero-card-body">
+          <p class="hc-name">Yuval Guetta</p>
+          <p class="hc-title">PMO · Operations · BDR</p>
+          <div class="hc-tags">
+            <span>Rehovot, IL</span>
+            <span>Hebrew & English</span>
+          </div>
+          <div class="hc-status"><i></i> Open to new opportunities</div>
+        </div>
+      </div>
+
+      <a href="#about" class="scroll-hint" aria-label="Scroll down"><span></span></a>
+    </section>
+
+    <!-- MARQUEE -->
+    <div class="marquee" aria-hidden="true">
+      <div class="marquee-track">
+        <span>Resource Allocation</span><i>✦</i>
+        <span>Operational Monitoring</span><i>✦</i>
+        <span>Outbound Prospecting</span><i>✦</i>
+        <span>Process Optimization</span><i>✦</i>
+        <span>Stakeholder Communication</span><i>✦</i>
+        <span>KPI Tracking</span><i>✦</i>
+        <span>Resource Allocation</span><i>✦</i>
+        <span>Operational Monitoring</span><i>✦</i>
+        <span>Outbound Prospecting</span><i>✦</i>
+        <span>Process Optimization</span><i>✦</i>
+        <span>Stakeholder Communication</span><i>✦</i>
+        <span>KPI Tracking</span><i>✦</i>
+      </div>
+    </div>
+
+    <!-- ABOUT -->
+    <section class="section" id="about">
+      <div class="section-head reveal">
+        <p class="kicker">About me</p>
+        <h2>Structure, clarity, and <em>momentum.</em></h2>
+      </div>
+      <div class="about-grid">
+        <div class="about-text reveal">
+          <p>
+            I'm a Business Administration graduate with years of hands-on experience in
+            high-stakes operational environments and B2B business development. My work sits
+            where planning meets execution: allocating people and resources, watching live
+            workflows, and making sure everyone knows exactly where things stand.
+          </p>
+          <p>
+            On the commercial side, I've researched markets across Web3 and tech, mapped
+            high-value accounts, and built outbound pipelines that turn cold leads into real
+            conversations. I bring analytical thinking, clear communication with stakeholders,
+            and a genuine curiosity about the tools that make teams faster, including GenAI.
+          </p>
+        </div>
+        <div class="about-cards">
+          <div class="mini-card reveal" data-tilt>
+            <div class="mini-icon">
+              <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h6"/></svg>
+            </div>
+            <h3>Operations mindset</h3>
+            <p>Real-time monitoring, shift handoffs and SOPs that hold up under pressure.</p>
+          </div>
+          <div class="mini-card reveal" data-tilt>
+            <div class="mini-icon">
+              <svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8M14 7h7v7"/></svg>
+            </div>
+            <h3>Growth driven</h3>
+            <p>Account research, lead qualification and pipeline building in B2B tech.</p>
+          </div>
+          <div class="mini-card reveal" data-tilt>
+            <div class="mini-icon">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+            </div>
+            <h3>People first</h3>
+            <p>Mentoring youth and working side by side with senior leadership.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- EXPERIENCE -->
+    <section class="section" id="experience">
+      <div class="section-head reveal">
+        <p class="kicker">Experience</p>
+        <h2>Where I've been <em>making an impact.</em></h2>
+      </div>
+
+      <div class="timeline">
+        <div class="timeline-line"><span id="timelineFill"></span></div>
+
+        <article class="job reveal">
+          <div class="job-dot"></div>
+          <div class="job-card" data-tilt>
+            <div class="job-top">
+              <div>
+                <h3>Prime Minister's Office</h3>
+                <p class="job-role">PMO · Operations & Monitoring</p>
+              </div>
+              <span class="job-date">2021 - Present</span>
+            </div>
+            <ul class="job-list">
+              <li><strong>Resource allocation.</strong> Managing shift manpower, equipment and critical assets across multi-unit operations to keep every site fully staffed and ready.</li>
+              <li><strong>Operational monitoring.</strong> Tracking live workflows, security protocols and milestones in real time to catch bottlenecks before they escalate.</li>
+              <li><strong>Process standardization.</strong> Working directly with senior leadership to update SOPs, streamline shift handoffs and track operational KPIs.</li>
+              <li><strong>Executive reporting.</strong> Preparing daily status reports, tracking execution against strict timelines and communicating key data to management.</li>
+            </ul>
+            <div class="job-tags"><span>Resource Planning</span><span>SOPs</span><span>KPIs</span><span>Status Reporting</span></div>
+          </div>
+        </article>
+
+        <article class="job reveal">
+          <div class="job-dot"></div>
+          <div class="job-card" data-tilt>
+            <div class="job-top">
+              <div>
+                <h3>CyVers AI <span class="pill">B2B</span></h3>
+                <p class="job-role">Business Development Representative · Internship</p>
+              </div>
+              <span class="job-date">2025 - 2026</span>
+            </div>
+            <ul class="job-list">
+              <li><strong>Account research & mapping.</strong> Ran in-depth market research across Web3, blockchain and tech ecosystems to map high-value accounts and uncover strategic partnerships.</li>
+              <li><strong>Prospecting & lead qualification.</strong> Executed multi-channel outbound campaigns, qualifying enterprise leads and routing high-intent accounts into the sales pipeline.</li>
+            </ul>
+            <div class="job-tags"><span>Outbound</span><span>Salesforce</span><span>Sales Navigator</span><span>Web3</span></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- SKILLS -->
+    <section class="section" id="skills">
+      <div class="section-head reveal">
+        <p class="kicker">Skills & Tools</p>
+        <h2>What I bring <em>to the table.</em></h2>
+      </div>
+
+      <div class="skills-grid">
+        <div class="skill-card reveal" data-tilt>
+          <h3>PMO & Project Execution</h3>
+          <div class="chips">
+            <span>Resource Allocation</span><span>Milestone Tracking</span><span>Operational Monitoring</span>
+            <span>Process Optimization</span><span>Risk Mitigation</span><span>KPI Tracking</span>
+            <span>SOP Standardization</span><span>Status Reporting</span>
+          </div>
+        </div>
+        <div class="skill-card reveal" data-tilt>
+          <h3>Sales Pipeline & Outreach</h3>
+          <div class="chips">
+            <span>Outbound Prospecting</span><span>Lead Qualification</span><span>Account Mapping</span>
+            <span>Cold Calling</span><span>Deal Progression</span><span>Market Research</span>
+            <span>CRM Data Hygiene</span>
+          </div>
+        </div>
+        <div class="skill-card reveal" data-tilt>
+          <h3>Systems & Tools</h3>
+          <div class="chips">
+            <span>MS Project</span><span>Jira</span><span>Salesforce</span><span>Monday.com</span>
+            <span>LinkedIn Sales Navigator</span><span>Excel</span>
+          </div>
+          <h4>GenAI</h4>
+          <div class="chips chips-soft">
+            <span>Claude Code</span><span>Gemini</span><span>OpenAI</span>
+          </div>
+        </div>
+        <div class="skill-card reveal" data-tilt>
+          <h3>Languages</h3>
+          <div class="lang">
+            <div class="lang-row"><span>Hebrew</span><em>Native</em></div>
+            <div class="bar"><i style="--w:100%"></i></div>
+            <div class="lang-row"><span>English</span><em>Professional</em></div>
+            <div class="bar"><i style="--w:85%"></i></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- EDUCATION & VOLUNTEERING -->
+    <section class="section" id="education">
+      <div class="section-head reveal">
+        <p class="kicker">Education & Giving back</p>
+        <h2>Learning, and <em>paying it forward.</em></h2>
+      </div>
+
+      <div class="edu-grid">
+        <div class="edu-card reveal" data-tilt>
+          <div class="edu-icon">
+            <svg viewBox="0 0 24 24"><path d="M2 9l10-5 10 5-10 5L2 9z"/><path d="M6 11v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/></svg>
+          </div>
+          <span class="edu-date">Graduated 2026</span>
+          <h3>B.A. in Business Administration</h3>
+          <p class="edu-place">Peres Academic Center, Rehovot</p>
+          <p>Graduated with a GPA of 92, focusing on Project Management, Operations Strategy, Market Analysis and Resource Planning.</p>
+          <div class="job-tags"><span>Project Management</span><span>Operations Strategy</span><span>Market Analysis</span></div>
+        </div>
+
+        <div class="edu-card reveal" data-tilt>
+          <div class="edu-icon warm">
+            <svg viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9.5-9A5.5 5.5 0 0112 6a5.5 5.5 0 019.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg>
+          </div>
+          <span class="edu-date">2023 - 2026</span>
+          <h3>Mentor · Chimes Israel</h3>
+          <p class="edu-place">Volunteering</p>
+          <p>Developed and led adaptive training programs tailored to different functional levels, giving personal guidance and building an empowering environment for youth.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section class="section contact" id="contact">
+      <div class="contact-box reveal">
+        <p class="kicker">Contact</p>
+        <h2>Let's build something <em>great together.</em></h2>
+        <p class="contact-sub">Open to roles in operations, project management and business development. The fastest way to reach me is by email.</p>
+
+        <div class="contact-links">
+          <a href="mailto:yuvalguetta222@gmail.com" class="contact-link magnetic">
+            <span class="cl-icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></span>
+            <span class="cl-text"><small>Email</small>yuvalguetta222@gmail.com</span>
+          </a>
+          <a href="https://www.linkedin.com/in/yuval-guetta/" target="_blank" rel="noopener" class="contact-link magnetic">
+            <span class="cl-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 10v7M8 7v.01M12 17v-4a2 2 0 014 0v4M12 10v7"/></svg></span>
+            <span class="cl-text"><small>LinkedIn</small>yuval-guetta</span>
+          </a>
+          <a href="Yuval_Guetta_CV.pdf" download class="contact-link magnetic">
+            <span class="cl-icon"><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 19h16"/></svg></span>
+            <span class="cl-text"><small>Resume</small>Download CV (PDF)</span>
+          </a>
+        </div>
+
+        <button class="copy-btn" id="copyEmail" type="button">Copy email address</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>© <span id="year"></span> Yuval Guetta · Designed with care</p>
+    <a href="#top" class="to-top" aria-label="Back to top">↑</a>
+  </footer>
+
+  <div class="toast" id="toast">Email copied ✓</div>
+
+  <script src="script.js"></script>
+</body>
+</html>
