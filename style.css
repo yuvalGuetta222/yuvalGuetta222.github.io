@@ -382,7 +382,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .contact-box .kicker::before { display: none; }
 .contact-sub { color: var(--muted); max-width: 520px; margin: 0 auto 40px; }
 
-.contact-links { display: grid; grid-template-columns: 1.25fr 1fr 1fr; gap: 16px; max-width: 900px; margin: 0 auto; }
+.contact-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; max-width: 750px; margin: 0 auto; }
 .contact-link {
   display: flex; align-items: center; gap: 14px; text-align: left;
   padding: 18px 20px; border-radius: 20px; background: rgba(255, 255, 255, 0.85);
@@ -434,8 +434,8 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
   .hero-actions { justify-content: center; }
   .hero-card { max-width: 380px; margin: 0 auto; }
   .scroll-hint { display: none; }
-  .about-grid, .skills-grid, .edu-grid, .contact-links { grid-template-columns: 1fr; }
-  .contact-links { max-width: 420px; }
+  .about-grid, .skills-grid, .edu-grid { grid-template-columns: 1fr; }
+  .contact-links { max-width: 700px; }
 }
 
 @media (max-width: 760px) {
@@ -456,6 +456,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
   .timeline-line { left: 3px; }
   .job-card, .skill-card, .edu-card { padding: 24px 22px; }
   .contact-box { padding: 54px 20px; }
+  .contact-links { grid-template-columns: 1fr; max-width: 420px; }
   .cursor-glow { display: none; }
   .footer { padding-inline: 16px; }
 }
