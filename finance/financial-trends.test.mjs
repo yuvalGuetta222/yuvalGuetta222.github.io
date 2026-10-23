@@ -82,7 +82,7 @@ test("History planning balance subtracts unmatched recurring rent for every cove
  assert.equal(months.length,3);
  assert.deepEqual(months.map(m=>m.unlinkedFixed),[450000,450000,450000]);
  assert.deepEqual(months.map(m=>m.plannedBalance),[1944800,1949800,1934800]);
- assert.equal(months.reduce((s,m)=>s+m.plannedBalance,0),5839400);
+ assert.equal(months.reduce((s,m)=>s+m.plannedBalance,0),5829400);
 });
 test("Fixed expense matched to a specific month only prevents double counting there",()=>{
  const transaction=[
