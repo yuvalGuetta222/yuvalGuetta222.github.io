@@ -112,7 +112,8 @@ async function loadTransactions(start,next){
 }
 
 async function reload(){
- if(!household)return;const m=$("month").value||currentMonth();const start=m+"-01";
+ if(!household)return;
+ try {const m=$("month").value||currentMonth();const start=m+"-01";
  const yr=Number(m.slice(0,4)),mo=Number(m.slice(5,7));const next=(mo===12?yr+1:yr)+"-"+String(mo===12?1:mo+1).padStart(2,"0")+"-01";
  notice("טוען נתונים…");
  const [i,t,f,b,r,c]=await Promise.all([
@@ -124,7 +125,14 @@ async function reload(){
  supabase.from("tevuna_fixed_expense_card_coverage").select("fixed_expense_id,transaction_id,expense_month").eq("household_id",household).eq("expense_month",start)]);
  const err=[i.error,t.error,f.error,b.error,r.error,c.error].find(Boolean);
  if(err){notice("שגיאה בטעינת הנתונים. בדוק את החיבור ונסה שוב.");return}
- data={income:i.data||[],transactions:t.data||[],fixed:f.data||[],budgets:b.data||[],recurring:r.data||[],coverage:c.data||[]};notice("");render();document.dispatchEvent(new CustomEvent("tevuna:loaded",{detail:{data,month:m,household}}));
+ data={income:i.data||[],transactions:t.data||[],fixed:f.data||[],budgets:b.data||[],recurring:r.data||[],coverage:c.data||[]};
+ render();
+ notice("");
+ document.dispatchEvent(new CustomEvent("tevuna:loaded",{detail:{data,month:m,household}}));
+ }catch(error){
+  console.error("Tevuna: error loading or rendering a financial month",error);
+  notice("לא ניתן להשלים את טעינת החודש. הנתונים לא נמחקו. נסו לרענן את הדף; אם התקלה נמשכת, פתחו את האתר בדפדפן מעודכן.");
+ }
 }
 function line(label,sub,val,id=null,table=null){
  const row=document.createElement("div");row.className="line-item";
