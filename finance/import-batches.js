@@ -31,7 +31,7 @@ function render(){
   const details=el("p",[
     "גיליון: "+(b.sheet_name||(b.file_kind==="xlsx"?"לא נשמר":"CSV")),"יובא: "+niceDate(b.imported_at),
     "תאריכי עסקאות: "+period(b),
-    Number(b.transaction_count)+" עסקאות שנשמרו","סכום נטו: "+money(b.net_amount_agorot)
+    Number(b.transaction_count)+" עסקאות שנשמרו","סכום נטו: "+money(b.net_amount_agorot),b.expected_net_agorot===null?"ללא בדיקת סכום מקור":b.net_amount_agorot===b.expected_net_agorot?"סכום תואם לביקורת":"פער מול סיכום מקור"
    ].join("  •  "),"statement-details");
   main.append(details);
   const action=el("button","מחיקת הפירוט","danger delete-statement");action.type="button";
@@ -45,7 +45,7 @@ function openConfirm(batch){
  selected=batch;
  $("delete-statement-filename").textContent=batch.filename;
  $("delete-statement-info").textContent=(batch.statement_month?"חודש פירוט "+labelMonth(batch.statement_month)+" • ":"")+period(batch)+" • "+batch.transaction_count+" עסקאות • "+money(batch.net_amount_agorot);
- $("delete-statement-warning").textContent="כל "+batch.transaction_count+" העסקאות ששויכו לייבוא הזה יימחקו לצמיתות ממאגר הנתונים, מהתקציב ומהגרפים. עסקאות ידניות, הכנסות, וייבואים אחרים לא יימחקו. לא ניתן לבטל את המחיקה.";
+ $("delete-statement-warning").textContent="הפירוט הזה יוסר. רק עסקאות שאינן מופיעות באף פירוט אחר יימחקו מהמאגר והגרפים. עסקאות משותפות, עסקאות ידניות והכנסות לא יימחקו. לא ניתן לבטל.";
  $("delete-statement-error").textContent="";
  $("delete-statement-confirm").disabled=false;
  $("delete-statement-dialog").showModal();
@@ -57,10 +57,10 @@ async function deleteBatch(){
  $("delete-statement-confirm").disabled=true;
  $("delete-statement-error").textContent="מוחק את הפירוט ואת כל העסקאות השייכות אליו…";
  try{
-  const {data,error}=await runtime.supabase.from("tevuna_import_batches")
-    .delete().eq("id",batch.id).eq("household_id",context.household).select("id");
+  const {data,error}=await runtime.supabase.rpc("tevuna_delete_import_batch",{p_batch_id:batch.id});
   if(error)throw error;
-  if(!Array.isArray(data)||data.length!==1)throw Error("הרשומה לא נמחקה. ייתכן שהפירוט כבר הוסר או שאין הרשאה.");
+  if(!Number.isInteger(data)||data<0)throw Error("לא התקבל אישור מחיקה תקין.");
+  const preserved=Number(batch.transaction_count)-data;
   selected=null;
   $("delete-statement-dialog").close();
   status("הפירוט '"+batch.filename+"' נמחק לצמיתות. העסקאות ששויכו אליו לא יופיעו עוד בחישובים.");
@@ -79,7 +79,7 @@ async function refresh(){
  const current=++seq;
  if(!$("statements").classList.contains("hidden"))status("טוען פירוטי אשראי…");
  const {data,error}=await runtime.supabase.from("tevuna_import_batch_summary")
-  .select("id,filename,sheet_name,file_kind,imported_at,transaction_count,net_amount_agorot,first_transaction_date,last_transaction_date,statement_month")
+  .select("id,filename,sheet_name,file_kind,imported_at,transaction_count,net_amount_agorot,first_transaction_date,last_transaction_date,statement_month,expected_count,expected_net_agorot")
   .eq("household_id",ctx.household).order("imported_at",{ascending:false}).limit(400);
  if(current!==seq)return;
  if(error){status("לא ניתן לטעון את פירוטי האשראי. "+String(error.message).slice(0,150));return}
