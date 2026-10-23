@@ -1,3 +1,6 @@
+import {setupIncomeManagement} from "./income-view.js";
+import {setupCategoryDashboard} from "./category-view.js";
+import {recurringIncomeSummary} from "./income-utils.mjs";
 import {setupBatches} from "./import-batches.js";
 import {setupHistory} from "./history.js";
 import {setupImporter} from "./importer.js";
@@ -20,7 +23,7 @@ function toAgorot(input,allowZero=false){
   if(!Number.isSafeInteger(n)||n>100000000000||(!allowZero&&n<=0))throw Error("הסכום אינו בטווח המותר");
   return n;
 }
-let household=null, user=null, signup=false, data={income:[],transactions:[],fixed:[],budgets:[]},busy=false;
+let household=null, user=null, signup=false, data={income:[],transactions:[],fixed:[],budgets:[],recurring:[]},busy=false;
 const view=id=>{for(const n of ["auth-view","pending-view","app-view"])$(n).classList.toggle("hidden",n!==id)};
 function notice(msg,target="app-error"){const el=$(target);el.textContent=msg??"";if(msg){el.scrollIntoView({block:"nearest",behavior:"smooth"})}}
 function defaultDates(){$("month").value=currentMonth();document.querySelector('input[name="occurred_on"]').value=today();document.querySelector('input[name="income_month"]').value=currentMonth()}
@@ -57,10 +60,10 @@ async function showFor(nextUser){
  household=d.household_id;view("app-view");await reload();
 }
 $("pending-refresh").addEventListener("click",async()=>{notice("בודק הרשאות…","pending-message");const {data:{user:u},error}=await supabase.auth.getUser();if(error){notice("בדיקת האימות נכשלה. נסה להתחבר מחדש.","pending-message");return}await showFor(u)});
-document.querySelectorAll(".logout").forEach(btn=>btn.addEventListener("click",async()=>{const {error}=await supabase.auth.signOut();if(error){notice(authError(error));return}user=null;household=null;data={income:[],transactions:[],fixed:[],budgets:[]};$("password").value="";view("auth-view")}));
-function switchScreen(name){for(const screen of document.querySelectorAll(".screen"))screen.classList.toggle("hidden",screen.id!==name);document.querySelectorAll("[data-screen]").forEach(btn=>btn.classList.toggle("active",btn.dataset.screen===name));document.dispatchEvent(new CustomEvent("tevuna:screen-changed",{detail:{screen:name}}))}
+document.querySelectorAll(".logout").forEach(btn=>btn.addEventListener("click",async()=>{const {error}=await supabase.auth.signOut();if(error){notice(authError(error));return}user=null;household=null;data={income:[],transactions:[],fixed:[],budgets:[],recurring:[]};$("password").value="";view("auth-view")}));
+function switchScreen(name){for(const screen of document.querySelectorAll(".screen"))screen.classList.toggle("hidden",screen.id!==name);document.querySelectorAll("[data-screen]").forEach(btn=>btn.classList.toggle("active",btn.dataset.screen===name));document.dispatchEvent(new CustomEvent("tevuna:screen-changed",{detail:{screen:name}}));const menu=$("nav-more");if(menu&&menu.open)menu.open=false}
 document.querySelectorAll("[data-screen]").forEach(btn=>btn.addEventListener("click",()=>switchScreen(btn.dataset.screen)));
-$("month").addEventListener("change",reload);
+$("month").addEventListener("change",()=>{if($("recurring-income-form"))$("recurring-income-form").elements.start_month.value=$("month").value;reload()});
 const cadenceMonths={monthly:1,bimonthly:2,quarterly:3,yearly:12};
 async function loadTransactions(start,next){
  const result=[];
@@ -78,14 +81,15 @@ async function reload(){
  if(!household)return;const m=$("month").value||currentMonth();const start=m+"-01";
  const yr=Number(m.slice(0,4)),mo=Number(m.slice(5,7));const next=(mo===12?yr+1:yr)+"-"+String(mo===12?1:mo+1).padStart(2,"0")+"-01";
  notice("טוען נתונים…");
- const [i,t,f,b]=await Promise.all([
- supabase.from("tevuna_incomes").select("id,label,amount_agorot,income_month,received").eq("household_id",household).eq("income_month",start).order("created_at",{ascending:false}),
+ const [i,t,f,b,r]=await Promise.all([
+ supabase.from("tevuna_incomes").select("id,label,amount_agorot,income_month,received,recurring_income_id").eq("household_id",household).eq("income_month",start).order("created_at",{ascending:false}),
  loadTransactions(start,next),
  supabase.from("tevuna_fixed_expenses").select("id,label,category,amount_agorot,cadence,active").eq("household_id",household).order("created_at",{ascending:false}),
- supabase.from("tevuna_budgets").select("id,category,amount_agorot,budget_month").eq("household_id",household).eq("budget_month",start).order("category")]);
- const err=[i.error,t.error,f.error,b.error].find(Boolean);
+ supabase.from("tevuna_budgets").select("id,category,amount_agorot,budget_month").eq("household_id",household).eq("budget_month",start).order("category"),
+ supabase.from("tevuna_recurring_incomes").select("id,label,amount_agorot,start_month,end_month,active").eq("household_id",household).order("created_at",{ascending:false})]);
+ const err=[i.error,t.error,f.error,b.error,r.error].find(Boolean);
  if(err){notice("שגיאה בטעינת הנתונים. בדוק את החיבור ונסה שוב.");return}
- data={income:i.data||[],transactions:t.data||[],fixed:f.data||[],budgets:b.data||[]};notice("");render();document.dispatchEvent(new CustomEvent("tevuna:loaded",{detail:{data,month:m,household}}));
+ data={income:i.data||[],transactions:t.data||[],fixed:f.data||[],budgets:b.data||[],recurring:r.data||[]};notice("");render();document.dispatchEvent(new CustomEvent("tevuna:loaded",{detail:{data,month:m,household}}));
 }
 function line(label,sub,val,id=null,table=null){
  const row=document.createElement("div");row.className="line-item";
@@ -123,11 +127,14 @@ function updateCategorySuggestions(){
 function render(){
  updateCategorySuggestions();
  const inc=data.income.filter(x=>x.received).reduce((a,x)=>a+x.amount_agorot,0);
+ const incomes=recurringIncomeSummary(data.recurring,data.income,$("month").value);
  const spent=data.transactions.reduce((a,x)=>a+(x.entry_kind==="refund"?-1:1)*x.amount_agorot,0);
  const fixed=monthlyFixed();
- $("s-income").textContent=money(inc);$("s-spent").textContent=money(spent);$("s-fixed").textContent=money(fixed);$("s-balance").textContent=money(inc-spent);$("s-balance").className=(inc-spent<0?"negative":"positive");
+ $("s-income").textContent=money(inc);
+ $("s-income-meta").textContent=incomes.pending>0?"בנוסף צפויות "+money(incomes.pending)+" שטרם אושרו":"הכנסות שהתקבלו בפועל";
+ $("s-spent").textContent=money(spent);$("s-fixed").textContent=money(fixed);$("s-balance").textContent=money(inc-spent);$("s-balance").className=(inc-spent<0?"negative":"positive");
  const cat=categorySpend();
- fillLines("category-lines",cat.map(([name,n])=>line(name,"הוצאות בניכוי זיכויים",n)));
+
  const insights=[];
  if(!data.income.length&&!data.transactions.length)insights.push("כדי להתחיל, הוסיפו משכורת ועסקאות ראשונות. עד אז לא ניתן לנתח את מצבכם.");
  for(const b of data.budgets){const current=cat.find(x=>x[0]===b.category)?.[1]||0;if(current>b.amount_agorot)insights.push("הוצאות "+b.category+" חרגו ב-"+money(current-b.amount_agorot)+" מהתקציב שנקבע.");}
@@ -172,6 +179,9 @@ setupImporter({supabase,notice,reload,getContext:()=>({user,household})});
 setupBatches({supabase,notice,reload,getContext:()=>({user,household})});
 setupAnalysis({supabase,getContext:()=>({user,household})});
 setupHistory({supabase,getContext:()=>({user,household})});
+setupCategoryDashboard();
+setupIncomeManagement({supabase,notice,reload,getContext:()=>({user,household}),getData:()=>data});
+$("recurring-income-form").elements.start_month.value=$("month").value;
 defaultDates();
 (async()=>{
  try{const {data:d,error}=await supabase.auth.getSession();if(error)throw error;await showFor(d.session?.user||null);
