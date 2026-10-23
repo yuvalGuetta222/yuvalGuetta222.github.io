@@ -38,6 +38,7 @@
 <button data-screen="incomes">הכנסות</button>
 <button data-screen="budgets">תקציבים</button>
 <button data-screen="fixed">הוצאות קבועות</button>
+<button data-screen="backup">גיבוי וייצוא</button>
 </div></details></nav>
  <p class="feedback" id="app-error" role="status" aria-live="polite"></p><datalist id="finance-category-options"><option value="מזון וסופר"><option value="מסעדות ומשלוחים"><option value="תחבורה"><option value="בילויים"><option value="בריאות"><option value="קניות"><option value="חשבונות הבית"><option value="שכירות"><option value="מנויים"><option value="חינוך"><option value="ביטוח"><option value="נסיעות ונופש"><option value="אחר"></datalist>
  <section id="dashboard" class="screen">
@@ -102,7 +103,7 @@
   <div class="two"><div><div id="history-income-compare" class="trend-subtotal"></div><div id="history-fixed-compare" class="trend-subtotal"></div><div id="history-expense-compare" class="trend-subtotal"></div><div id="history-category-compare" class="category-changes"></div></div>
   <div><h2>מה כדאי לבדוק?</h2><p class="subtitle">ממצאים והצעות לבדיקה, לא הוראות לקצץ בכל מחיר</p><div id="history-notes"></div></div></div>
  </div>
- <div class="box disclaimer"><b>איך להבין השוואות?</b><p>ההתחייבויות הקבועות במגמה מבוססות על ההגדרות הנוכחיות, גם לחודשים קודמים. זו הערכה לצורכי תכנון, ולא הוכחה שאותן התחייבויות היו קיימות אז. רק עסקאות שקושרו ידנית להתחייבויות בחודש המתאים מקטינות את השריון הקבוע. חיוב כרטיס במועד שונה, קובץ חסר, עסקה בתשלומים או הכנסה שטרם התקבלה יכולים להשפיע על המסקנות. לפני שינוי כלכלי משמעותי מומלץ להשלים נתונים ולוודא סכומים מול הדוחות המקוריים.</p></div>
+ <div class="box disclaimer"><b>איך להבין השוואות?</b><p>ההתחייבויות הקבועות במגמה מבוססות על ההגדרות הנוכחיות, גם לחודשים קודמים. חודשים שבהם לא הוגדר תאריך תחילה לא יוצגו כאילו הם מאומתים. ניתן להגדיר תוקף בהוצאות קבועות. רק עסקאות שקושרו ידנית להתחייבויות בחודש המתאים מקטינות את השריון הקבוע. חיוב כרטיס במועד שונה, קובץ חסר, עסקה בתשלומים או הכנסה שטרם התקבלה יכולים להשפיע על המסקנות. לפני שינוי כלכלי משמעותי מומלץ להשלים נתונים ולוודא סכומים מול הדוחות המקוריים.</p></div>
  </section>
  <section id="import" class="screen hidden">
   <div class="two">
@@ -204,6 +205,26 @@
  <label>סכום לכל חיוב<input name="amount" type="number" min="0.01" max="100000000" step="0.01" required></label>
  <label>החל מחודש<input name="start_month" type="month" required></label><label>עד חודש (אופציונלי)<input name="end_month" type="month"></label><label>תדירות<select name="cadence"><option value="monthly">חודשי</option><option value="bimonthly">דו-חודשי</option><option value="quarterly">רבעוני</option><option value="yearly">שנתי</option></select></label><button type="submit" class="primary">שמירת הוצאה קבועה</button></form></div>
  <div class="box"><h2>התאמת התחייבויות לעסקאות האשראי</h2><p class="subtitle">ברירת המחדל: כל התחייבות קבועה נשמרת בחישוב היתרה. אם כבר יש בדוח האשראי חיוב מתאים, בחרו את העסקה המדויקת כדי שלא נספור את ההתחייבות שוב.</p><p class="note">ההתאמה נשמרת לחודש הנבחר בלבד. כאשר קובץ אשראי נמחק, ההתאמות לעסקאות שנמחקו מוסרות אוטומטית.</p><div id="fixed-list"></div></div></div></section>
+ <section id="backup" class="screen hidden">
+  <div class="box backup-intro">
+   <span class="eyebrow">DATA PORTABILITY</span><h2>גיבוי וייצוא הנתונים</h2>
+   <p class="subtitle">כדאי לשמור גיבוי עצמאי של המידע המשפחתי, במיוחד לפני שינויים גדולים. הקובץ ייווצר בדפדפן שלך ולא יישלח לשירות גיבוי חיצוני.</p>
+   <div class="two">
+    <div class="backup-choice">
+     <h3>גיבוי מלא לקובץ JSON</h3>
+     <p class="note">כולל עסקאות, הכנסות, התחייבויות, תקציבים, פירוטים וקישורים ביניהם. לא כולל סיסמאות או קבצי האשראי המקוריים.</p>
+     <button id="backup-json" class="primary" type="button">הורדת גיבוי מלא</button>
+    </div>
+    <div class="backup-choice">
+     <h3>ייצוא עסקאות לקובץ CSV</h3>
+     <p class="note">מיועד לפתיחה ב-Excel. כולל תאריך עסקה, חודש חיוב, קטגוריה, סכום והאם בוצע תיקון.</p>
+     <button id="backup-csv" class="secondary" type="button">הורדת עסקאות ל-Excel</button>
+    </div>
+   </div>
+   <p class="feedback" id="backup-status" role="status" aria-live="polite"></p>
+   <div class="notice"><b>שמירה בטוחה:</b><p>קובצי הגיבוי מכילים מידע כספי פרטי. יש לשמור אותם במכשיר מוגן ולא לשתף בקבוצות או להעלות למיקום ציבורי. ייבוא גיבוי מלא חזרה למערכת עדיין אינו נתמך.</p></div>
+  </div>
+ </section>
  <section id="budgets" class="screen hidden"><div class="two"><div class="box"><h2>הגדרת תקציב חודשי</h2><form id="budget-form">
  <label>קטגוריה<input name="category" list="finance-category-options" placeholder="בחרו או הקלידו קטגוריה" maxlength="60" required></label>
  <label>מסגרת לחודש שנבחר<input name="amount" type="number" min="0" max="100000000" step="0.01" required></label>
