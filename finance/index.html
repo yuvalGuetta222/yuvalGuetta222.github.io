@@ -27,7 +27,7 @@
 <button type="button" class="link logout">התנתקות</button><p class="feedback" id="pending-message" role="status"></p></div></section>
 <section id="app-view" class="hidden">
  <div class="heading"><div><span class="eyebrow">הנתונים שלכם • עדכון מהענן</span><h1>התמונה הכלכלית שלנו</h1><p class="subtitle">כל הסכומים בשקלים • המערכת מחשבת מנתונים שנשמרו בפועל</p></div><div class="heading-actions"><label class="month-label">בחירת חודש<input type="month" id="month" aria-label="בחירת חודש"></label><button class="secondary logout">התנתקות</button></div></div>
- <div class="navigation" role="navigation" aria-label="ניווט ראשי"><button data-screen="dashboard" class="active">סקירה</button><button data-screen="import">⬆ ייבוא אשראי</button><button data-screen="transactions">עסקאות</button><button data-screen="incomes">הכנסות</button><button data-screen="fixed">הוצאות קבועות</button><button data-screen="budgets">תקציבים</button></div>
+ <div class="navigation" role="navigation" aria-label="ניווט ראשי"><button data-screen="dashboard" class="active">סקירה</button><button data-screen="history">📈 מגמות חודשיות</button><button data-screen="import">⬆ ייבוא אשראי</button><button data-screen="transactions">עסקאות</button><button data-screen="incomes">הכנסות</button><button data-screen="fixed">הוצאות קבועות</button><button data-screen="budgets">תקציבים</button></div>
  <p class="feedback" id="app-error" role="status" aria-live="polite"></p>
  <section id="dashboard" class="screen">
   <div class="stats">
@@ -42,11 +42,30 @@
   <div class="two"><div class="box"><h2>בתי העסק המרכזיים</h2><p class="subtitle">איפה הוצאתם הכי הרבה בחודש הנבחר?</p><div id="merchant-leaders"></div></div><div class="box"><h2>שינויים בהוצאות</h2><p class="subtitle" id="analysis-compare">השוואה מול חודש קודם</p><div id="comparison-list"></div></div></div>
   <div class="box disclaimer"><b>איך קוראים את המספרים?</b><p>הוצאות קבועות הן תוכנית בלבד וייתכן שכבר שולמו בעסקאות. הן מוצגות בנפרד כדי למנוע ספירה כפולה. הנתונים אינם מהווים ייעוץ השקעות או המלצה לקחת אשראי.</p></div>
  </section>
+ <section id="history" class="screen hidden">
+ <div class="box history-top">
+  <div class="heading" style="margin-bottom:12px">
+   <div><span class="eyebrow">FAMILY FINANCIAL TRENDS</span><h2>התמונה הכלכלית לאורך זמן</h2><p class="subtitle">השוואת הכנסות שהתקבלו מול עסקאות אשראי והוצאות לפי קטגוריה. ללא ספירה כפולה של התחייבויות קבועות.</p></div>
+   <div class="heading-actions"><label>טווח מגמות<select id="history-months"><option value="3">3 חודשים</option><option value="6" selected>6 חודשים</option><option value="12">12 חודשים</option></select></label></div>
+  </div>
+  <p id="history-coverage" class="note">בחרו טווח להצגת ההיסטוריה.</p><p id="history-error" class="feedback" role="status" aria-live="polite"></p>
+ </div>
+ <div class="stats" id="history-cards"></div>
+ <div class="box history-block"><h2>מגמת הכנסות והוצאות</h2><p class="subtitle">השוואה על אותה סקאלה כספית: <span class="dot income"></span> הכנסות שהתקבלו • <span class="dot expense"></span> עסקאות נטו לאחר זיכויים. *חודש נוכחי חלקי.</p><div class="history-chart" id="history-chart"></div></div>
+ <div class="box history-block"><h2>כמה יותר או פחות בכל חודש?</h2><p class="subtitle">הפרש בחודש מתייחס להכנסות פחות עסקאות בלבד, לא יתרת חשבון הבנק. היעדר רישום אינו נחשב לאפס.</p>
+  <div class="table-wrap"><table class="history-table"><thead><tr><th>חודש</th><th>הכנסות</th><th>עסקאות</th><th>הפרש</th><th>שינוי בהוצאות</th><th>שינוי בהכנסות</th></tr></thead><tbody id="history-table"></tbody></table></div>
+ </div>
+ <div class="box history-block"><div class="heading"><div><h2>איפה בזבזנו יותר או פחות?</h2><p class="subtitle" id="history-compare-description"></p></div><label>חודש להשוואה<select id="history-focus-month" aria-label="חודש להשוואה"></select></label></div>
+  <div class="two"><div><div id="history-income-compare" class="trend-subtotal"></div><div id="history-expense-compare" class="trend-subtotal"></div><div id="history-category-compare" class="category-changes"></div></div>
+  <div><h2>מה כדאי לבדוק?</h2><p class="subtitle">ממצאים והצעות לבדיקה, לא הוראות לקצץ בכל מחיר</p><div id="history-notes"></div></div></div>
+ </div>
+ <div class="box disclaimer"><b>איך להבין השוואות?</b><p>המגמות מבוססות רק על עסקאות והכנסות שנשמרו בתבונה. חיוב כרטיס במועד שונה, קובץ חסר, עסקה בתשלומים או הכנסה שטרם התקבלה יכולים להשפיע על המסקנות. לפני שינוי כלכלי משמעותי מומלץ להשלים נתונים ולוודא סכומים מול הדוחות המקוריים.</p></div>
+ </section>
  <section id="import" class="screen hidden">
   <div class="two">
    <div class="box">
     <span class="eyebrow">SMART CREDIT IMPORT</span><h2>מייבאים פירוט אשראי</h2>
-    <p class="subtitle">מורידים פירוט עסקאות מחברת האשראי בקובץ Excel ‏(XLSX) או CSV, בוחרים אותו כאן ובודקים את העסקאות לפני שמירה.</p>
+    <p class="subtitle">מורידים פירוט עסקאות מחברת האשראי בקובץ Excel ‏(XLSX) או CSV, בוחרים אותו כאן ובודקים את העסקאות לפני שמירה. <b>אם הקובץ מכיל עמודת קטגוריה, נשתמש בקטגוריות המקור.</b></p>
     <label class="upload-area">⬆ בחרו קובץ פירוט עסקאות
      <input type="file" id="import-file" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
      <small>עד 8MB • הקובץ מפוענח בדפדפן, ללא העלאת הקובץ המקורי לענן</small></label>
@@ -59,7 +78,7 @@
    </div>
    <div class="box">
     <h2>איך מנתחים את ההוצאות?</h2>
-    <div class="import-feature"><b>◉ זיהוי וסיווג</b><p>זיהוי מסעדות, סופרמרקטים, תחבורה, קניות, מנויים ועוד. ניתן לתקן את הסיווג לפני השמירה.</p></div>
+    <div class="import-feature"><b>◉ קטגוריות מהקובץ</b><p>כשחברת האשראי כוללת עמודת קטגוריה או סיווג, היא תקבע את התיוג. רק כשקטגוריה חסרה נציע זיהוי לפי בית העסק. אפשר לתקן ידנית.</p></div>
     <div class="import-feature"><b>▥ בדיקת כפילויות</b><p>אותה עסקה המיובאת שוב מאותו פירוט לא אמורה להיספר מחדש.</p></div>
     <div class="import-feature"><b>↑ שינוי מול חודש קודם</b><p>נזהה עליות בקטגוריות, תוך סימון מקרים שבהם לא קיימים מספיק נתונים להשוואה.</p></div>
     <div class="import-feature"><b>✦ תרחישי חיסכון</b><p>נראה הוצאות גמישות ונסביר מה עשוי להשתנות אם מצמצמים אחוז מסוים. אלה הערכות ולא הבטחה לחיסכון.</p></div>
@@ -67,10 +86,10 @@
    </div>
   </div>
   <div id="import-review" class="box hidden">
-    <div class="section-intro"><h2>סקירת העסקאות לפני שמירה</h2><p class="subtitle">בדקו תאריך, חיוב מול זיכוי וסכום. תוכלו לשנות קטגוריה ולהסיר עסקה מהייבוא. אם הסכומים אינם תואמים לדוח, תקנו את מיפוי העמודות.</p></div>
+    <div class="section-intro"><h2>סקירת העסקאות לפני שמירה</h2><p class="subtitle">קטגוריה מהדוח מקבלת עדיפות על זיהוי אוטומטי. בדקו תאריך, חיוב מול זיכוי וסכום. תוכלו לשנות קטגוריה ולהסיר עסקה מהייבוא. אם הסכומים אינם תואמים לדוח, תקנו את מיפוי העמודות.</p></div>
     <p class="feedback" id="import-summary"></p>
     <div class="import-actions"><button type="button" class="secondary" id="only-visible">בחר רק את 100 הראשונות</button><button type="button" class="secondary" id="select-all-import">בחר את כולן</button></div>
-    <div class="table-wrap"><table><thead><tr><th>ייבוא</th><th>תאריך</th><th>בית העסק</th><th>סוג</th><th>קטגוריה</th><th>סכום</th></tr></thead><tbody id="import-preview"></tbody></table></div>
+    <div class="table-wrap"><table><thead><tr><th>ייבוא</th><th>תאריך</th><th>בית העסק</th><th>סוג</th><th>קטגוריה</th><th>מקור קטגוריה</th><th>סכום</th></tr></thead><tbody id="import-preview"></tbody></table></div>
     <div class="import-actions"><button type="button" class="primary" id="import-save" disabled>אישור ושמירת העסקאות</button></div>
   </div>
   <p class="feedback" id="import-status" role="status" aria-live="polite"></p>
