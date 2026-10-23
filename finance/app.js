@@ -86,7 +86,7 @@ function switchScreen(name){
 }
 document.querySelectorAll("[data-screen]").forEach(btn=>btn.addEventListener("click",()=>switchScreen(btn.dataset.screen)));
 $("ledger-fixed-link").addEventListener("click",()=>switchScreen("fixed"));
-$("month").addEventListener("change",()=>{if($("recurring-income-form"))$("recurring-income-form").elements.start_month.value=$("month").value;reload()});
+$("month").addEventListener("change",()=>{if($("recurring-income-form"))$("recurring-income-form").elements.start_month.value=$("month").value;if($("fixed-form"))$("fixed-form").elements.start_month.value=$("month").value;reload()});
 $("date-basis").addEventListener("change",reload);
 const cadenceMonths={monthly:1,bimonthly:2,quarterly:3,yearly:12};
 async function loadTransactions(start,next){
@@ -171,6 +171,25 @@ function fixedRow(item){
    bar.append(select,save);
   }else bar.append(Object.assign(document.createElement("p"),{className:"note",textContent:"אין בחודש זה עסקאות אשראי זמינות להתאמה. ההתחייבות מנוכה במלואה מהיתרה לתכנון."}));
  }
+ const dates=document.createElement("div");dates.className="fixed-dates";dates.setAttribute("aria-label","תקופת תוקף של "+item.label);
+ const startLabel=document.createElement("label");startLabel.textContent="תחילת ההתחייבות";
+ const startInput=document.createElement("input");startInput.type="month";startInput.value=item.start_month?.slice(0,7)||"";startLabel.append(startInput);
+ const endLabel=document.createElement("label");endLabel.textContent="סיום (אופציונלי)";
+ const endInput=document.createElement("input");endInput.type="month";endInput.value=item.end_month?.slice(0,7)||"";endLabel.append(endInput);
+ const saveDates=document.createElement("button");saveDates.type="button";saveDates.className="secondary";saveDates.textContent="עדכן תוקף";
+ saveDates.addEventListener("click",async()=>{
+  if(!startInput.value){notice("חובה לבחור תאריך התחלה כדי לחשב היסטוריה מדויקת.");return}
+  if(endInput.value&&endInput.value<startInput.value){notice("תאריך הסיום לא יכול להיות לפני תאריך ההתחלה.");return}
+  saveDates.disabled=true;
+  const {data:updated,error}=await supabase.from("tevuna_fixed_expenses")
+   .update({start_month:startInput.value+"-01",end_month:endInput.value?endInput.value+"-01":null})
+   .eq("id",item.id).eq("household_id",household).select("id");
+  if(error||!updated?.length){notice("לא ניתן לעדכן את התוקף: "+String(error?.message||"הרשומה לא נמצאה"));saveDates.disabled=false;return}
+  await reload();notice("תוקף ההתחייבות נשמר. המגמות ההיסטוריות עודכנו.");saveDates.disabled=false;
+ });
+ dates.append(startLabel,endLabel,saveDates);
+ if(!item.start_month)dates.append(Object.assign(document.createElement("p"),{className:"note",textContent:"אין תאריך תחילה היסטורי. חודשים קודמים לא ייחשבו כמאומתים עד שתמלאו תאריך."}));
+ bar.append(dates);
  const wrap=document.createElement("div");wrap.className="fixed-expense-item";wrap.append(base,bar);return wrap;
 }
 function render(){
