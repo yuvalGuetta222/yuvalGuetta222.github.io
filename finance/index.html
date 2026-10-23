@@ -86,21 +86,21 @@
  <section id="history" class="screen hidden">
  <div class="box history-top">
   <div class="heading" style="margin-bottom:12px">
-   <div><span class="eyebrow">FAMILY FINANCIAL TRENDS</span><h2>התמונה הכלכלית לאורך זמן</h2><p class="subtitle">השוואת הכנסות שהתקבלו מול עסקאות אשראי והוצאות לפי קטגוריה. ללא ספירה כפולה של התחייבויות קבועות.</p></div>
+   <div><span class="eyebrow">FAMILY FINANCIAL TRENDS</span><h2>התמונה הכלכלית לאורך זמן</h2><p class="subtitle">השוואת הכנסות מול עסקאות אשראי והתחייבויות קבועות לתכנון, עם מניעת ספירה כפולה של חיובים שקושרו לעסקאות.</p></div>
    <div class="heading-actions"><label>טווח מגמות<select id="history-months"><option value="3">3 חודשים</option><option value="6" selected>6 חודשים</option><option value="12">12 חודשים</option></select></label></div>
   </div>
   <p id="history-coverage" class="note">בחרו טווח להצגת ההיסטוריה.</p><p id="history-error" class="feedback" role="status" aria-live="polite"></p>
  </div>
  <div class="stats" id="history-cards"></div>
- <div class="box history-block"><h2>מגמת הכנסות והוצאות</h2><p class="subtitle">השוואה על אותה סקאלה כספית: <span class="dot income"></span> הכנסות שהתקבלו • <span class="dot expense"></span> עסקאות נטו לאחר זיכויים. *חודש נוכחי חלקי.</p><div class="history-chart" id="history-chart"></div></div>
- <div class="box history-block"><h2>כמה יותר או פחות בכל חודש?</h2><p class="subtitle">הפרש בחודש מתייחס להכנסות פחות עסקאות בלבד, לא יתרת חשבון הבנק. היעדר רישום אינו נחשב לאפס.</p>
-  <div class="table-wrap"><table class="history-table"><thead><tr><th>חודש</th><th>הכנסות</th><th>עסקאות</th><th>הפרש</th><th>שינוי בהוצאות</th><th>שינוי בהכנסות</th></tr></thead><tbody id="history-table"></tbody></table></div>
+ <div class="box history-block"><h2>מגמת הכנסות והוצאות</h2><p class="subtitle">השוואה על אותה סקאלה כספית: <span class="dot income"></span> הכנסות שהתקבלו • <span class="dot expense"></span> עסקאות אשראי נטו • <span class="dot fixed"></span> התחייבויות קבועות שטרם נכללו באשראי. *חודש נוכחי חלקי.</p><div class="history-chart" id="history-chart"></div></div>
+ <div class="box history-block"><h2>כמה יותר או פחות בכל חודש?</h2><p class="subtitle">היתרה לתכנון מחושבת לאחר עסקאות האשראי וההתחייבויות הקבועות שטרם נכללו בהן. היא אינה יתרת חשבון בנק; חודש ללא פירוט לא נחשב כחודש ללא הוצאות.</p>
+  <div class="table-wrap"><table class="history-table"><thead><tr><th>חודש</th><th>הכנסות</th><th>אשראי</th><th>קבועות נוספות</th><th>הוצאות לתכנון</th><th>יתרה לאחר התחייבויות</th><th>שינוי באשראי</th><th>שינוי בהכנסות</th></tr></thead><tbody id="history-table"></tbody></table></div>
  </div>
  <div class="box history-block"><div class="heading"><div><h2>איפה בזבזנו יותר או פחות?</h2><p class="subtitle" id="history-compare-description"></p></div><label>חודש להשוואה<select id="history-focus-month" aria-label="חודש להשוואה"></select></label></div>
-  <div class="two"><div><div id="history-income-compare" class="trend-subtotal"></div><div id="history-expense-compare" class="trend-subtotal"></div><div id="history-category-compare" class="category-changes"></div></div>
+  <div class="two"><div><div id="history-income-compare" class="trend-subtotal"></div><div id="history-fixed-compare" class="trend-subtotal"></div><div id="history-expense-compare" class="trend-subtotal"></div><div id="history-category-compare" class="category-changes"></div></div>
   <div><h2>מה כדאי לבדוק?</h2><p class="subtitle">ממצאים והצעות לבדיקה, לא הוראות לקצץ בכל מחיר</p><div id="history-notes"></div></div></div>
  </div>
- <div class="box disclaimer"><b>איך להבין השוואות?</b><p>המגמות מבוססות רק על עסקאות והכנסות שנשמרו בתבונה. חיוב כרטיס במועד שונה, קובץ חסר, עסקה בתשלומים או הכנסה שטרם התקבלה יכולים להשפיע על המסקנות. לפני שינוי כלכלי משמעותי מומלץ להשלים נתונים ולוודא סכומים מול הדוחות המקוריים.</p></div>
+ <div class="box disclaimer"><b>איך להבין השוואות?</b><p>ההתחייבויות הקבועות במגמה מבוססות על ההגדרות הנוכחיות, גם לחודשים קודמים. זו הערכה לצורכי תכנון, ולא הוכחה שאותן התחייבויות היו קיימות אז. רק עסקאות שקושרו ידנית להתחייבויות בחודש המתאים מקטינות את השריון הקבוע. חיוב כרטיס במועד שונה, קובץ חסר, עסקה בתשלומים או הכנסה שטרם התקבלה יכולים להשפיע על המסקנות. לפני שינוי כלכלי משמעותי מומלץ להשלים נתונים ולוודא סכומים מול הדוחות המקוריים.</p></div>
  </section>
  <section id="import" class="screen hidden">
   <div class="two">
