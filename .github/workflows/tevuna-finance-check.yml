@@ -21,6 +21,10 @@ jobs:
           node --check finance/importer.js
           node --check finance/import-batches.js
           node --check finance/analysis.js
+          node --check finance/category-view.js
+          node --check finance/category-data.mjs
+          node --check finance/income-view.js
+          node --check finance/income-utils.mjs
           node --check finance/credit-core.mjs
           node --check finance/financial-insights.mjs
       - name: Run statement parser and analytics tests
@@ -30,3 +34,5 @@ jobs:
           test -s finance/index.html
           test -s finance/style.css
           test -s finance/app.js
+          test -s finance/category-view.js
+          test -s finance/income-view.js
