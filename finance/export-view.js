@@ -5,8 +5,11 @@ function status(s){$("backup-status").textContent=s}
 async function allRows(table,select,household){
  const rows=[];
  for(let index=0;index<20000;index+=1000){
-  const {data,error}=await runtime.supabase.from(table).select(select)
-    .eq("household_id",household).range(index,index+999);
+  let query=runtime.supabase.from(table).select(select).eq("household_id",household);
+  if(table==="tevuna_import_batch_transactions")query=query.order("batch_id").order("transaction_id");
+  else if(table==="tevuna_fixed_expense_card_coverage")query=query.order("fixed_expense_id").order("expense_month");
+  else query=query.order("id");
+  const {data,error}=await query.range(index,index+999);
   if(error)throw error;
   rows.push(...(data||[]));
   if(!data||data.length<1000)return rows;
