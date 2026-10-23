@@ -29,7 +29,7 @@ function render(){
   main.append(el("div",b.statement_month?"פירוט אשראי • "+labelMonth(b.statement_month):"פירוט אשראי • "+period(b),"statement-period"));
   main.append(el("h3",b.filename,"statement-filename"));
   const details=el("p",[
-    "גיליון: "+(b.sheet_name||"CSV"),"יובא: "+niceDate(b.imported_at),
+    "גיליון: "+(b.sheet_name||(b.file_kind==="xlsx"?"לא נשמר":"CSV")),"יובא: "+niceDate(b.imported_at),
     "תאריכי עסקאות: "+period(b),
     Number(b.transaction_count)+" עסקאות שנשמרו","סכום נטו: "+money(b.net_amount_agorot)
    ].join("  •  "),"statement-details");
