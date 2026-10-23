@@ -27,7 +27,7 @@
 <button type="button" class="link logout">התנתקות</button><p class="feedback" id="pending-message" role="status"></p></div></section>
 <section id="app-view" class="hidden">
  <div class="heading"><div><span class="eyebrow">הנתונים שלכם • עדכון מהענן</span><h1>התמונה הכלכלית שלנו</h1><p class="subtitle">כל הסכומים בשקלים • המערכת מחשבת מנתונים שנשמרו בפועל</p></div><div class="heading-actions"><label class="month-label">בחירת חודש<input type="month" id="month" aria-label="בחירת חודש"></label><button class="secondary logout">התנתקות</button></div></div>
- <div class="navigation" role="navigation" aria-label="ניווט ראשי"><button data-screen="dashboard" class="active">סקירה</button><button data-screen="history">📈 מגמות חודשיות</button><button data-screen="import">⬆ ייבוא אשראי</button><button data-screen="transactions">עסקאות</button><button data-screen="incomes">הכנסות</button><button data-screen="fixed">הוצאות קבועות</button><button data-screen="budgets">תקציבים</button></div>
+ <div class="navigation" role="navigation" aria-label="ניווט ראשי"><button data-screen="dashboard" class="active">סקירה</button><button data-screen="history">📈 מגמות חודשיות</button><button data-screen="import">⬆ ייבוא אשראי</button><button data-screen="statements">📁 פירוטים שיובאו</button><button data-screen="transactions">עסקאות</button><button data-screen="incomes">הכנסות</button><button data-screen="fixed">הוצאות קבועות</button><button data-screen="budgets">תקציבים</button></div>
  <p class="feedback" id="app-error" role="status" aria-live="polite"></p><datalist id="finance-category-options"><option value="מזון וסופר"><option value="מסעדות ומשלוחים"><option value="תחבורה"><option value="בילויים"><option value="בריאות"><option value="קניות"><option value="חשבונות הבית"><option value="שכירות"><option value="מנויים"><option value="חינוך"><option value="ביטוח"><option value="נסיעות ונופש"><option value="אחר"></datalist>
  <section id="dashboard" class="screen">
   <div class="stats">
@@ -94,6 +94,29 @@
   </div>
   <p class="feedback" id="import-status" role="status" aria-live="polite"></p>
  </section>
+ <section id="statements" class="screen hidden">
+  <div class="box statement-head">
+   <div class="heading" style="margin-bottom:8px">
+    <div><span class="eyebrow">CREDIT STATEMENT LIBRARY</span><h2>פירוטי אשראי שיובאו</h2><p class="subtitle">כל העלאת גיליון נשמרת כייבוא נפרד. מכאן אפשר למחוק את הפירוט כולו, ולא רק עסקה בודדת.</p></div>
+    <button type="button" id="statements-refresh" class="secondary">↻ רענון הרשימה</button>
+   </div>
+   <p class="note">המחיקה מסירה ממאגר הנתונים את כל העסקאות שנוספו מאותו ייבוא ומעדכנת את הגרפים והניתוחים. היא אינה מוחקת עסקאות ידניות, הכנסות, תקציבים או ייבואים אחרים. אם אותו חיוב הופיע בכמה קבצים, הוא נשמר רק תחת הייבוא שהוסיף אותו לראשונה.</p>
+   <p id="statements-count" class="statement-count"></p>
+   <p class="feedback" id="statements-status" role="status" aria-live="polite"></p>
+  </div>
+  <div id="statements-list" class="statement-list"><p class="empty">טוען…</p></div>
+ </section>
+ <dialog id="delete-statement-dialog" class="delete-dialog">
+  <div class="delete-dialog-body">
+   <span class="eyebrow">CONFIRM PERMANENT DELETION</span>
+   <h2>למחוק את כל פירוט האשראי?</h2>
+   <p id="delete-statement-filename" class="statement-filename"></p>
+   <p id="delete-statement-info" class="statement-details"></p>
+   <div class="delete-warning"><strong>מחיקה בלתי הפיכה</strong><p id="delete-statement-warning"></p></div>
+   <p id="delete-statement-error" class="feedback" role="status" aria-live="polite"></p>
+   <div class="import-actions"><button type="button" class="secondary" id="delete-statement-cancel">ביטול</button><button type="button" class="danger" id="delete-statement-confirm">כן, מחק את כל הפירוט</button></div>
+  </div>
+ </dialog>
  <section id="transactions" class="screen hidden"><div class="two"><div class="box"><h2>הוספת עסקה</h2><form id="tx-form">
  <label>תאריך<input name="occurred_on" type="date" required></label>
  <label>בית עסק / פירוט<input name="merchant" maxlength="150" required placeholder="למשל סופרמרקט"></label>
