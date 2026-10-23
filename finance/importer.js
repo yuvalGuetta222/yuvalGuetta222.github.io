@@ -55,9 +55,9 @@ function preview(){
   const category=document.createElement("select");category.setAttribute("aria-label","סיווג לעסקה "+t.merchant);
   available.forEach(c=>category.append(option(c,c)));
   category.value=t.category;
-  category.addEventListener("change",()=>{t.category=category.value;updateSummary()});
+  category.addEventListener("change",()=>{t.category=category.value;t.categoryMethod="manual";const badge=row.querySelector("[data-category-method]");if(badge)badge.textContent="תיקון ידני";updateSummary()});
   function cell(content){const td=document.createElement("td");if(typeof content==="string")td.textContent=content;else td.append(content);row.append(td)}
-  cell(checkbox);cell(t.occurred_on);cell(t.merchant);cell(t.entry_kind==="refund"?"זיכוי":"חיוב");cell(category);cell(t.categoryMethod==="file"?"מקובץ האשראי":t.categoryMethod==="suggestion"?"זיהוי אוטומטי":"לא זוהה");cell(money(t.amount_agorot));
+  cell(checkbox);cell(t.occurred_on);cell(t.merchant);cell(t.entry_kind==="refund"?"זיכוי":"חיוב");cell(category);const tag=document.createElement("span");tag.dataset.categoryMethod="true";tag.textContent=t.categoryMethod==="file"?"מקובץ האשראי":t.categoryMethod==="suggestion"?"זיהוי אוטומטי":t.categoryMethod==="manual"?"תיקון ידני":"לא זוהה";cell(tag);cell(money(t.amount_agorot));
   target.append(row);
  }
  if(candidates.length>100) {
@@ -77,7 +77,7 @@ function updateSummary(){
  $("import-save").disabled=!selected.length;
 }
 function onlyVisible(){for(let i=100;i<candidates.length;i++)candidates[i].selected=false;updateSummary();say("רק 100 העסקאות המוצגות ייובאו.")}
-function selectAll(){for(const t of candidates)t.selected=true;preview()}
+function selectAll(){for(const t of candidates)t.selected=true;for(const box of $("import-preview").querySelectorAll('input[type="checkbox"]'))box.checked=true;updateSummary()}
 async function readFile(file){
  if(!file)return;
  reset();say("קורא קובץ בדפדפן…");
