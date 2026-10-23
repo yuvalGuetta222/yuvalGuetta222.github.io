@@ -1,3 +1,5 @@
+import {setupImporter} from "./importer.js";
+import {setupAnalysis} from "./analysis.js";
 import {createClient} from "https://esm.sh/@supabase/supabase-js@2.76.1";
 const SB_URL="https://vimklcufkafrmkcfxxak.supabase.co";
 const SB_PUBLIC_KEY="sb_publishable_4n9nLMOpeR4VcMSKvXiYWQ_E-83U8va";
@@ -68,7 +70,7 @@ async function reload(){
  supabase.from("tevuna_budgets").select("id,category,amount_agorot,budget_month").eq("household_id",household).eq("budget_month",start).order("category")]);
  const err=[i.error,t.error,f.error,b.error].find(Boolean);
  if(err){notice("שגיאה בטעינת הנתונים. בדוק את החיבור ונסה שוב.");return}
- data={income:i.data||[],transactions:t.data||[],fixed:f.data||[],budgets:b.data||[]};notice("");render();
+ data={income:i.data||[],transactions:t.data||[],fixed:f.data||[],budgets:b.data||[]};notice("");render();document.dispatchEvent(new CustomEvent("tevuna:loaded",{detail:{data,month:m,household}}));
 }
 function line(label,sub,val,id=null,table=null){
  const row=document.createElement("div");row.className="line-item";
@@ -126,6 +128,8 @@ $("budget-form").addEventListener("submit",async e=>{
  if(res.error)throw res.error;f.reset();await reload();notice("התקציב נשמר.")
  }catch(err){notice(authError(err))}finally{button.disabled=false}
 });
+setupImporter({supabase,notice,reload,getContext:()=>({user,household})});
+setupAnalysis({supabase,getContext:()=>({user,household})});
 defaultDates();
 (async()=>{
  try{const {data:d,error}=await supabase.auth.getSession();if(error)throw error;await showFor(d.session?.user||null);
