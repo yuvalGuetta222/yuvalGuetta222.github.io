@@ -1,7 +1,7 @@
 import { CATEGORIES,parseCSV,findHeaderRow,guessMapping,convertRows,fileIsSupported } from "./credit-core.mjs";
 const $=id=>document.getElementById(id);
 let workbook=[],rows=[],mapping={},headerRow=-1,candidates=[],fileType="csv",fileSize=0,rawFileName="";
-const FIELDS=[["date","תאריך עסקה / חיוב *"],["merchant","בית עסק / תיאור *"],["amount","סכום חיוב בשקלים *"],["category","קטגוריה מתוך הדוח (אופציונלי)"],["kind","חיוב או זיכוי (אופציונלי)"],["reference","אסמכתא (אופציונלי)"],["card","זיהוי כרטיס (אופציונלי)"]];
+const FIELDS=[["date","תאריך עסקה / חיוב *"],["merchant","בית עסק / תיאור *"],["amount","סכום חיוב בשקלים *"],["category","קטגוריה מתוך הדוח (אופציונלי)"],["kind","חיוב או זיכוי (אופציונלי)"],["installment","תשלומים בקובץ"],["installmentNumber","תשלום נוכחי"],["installmentTotal","סך תשלומים"],["reference","אסמכתא (אופציונלי)"],["card","זיהוי כרטיס (אופציונלי)"]];
 let runtime=null;
 function say(message){$("import-status").textContent=message;$("import-status").hidden=!message}
 function reset(){candidates=[];rows=[];mapping={};$("import-review").classList.add("hidden");$("import-save").disabled=true;$("import-preview").replaceChildren()}
@@ -57,11 +57,11 @@ function preview(){
   category.value=t.category;
   category.addEventListener("change",()=>{t.category=category.value;t.categoryMethod="manual";const badge=row.querySelector("[data-category-method]");if(badge)badge.textContent="תיקון ידני";updateSummary()});
   function cell(content){const td=document.createElement("td");if(typeof content==="string")td.textContent=content;else td.append(content);row.append(td)}
-  cell(checkbox);cell(t.occurred_on);cell(t.merchant);cell(t.entry_kind==="refund"?"זיכוי":"חיוב");cell(category);const tag=document.createElement("span");tag.dataset.categoryMethod="true";tag.textContent=t.categoryMethod==="file"?"מקובץ האשראי":t.categoryMethod==="suggestion"?"זיהוי אוטומטי":t.categoryMethod==="manual"?"תיקון ידני":"לא זוהה";cell(tag);cell(money(t.amount_agorot));
+  cell(checkbox);cell(t.occurred_on);cell(t.merchant);cell(t.entry_kind==="refund"?"זיכוי":"חיוב");cell(category);const tag=document.createElement("span");tag.dataset.categoryMethod="true";tag.textContent=t.categoryMethod==="file"?"מקובץ האשראי":t.categoryMethod==="suggestion"?"זיהוי אוטומטי":t.categoryMethod==="manual"?"תיקון ידני":"לא זוהה";cell(tag);cell(t.installment_total?"תשלום "+t.installment_number+"/"+t.installment_total:"לא צוין");cell(money(t.amount_agorot));
   target.append(row);
  }
  if(candidates.length>100) {
-  const e=document.createElement("tr"),td=document.createElement("td");td.colSpan=7;
+  const e=document.createElement("tr"),td=document.createElement("td");td.colSpan=8;
   td.textContent="בתצוגה נראות 100 העסקאות הראשונות בלבד. יתר העסקאות יישמרו לפי קטגוריות המקור מהקובץ, אם קיימות, או לפי הסיווג המשוער. אפשר לייבא רק את 100 המוצגות.";
   e.append(td);target.append(e);
  }
@@ -125,7 +125,7 @@ async function save(){
    const fp=await digest("tevuna-credit-v2|"+row.identity+"|"+row.sequence);
    mapped.push({household_id:context.household,created_by:context.user.id,occurred_on:row.occurred_on,
     merchant:row.merchant,category:row.category,amount_agorot:row.amount_agorot,
-    entry_kind:row.entry_kind,source:fileType,source_fingerprint:fp});
+    entry_kind:row.entry_kind,source:fileType,source_fingerprint:fp,installment_number:row.installment_number,installment_total:row.installment_total});
   }
   const filename=String(rawFileName||"פירוט אשראי").slice(0,180);
   const selectedSheet=workbook[Number($("sheet-select").value)]?.name||null;
