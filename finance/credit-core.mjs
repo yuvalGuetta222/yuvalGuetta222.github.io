@@ -48,7 +48,7 @@ export function detectDelimiter(text) {
   return scored[0][0];
 }
 export function parseCSV(text) {
-  const s=String(text).replace(/^\uFEFF/,"");
+  const s=String(text).replace(/^\uFEFF/,"").replace(/^sep=([;,\t])\r?\n/i,"");
   const delimiter=detectDelimiter(s);
   const rows=[]; let row=[],cell="",quoted=false;
   for(let i=0;i<s.length;i++){
