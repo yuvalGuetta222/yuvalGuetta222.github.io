@@ -1,3 +1,4 @@
+import {setupBatches} from "./import-batches.js";
 import {setupHistory} from "./history.js";
 import {setupImporter} from "./importer.js";
 import {CATEGORIES} from "./credit-core.mjs";
@@ -168,6 +169,7 @@ $("budget-form").addEventListener("submit",async e=>{
  }catch(err){notice(authError(err))}finally{button.disabled=false}
 });
 setupImporter({supabase,notice,reload,getContext:()=>({user,household})});
+setupBatches({supabase,notice,reload,getContext:()=>({user,household})});
 setupAnalysis({supabase,getContext:()=>({user,household})});
 setupHistory({supabase,getContext:()=>({user,household})});
 defaultDates();
