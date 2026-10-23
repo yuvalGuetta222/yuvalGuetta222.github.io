@@ -117,7 +117,7 @@ async function save(){
  const items=candidates.filter(c=>c.selected);
  if(!items.length)return;
  if(!confirm("לשמור "+items.length+" עסקאות בחשבון המשותף? הקובץ המקורי לא נשמר באתר."))return;
- const btn=$("import-save");btn.disabled=true;let stored=0,duplicates=0;
+ const btn=$("import-save");btn.disabled=true;let stored=0,duplicates=0,batchId=null;
  try{
   const mapped=[];
   for(const row of items){
@@ -127,6 +127,15 @@ async function save(){
     merchant:row.merchant,category:row.category,amount_agorot:row.amount_agorot,
     entry_kind:row.entry_kind,source:fileType,source_fingerprint:fp});
   }
+  const filename=String(rawFileName||"פירוט אשראי").slice(0,180);
+  const selectedSheet=workbook[Number($("sheet-select").value)]?.name||null;
+  const {data:batch,error:batchError}=await runtime.supabase.from("tevuna_import_batches").insert({
+   household_id:context.household,created_by:context.user.id,filename,
+   sheet_name:selectedSheet?String(selectedSheet).slice(0,120):null,file_kind:fileType
+  }).select("id").single();
+  if(batchError)throw batchError;
+  batchId=batch.id;
+  for(const record of mapped)record.import_batch_id=batchId;
   for(let i=0;i<mapped.length;i+=75){
    const part=mapped.slice(i,i+75);
    const {data,error}=await runtime.supabase.from("tevuna_transactions")
@@ -136,14 +145,26 @@ async function save(){
    stored+=data?.length||0;duplicates+=part.length-(data?.length||0);
    say("מייבא… נשמרו "+stored+" עסקאות, דולגו "+duplicates+" כפולות.");
   }
-  say("✓ הייבוא הסתיים. נשמרו "+stored+" עסקאות חדשות; "+duplicates+" עסקאות חוזרות לא נשמרו שוב. לחצו על סקירה לצפייה בניתוח.");
+  if(stored===0 && batchId){
+   const {error:cleanError}=await runtime.supabase.from("tevuna_import_batches").delete()
+    .eq("id",batchId).eq("household_id",context.household);
+   if(cleanError)throw cleanError;
+   batchId=null;
+  }
+  say("✓ הייבוא הסתיים. נשמרו "+stored+" עסקאות חדשות; "+duplicates+" עסקאות חוזרות לא נשמרו שוב. פירוט עם עסקאות חדשות נשמר ב'פירוטים שיובאו', משם אפשר למחוק אותו בשלמותו.");
   $("import-file").value="";reset();
   if(stored>0){const months=new Map();for(const x of items){const month=x.occurred_on.slice(0,7);months.set(month,(months.get(month)||0)+1)}const mostCommon=[...months].sort((a,b)=>b[1]-a[1])[0]?.[0];if(mostCommon)$("month").value=mostCommon;}
   await runtime.reload();
   document.dispatchEvent(new CustomEvent("tevuna:imported"));
+  document.dispatchEvent(new CustomEvent("tevuna:batches-changed"));
  }catch(err){
   say("הייבוא לא הושלם. נשמרו "+stored+" עסקאות לפני התקלה; אפשר לייבא את אותו קובץ שוב, ועסקאות זהות אמורות להיות מדולגות. פירוט: "+String(err?.message||err).slice(0,180));
   btn.disabled=false;
+  if(batchId) {
+   say("הייבוא הופסק לאחר שמירת "+stored+" עסקאות. ייבוא חלקי בשם '"+String(rawFileName).slice(0,60)+"' מופיע ב'פירוטים שיובאו', ותוכלו למחוק אותו בשלמותו או לייבא את הקובץ שוב.");
+   document.dispatchEvent(new CustomEvent("tevuna:batches-changed"));
+   await runtime.reload();
+  }
  }
 }
 export function setupImporter(context){
