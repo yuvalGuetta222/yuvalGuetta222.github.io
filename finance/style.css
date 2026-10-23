@@ -83,3 +83,27 @@ button:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:820px){.income-layout{grid-template-columns:1fr}.top-navigation{width:100%;max-width:100%;justify-content:space-between}.top-navigation>button,.nav-more>summary{font-size:12px;padding:12px 11px}.section-heading{flex-wrap:wrap}.category-total{margin-top:0}}
 @media(max-width:530px){.categories-main{padding:16px}.category-chart-name{display:grid;gap:3px}.category-chart-row{padding:12px 5px}.category-chart-value{font-size:13px}.category-chart-name>span{font-size:13px}.nav-more-menu{right:auto;left:0}.income-template{align-items:flex-start;flex-direction:column}.income-template-actions{justify-content:flex-start}.category-dialog-inside{padding:17px}}
 @media(prefers-reduced-motion:reduce){.category-chart-fill{transition:none}}
+
+
+/* Financial coach: receipts, projections and payments clearly separated */
+.forecast-main{margin:20px 0 18px;border-color:#426b78;background:linear-gradient(130deg,#1b3649,#16293e)}
+.forecast-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:15px 0}
+.forecast-grid>div{background:#13283e;border:1px solid #33536a;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.forecast-grid small{color:#b2cad8;font-size:12px}.forecast-grid strong{font-size:clamp(18px,2.35vw,27px);font-variant-numeric:tabular-nums;direction:ltr;text-align:right;color:#f2fcff}
+.forecast-grid .forecast-total{border-color:#3e8e84;background:#20474d}.forecast-grid .forecast-total strong{color:#87f6cf}
+.financial-confidence{display:inline-flex;align-items:center;background:#334356;border:1px solid #597089;color:#d2dee9;padding:8px 11px;border-radius:18px;white-space:nowrap;font-weight:750;font-size:12px}
+.financial-confidence.medium{background:#1c5248;border-color:#357d68;color:#a7efce}.financial-confidence.low{background:#544230;border-color:#8d7451;color:#ffe1a2}
+.forecast-range{font-size:13px;font-weight:700;color:#b2f4dc;margin:14px 0 9px}.forecast-notes{margin:14px 0}
+.coach-disclaimer{font-size:13px;color:#c4d7e3;line-height:1.85;margin:7px 0}
+.forecast-fixed{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#193247;border:1px solid #325669;border-radius:12px;padding:13px 15px;margin:14px 0}
+.forecast-fixed b{font-size:13px}.forecast-fixed span{font-size:13px;color:#c8deed}
+.coach-panels{margin:12px 0 14px}.coach-panels .box{height:auto}.coach-panels h2{font-size:20px}
+.coach-priority{margin:10px 0;padding:15px;border:1px solid #3f576b;background:#1d354b;border-radius:14px}
+.coach-priority-title{display:flex;align-items:center;gap:9px;font-size:15px}.priority-index{display:inline-grid;place-items:center;background:#4fa78d;color:#071e26;width:26px;height:26px;border-radius:50%;font-size:13px;font-weight:800}
+.coach-priority-basis{color:#c2d8e5;font-size:13px;line-height:1.85;margin:9px 0}
+.coach-confidence{color:#87d6bf;font-size:11px}.coach-priority-action{color:#c8dce7;font-size:12px;line-height:1.8;margin:10px 0 0}
+.recurring-focus h3{font-size:15px;margin:20px 0 11px;color:#ddf8eb}.coach-charge{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #324d61}.coach-charge:last-child{border:0}
+.charge-detail{min-width:0;display:grid;gap:6px}.charge-detail b{font-size:13px;overflow-wrap:anywhere}.charge-detail small{font-size:11px;color:#adc6d5;line-height:1.7}
+.charge-value{font-size:13px;white-space:nowrap;display:grid;gap:5px;direction:ltr;text-align:left;color:#bdeedd}.charge-value small{font-size:11px;color:#a6c3d1}
+@media(max-width:820px){.forecast-grid{grid-template-columns:1fr 1fr}.forecast-total{grid-column:span 2}.forecast-fixed{flex-direction:column;align-items:flex-start}}
+@media(max-width:480px){.forecast-main{padding:17px}.forecast-grid{gap:8px}.forecast-grid>div{padding:12px}.forecast-grid strong{font-size:17px}.forecast-fixed span{line-height:1.7}}
