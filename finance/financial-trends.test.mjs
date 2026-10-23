@@ -76,7 +76,7 @@ test("History planning balance subtracts unmatched recurring rent for every cove
   {income_month:"2026-09-01",amount_agorot:2444800,received:true},
   {income_month:"2026-10-01",amount_agorot:2444800,received:true}
  ];
- const fixed=[{id:"rent",label:"שכירות",active:true,amount_agorot:450000,cadence:"monthly"}];
+ const fixed=[{id:"rent",label:"שכירות",active:true,amount_agorot:450000,cadence:"monthly",start_month:"2026-08-01"}];
  const before=makeTimeline({endMonth:"2026-10",count:3,transactions:tx,incomes:income});
  const months=applyFixedToTimeline(before,{fixed});
  assert.equal(months.length,3);
@@ -93,7 +93,7 @@ test("Fixed expense matched to a specific month only prevents double counting th
   {income_month:"2026-09-01",amount_agorot:2444800,received:true},
   {income_month:"2026-10-01",amount_agorot:2444800,received:true}
  ];
- const fixed=[{id:"rent",label:"rent",active:true,cadence:"monthly",amount_agorot:450000}];
+ const fixed=[{id:"rent",label:"rent",active:true,cadence:"monthly",amount_agorot:450000,start_month:"2026-09-01"}];
  const coverage=[{fixed_expense_id:"rent",transaction_id:"sep-card",expense_month:"2026-09-01"}];
  const months=applyFixedToTimeline(makeTimeline({endMonth:"2026-10",count:2,transactions:transaction,incomes}),{fixed,coverage});
  assert.equal(months[0].linkedFixed,450000);
@@ -124,4 +124,13 @@ test("Annual obligations are averaged rather than double counted in each covered
  assert.equal(result[0].unlinkedFixed,10000);
  assert.equal(result[0].spendingWithFixed,20000);
  assert.equal(result[0].plannedBalance,980000);
+});
+
+test("Historical periods with an unknown fixed expense start date are not presented as verified",()=>{
+ const income=[{income_month:"2026-09-01",amount_agorot:1000000,received:true}];
+ const transaction=[{id:"tx1",occurred_on:"2026-09-01",amount_agorot:25000,entry_kind:"expense"}];
+ const fixed=[{id:"f",active:true,cadence:"monthly",amount_agorot:200000,start_month:null}];
+ const months=applyFixedToTimeline(makeTimeline({endMonth:"2026-10",count:2,transactions:transaction,incomes:income}),{fixed,now:new Date("2026-10-23")});
+ assert.equal(months[0].fixedHistoryUnknown,true);
+ assert.equal(months[0].plannedBalance,null);
 });
