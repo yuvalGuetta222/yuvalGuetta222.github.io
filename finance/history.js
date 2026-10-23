@@ -31,7 +31,7 @@ async function loadHistory(){
  try{
   const {household}=runtime.getContext();
   const billing=$("date-basis").value==="billing";
-  const cardSource=billing?fetchPaged("tevuna_transactions","id,occurred_on,billing_month,category,merchant,entry_kind,amount_agorot",from,to,"billing_month"):
+  const cardSource=billing?fetchPaged("tevuna_transactions","id,occurred_on,billing_month,category,merchant,entry_kind,amount_agorot,source",from,to,"billing_month"):
    fetchPaged("tevuna_transactions","id,occurred_on,billing_month,category,merchant,entry_kind,amount_agorot",from,to,"occurred_on");
   const [txSource,income,fixedResponse,coverageResponse]=await Promise.all([
    cardSource,
@@ -46,11 +46,12 @@ async function loadHistory(){
   let tx=txSource;
   if(billing){
    const manual=await fetchPaged("tevuna_transactions","id,occurred_on,billing_month,category,merchant,entry_kind,amount_agorot",from,to,"occurred_on");
-   const all=await runtime.supabase.from("tevuna_transactions").select("id").eq("household_id",household).eq("source","manual").limit(1);
-   if(all.error)throw all.error;
-   // Billing-month view deliberately shows imported cards only; manually entered transactions
-   // follow their entered date and are available in the purchase-date view.
-   tx=txSource.map(t=>({...t,occurred_on:t.billing_month||t.occurred_on}));
+   const byId=new Map();
+   for(const t of txSource.filter(t=>t.source!=="manual"))
+    byId.set(t.id,{...t,occurred_on:t.billing_month||t.occurred_on});
+   for(const t of manual.filter(t=>t.source==="manual"))
+    byId.set(t.id,t);
+   tx=[...byId.values()];
   }
   if(ticket!==requestId)return;
   today=new Date();
