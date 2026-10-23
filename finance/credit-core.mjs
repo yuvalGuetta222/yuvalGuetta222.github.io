@@ -6,6 +6,9 @@ const headers = {
   merchant: ["שם בית עסק","שם העסק","בית עסק","שם בית העסק","שם ספק","שם בית עסק / תיאור","תיאור עסקה","תיאור פעולה","תיאור","merchant","description","supplier"],
   amount: ["סכום חיוב בשח","סכום חיוב בשקל","סכום לחיוב","סכום החיוב","סכום חיוב","סכום בשח","סכום בשקל","סכום ₪","סכום העסקה בשח","סכום העסקה","סכום עסקה","סכום","amount","charged amount","billing amount"],
   category: ["קטגוריה","קטגוריית עסקה","קטגורית עסקה","קטגוריית בית העסק","קטגורית בית העסק","קטגוריית הוצאה","קטגורית הוצאה","סיווג קטגוריה","סיווג עסקה","סיווג בית העסק","סיווג","ענף בית העסק","ענף","category","merchant category","spending category","category name"],
+  installment: ["פרטי תשלומים","תשלומים","מספר תשלום מתוך","תשלום מתוך","פירוט תשלומים","installments","installment"],
+  installmentNumber: ["תשלום נוכחי","מספר תשלום","תשלום מספר","current installment","installment number"],
+  installmentTotal: ["מספר תשלומים כולל","סהכ תשלומים","סך תשלומים","כמות תשלומים","total installments","installment count"],
   kind: ["סוג חיוב","חיוב / זיכוי","חיוב/זיכוי","סוג עסקה","סוג פעולה","חיוב או זיכוי","type","debit credit"],
   reference: ["מספר אסמכתא","מספר שובר","אסמכתא","מספר עסקה","מזהה עסקה","reference","transaction id"],
   card: ["4 ספרות אחרונות","ארבע ספרות אחרונות","מספר כרטיס","כרטיס אשראי","כרטיס","card number","card"]
@@ -126,6 +129,13 @@ export function sourceCategory(value){
   return c.slice(0,60);
 }
 const isSummary=v=>/(?:^|\s)(סהכ|סך הכל|סה כ|total|יתרת פתיחה|יתרת סגירה|סיכום חיובים|סכום כולל|סכום לתשלום)(?:\s|$)/.test(key(v));
+export function parseInstallments(combo,number,total){
+  const combined=String(combo??"").normalize("NFKC").trim();
+  const pair=combined.match(/(?:תשלום\s*)?(\d{1,3})\s*(?:מתוך|\/|of|out of)\s*(\d{1,3})/i);
+  const n=Number(pair?.[1]||number),t=Number(pair?.[2]||total);
+  if(!Number.isInteger(n)||!Number.isInteger(t)||n<1||t<2||t>120||n>t)return {installment_number:null,installment_total:null};
+  return {installment_number:n,installment_total:t};
+}
 export function convertRows(rows, headerIndex, mapping) {
   const result=[], skipped=[];
   const counts=new Map();
@@ -151,7 +161,8 @@ export function convertRows(rows, headerIndex, mapping) {
     const seq=(counts.get(identity)||0)+1;counts.set(identity,seq);
     const fromFile=sourceCategory(cell("category"));
     const category=fromFile||categorize(merchant);
-    result.push({line:i+1,occurred_on:date,merchant,amount_agorot,entry_kind,category,sourceCategory:fromFile,categoryMethod:fromFile?"file":category==="אחר"?"unknown":"suggestion",identity,sequence:seq,selected:true});
+    const installments=parseInstallments(cell("installment"),cell("installmentNumber"),cell("installmentTotal"));
+    result.push({line:i+1,occurred_on:date,merchant,amount_agorot,entry_kind,category,sourceCategory:fromFile,categoryMethod:fromFile?"file":category==="אחר"?"unknown":"suggestion",...installments,identity,sequence:seq,selected:true});
   }
   return {valid:result,skipped};
 }
