@@ -41,7 +41,7 @@
  <p class="feedback" id="app-error" role="status" aria-live="polite"></p><datalist id="finance-category-options"><option value="מזון וסופר"><option value="מסעדות ומשלוחים"><option value="תחבורה"><option value="בילויים"><option value="בריאות"><option value="קניות"><option value="חשבונות הבית"><option value="שכירות"><option value="מנויים"><option value="חינוך"><option value="ביטוח"><option value="נסיעות ונופש"><option value="אחר"></datalist>
  <section id="dashboard" class="screen">
   <div class="stats">
-   <div class="box stat"><span>הכנסות שהתקבלו</span><strong id="s-income">₪0</strong><small>לחודש שנבחר</small></div>
+   <div class="box stat"><span>הכנסות שהתקבלו</span><strong id="s-income">₪0</strong><small id="s-income-meta">הכנסות שאושרו לחודש הנבחר</small></div>
    <div class="box stat"><span>הוצאות מעסקאות</span><strong id="s-spent">₪0</strong><small>עסקאות נטו לאחר זיכויים</small></div>
    <div class="box stat"><span>הוצאות קבועות מתוכננות</span><strong id="s-fixed">₪0</strong><small>ממוצע חודשי, לא מחויב מחדש</small></div>
    <div class="box stat"><span>הפרש הכנסות מול עסקאות</span><strong id="s-balance">₪0</strong><small>הכנסה שאושרה פחות עסקאות • לא יתרת בנק</small></div>
@@ -143,7 +143,7 @@
  <label>קטגוריה<input name="category" list="finance-category-options" placeholder="בחרו או הקלידו קטגוריה" maxlength="60" required></label>
  <label>סכום בשקלים<input name="amount" type="number" min="0.01" max="100000000" step="0.01" inputmode="decimal" required placeholder="0.00"></label>
  <label>סוג<select name="entry_kind"><option value="expense">הוצאה</option><option value="refund">זיכוי</option></select></label>
- <button type="submit" class="primary">שמירת עסקה</button></form></div><div class="box"><h2>העסקאות שלכם</h2><p class="subtitle">עסקאות שהוזנו ידנית או יובאו מפירוט אשראי. לשינוי סיווג לאחר ייבוא יש למחוק ולהוסיף מחדש כרגע.</p><div id="tx-list"></div></div></div></section>
+ <button type="submit" class="primary">שמירת עסקה</button></form></div><div class="box"><h2>העסקאות שלכם</h2><p class="subtitle">עסקאות שהוזנו ידנית או יובאו מאשראי. ניתן לשנות קטגוריה, אך בדרך כלל נוח יותר לפתוח קטגוריה במסך הסקירה.</p><div id="tx-list"></div></div></div></section>
  <section id="incomes" class="screen hidden">
  <div class="box income-intro"><span class="eyebrow">INCOME MANAGEMENT</span><h2>ההכנסות שלנו</h2><p class="subtitle">הכנסה קבועה כמו משכורת תופיע כצפויה מדי חודש, וניתן לסמן שהתקבלה בפועל. הכנסה חד־פעמית נרשמת רק לחודש שבוחרים.</p></div>
  <div class="income-layout">
@@ -166,7 +166,7 @@
   </section>
  </div>
  <div class="income-layout">
-  <section class="box"><h2>הכנסות קבועות פעילות</h2><p class="subtitle">סכומים צפויים אינם נספרים כהכנסה שהתקבלה עד שתאשרו אותם.</p><div id="recurring-income-list"></div></section>
+  <section class="box"><h2>הכנסות קבועות פעילות</h2><p class="subtitle">סכומים צפויים אינם נספרים כהכנסה שהתקבלה עד שתאשרו אותם.</p><div id="income-pending-summary" class="note"></div><div id="recurring-income-list"></div></section>
   <section class="box"><h2>הכנסות שנרשמו לחודש הנבחר</h2><p class="subtitle">רק מה שסומן כ״התקבל״ נכנס לסך ההכנסות בפועל.</p><div id="income-list"></div></section>
  </div>
 </section>
