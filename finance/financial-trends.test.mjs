@@ -77,7 +77,7 @@ test("History planning balance subtracts unmatched recurring rent for every cove
   {income_month:"2026-10-01",amount_agorot:2444800,received:true}
  ];
  const fixed=[{id:"rent",label:"שכירות",active:true,amount_agorot:450000,cadence:"monthly"}];
- const before=makeTimeline({endMonth:"2026-10",count:3,transactions:tx,incomes});
+ const before=makeTimeline({endMonth:"2026-10",count:3,transactions:tx,incomes:income});
  const months=applyFixedToTimeline(before,{fixed});
  assert.equal(months.length,3);
  assert.deepEqual(months.map(m=>m.unlinkedFixed),[450000,450000,450000]);
