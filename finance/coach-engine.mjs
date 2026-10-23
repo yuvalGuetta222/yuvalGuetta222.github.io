@@ -81,6 +81,8 @@ export function recurringSignals(transactions,month){
   if((highest-lowest)/Math.max(1,lowest)>.08)continue;
   const newest=months.get(month)?.[0]||[...months.values()].at(-1)?.[0];
   const seen=[...months.keys()].sort();
+  const adjacent=seen.some((m,i)=>i>0&&shiftMonth(seen[i-1],1)===m);
+  if(!adjacent)continue;
   found.push({merchant:newest.merchant,amount:Math.round(samples.reduce((a,b)=>a+b,0)/samples.length),
     months:seen,category:newest.category,confidence:months.size>=3?"medium":"low",
     title:"חיוב חוזר אפשרי",detail:"חיוב דומה מופיע ב-"+months.size+" חודשים. ייתכן מנוי או הוצאה קבועה, אך אין אישור לכך ממקור החיוב."});
