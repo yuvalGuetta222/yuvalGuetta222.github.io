@@ -21,6 +21,8 @@ jobs:
           node --check finance/importer.js
           node --check finance/import-batches.js
           node --check finance/analysis.js
+          node --check finance/coach-view.js
+          node --check finance/coach-engine.mjs
           node --check finance/category-view.js
           node --check finance/category-data.mjs
           node --check finance/income-view.js
@@ -36,3 +38,4 @@ jobs:
           test -s finance/app.js
           test -s finance/category-view.js
           test -s finance/income-view.js
+          test -s finance/coach-view.js
