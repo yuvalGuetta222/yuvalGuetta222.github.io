@@ -5,6 +5,7 @@ const headers = {
   date: ["תאריך חיוב","תאריך זיכוי","תאריך עסקה","תאריך ביצוע","תאריך רכישה","תאריך","date","transaction date","posting date"],
   merchant: ["שם בית עסק","שם העסק","בית עסק","שם בית העסק","שם ספק","שם בית עסק / תיאור","תיאור עסקה","תיאור פעולה","תיאור","merchant","description","supplier"],
   amount: ["סכום חיוב בשח","סכום חיוב בשקל","סכום לחיוב","סכום החיוב","סכום חיוב","סכום בשח","סכום בשקל","סכום ₪","סכום העסקה בשח","סכום העסקה","סכום עסקה","סכום","amount","charged amount","billing amount"],
+  category: ["קטגוריה","קטגוריית עסקה","קטגורית עסקה","קטגוריית בית העסק","קטגורית בית העסק","קטגוריית הוצאה","קטגורית הוצאה","סיווג קטגוריה","סיווג עסקה","סיווג בית העסק","סיווג","ענף בית העסק","ענף","category","merchant category","spending category","category name"],
   kind: ["סוג חיוב","חיוב / זיכוי","חיוב/זיכוי","סוג עסקה","סוג פעולה","חיוב או זיכוי","type","debit credit"],
   reference: ["מספר אסמכתא","מספר שובר","אסמכתא","מספר עסקה","מזהה עסקה","reference","transaction id"],
   card: ["4 ספרות אחרונות","ארבע ספרות אחרונות","מספר כרטיס","כרטיס אשראי","כרטיס","card number","card"]
@@ -43,14 +44,16 @@ function countOutsideQuotes(line,delimiter){
 }
 export function detectDelimiter(text) {
   const first=text.replace(/^\uFEFF/,"").split(/\r?\n/).slice(0,20).filter(x=>x.trim()).slice(0,8);
-  if (/^sep=([;,\t])\r?$/i.test(first[0]||"")) return RegExp.$1;
+  const sep=(first[0]||"").match(/^sep=([;,\t])\r?$/i);if(sep)return sep[1];
   const scored=[",",";","\t"].map(d=>[d,first.slice(0,6).map(line=>countOutsideQuotes(line,d)).filter(n=>n>0)]);
   scored.sort((a,b)=>(b[1].length>=3?b[1].length:0)-(a[1].length>=3?a[1].length:0) || b[1].reduce((x,y)=>x+y,0)-a[1].reduce((x,y)=>x+y,0));
   return scored[0][0];
 }
 export function parseCSV(text) {
-  const s=String(text).replace(/^\uFEFF/,"").replace(/^sep=([;,\t])\r?\n/i,"");
-  const delimiter=detectDelimiter(s);
+  const initial=String(text).replace(/^\uFEFF/,"");
+  const sep=initial.match(/^sep=([;,\t])\r?\n/i);
+  const delimiter=sep?sep[1]:detectDelimiter(initial);
+  const s=sep?initial.slice(sep[0].length):initial;
   const rows=[]; let row=[],cell="",quoted=false;
   for(let i=0;i<s.length;i++){
     const c=s[i];
@@ -117,6 +120,11 @@ export function categorize(merchant, description="") {
   ];
   return matches.find(([,re])=>re.test(s))?.[0]||"אחר";
 }
+export function sourceCategory(value){
+  const c=String(value??"").normalize("NFKC").replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g,"").replace(/\s+/g," ").trim();
+  if(!c || /^(?:-|—|לא ידוע|ללא קטגוריה|לא מסווג|none|uncategorized|null)$/i.test(c))return null;
+  return c.slice(0,60);
+}
 const isSummary=v=>/(?:^|\s)(סהכ|סך הכל|סה כ|total|יתרת פתיחה|יתרת סגירה|סיכום חיובים|סכום כולל|סכום לתשלום)(?:\s|$)/.test(key(v));
 export function convertRows(rows, headerIndex, mapping) {
   const result=[], skipped=[];
@@ -141,7 +149,9 @@ export function convertRows(rows, headerIndex, mapping) {
     const card=key(cell("card")||"");
     const identity=[date,key(merchant),String(amount_agorot),entry_kind,reference,card].join("|");
     const seq=(counts.get(identity)||0)+1;counts.set(identity,seq);
-    result.push({line:i+1,occurred_on:date,merchant,amount_agorot,entry_kind,category:categorize(merchant),identity,sequence:seq,selected:true});
+    const fromFile=sourceCategory(cell("category"));
+    const category=fromFile||categorize(merchant);
+    result.push({line:i+1,occurred_on:date,merchant,amount_agorot,entry_kind,category,sourceCategory:fromFile,categoryMethod:fromFile?"file":category==="אחר"?"unknown":"suggestion",identity,sequence:seq,selected:true});
   }
   return {valid:result,skipped};
 }
