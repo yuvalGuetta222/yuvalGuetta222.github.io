@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - "finance/**"
+      - "eslint.config.mjs"
       - ".github/workflows/tevuna-finance-check.yml"
   workflow_dispatch:
 permissions:
@@ -30,6 +31,12 @@ jobs:
           node --check finance/income-utils.mjs
           node --check finance/credit-core.mjs
           node --check finance/financial-insights.mjs
+          node --check finance/history.js
+          node --check finance/export-view.js
+          node --check finance/export-core.mjs
+          node --check finance/financial-trends.mjs
+      - name: Check undefined variables and unreachable code
+        run: npx --yes eslint@9.39.1 --config eslint.config.mjs "finance/**/*.{js,mjs}"
       - name: Run statement parser and analytics tests
         run: node --test finance/*.test.mjs
       - name: Ensure required pages exist
