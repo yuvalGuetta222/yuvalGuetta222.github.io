@@ -1,3 +1,4 @@
+import {householdBalance} from "./household-ledger.mjs";
 /* Financial timeline: deterministic, no AI inference and no external financial data. */
 export const formatILS=agorot=>new Intl.NumberFormat("he-IL",{style:"currency",currency:"ILS",maximumFractionDigits:0}).format((Number(agorot)||0)/100);
 export const amountDifference=(current,previous)=>current-previous;
@@ -41,6 +42,23 @@ export function makeTimeline({transactions=[],incomes=[],endMonth,count=6,now=ne
  }
  const nowMonth=[now.getFullYear(),String(now.getMonth()+1).padStart(2,"0")].join("-");
  return months.map(m=>({...m,partial:m.key===nowMonth}));
+}
+/**
+ * Reconciles each month independently with its specific confirmed credit links.
+ * Important limitation: current fixed-expense templates do not contain historical
+ * effective dates; applying them to older months is a planning scenario, not
+ * evidence those commitments existed in those months.
+ */
+export function applyFixedToTimeline(timeline,{fixed=[],coverage=[]}={}){
+ return timeline.map(m=>{
+  const monthCoverage=coverage.filter(x=>String(x.expense_month||"").slice(0,7)===m.key);
+  const ledger=householdBalance({incomes:m.incomes,transactions:m.transactions,fixed,coverage:monthCoverage});
+  return {...m,monthlyFixedPlan:ledger.planned,linkedFixed:ledger.matched,
+   unlinkedFixed:ledger.unmatched,
+   spendingWithFixed:m.hasExpenseData?ledger.recordedSpending+ledger.unmatched:null,
+   plannedBalance:m.hasIncomeData&&m.hasExpenseData?ledger.availableAfterProvisions:null,
+   fullBalanceCoverage:m.hasIncomeData&&m.hasExpenseData};
+ });
 }
 export function compareMonthly({timeline,month,now=new Date()}){
  const current=timeline.find(m=>m.key===month);
