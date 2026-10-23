@@ -36,6 +36,13 @@ export function generateInsights({current=[],previous=[],budgets=[],month,now=ne
    insights.push({priority:2,kind:"jump",title:"עלייה של "+pct+"% ב"+category,body:ILS(amount)+" כעת לעומת "+ILS(old)+" בתקופה המקבילה של החודש הקודם"+(isThisMonth?" (עד אותו יום)":"")+".",action:"בדקו אם מדובר בקנייה חד-פעמית לפני שינוי הרגלים.",category});
   }
  }
+ for(const [merchant,amount] of c.merchants){
+  const previousCharge=prev.merchants.find(([m])=>m.toLowerCase()===merchant.toLowerCase())?.[1]||0;
+  if(amount>=2000&&previousCharge>=2000&&Math.abs(amount-previousCharge)<=Math.max(100,previousCharge*.1)){
+   insights.push({priority:1,kind:"recurring",title:"חיוב שנראה חוזר: "+merchant,body:"חיוב של "+ILS(amount)+" החודש וחיוב דומה של "+ILS(previousCharge)+" בחודש הקודם.",action:"בדקו אם מדובר במנוי, הוראת קבע או רכישה חוזרת לפני שמבטלים משהו.",category:null});
+  }
+  if(insights.filter(x=>x.kind==="recurring").length>=2)break;
+ }
  if(c.spent>0&&c.merchants.length){
   const [name,amount]=c.merchants[0];
   if(amount>0)insights.push({priority:1,kind:"merchant",title:"בית העסק המרכזי החודש",body:name+": "+ILS(amount)+". המידע מתייחס לעסקאות שנשמרו בלבד.",action:"בדקו את פירוט החיובים לפני שמסיקים שיש הוצאה מיותרת.",category:null});
