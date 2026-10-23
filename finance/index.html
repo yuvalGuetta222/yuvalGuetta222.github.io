@@ -43,9 +43,14 @@
   <div class="stats">
    <div class="box stat"><span>הכנסות שהתקבלו</span><strong id="s-income">₪0</strong><small id="s-income-meta">הכנסות שאושרו לחודש הנבחר</small></div>
    <div class="box stat"><span>הוצאות מעסקאות</span><strong id="s-spent">₪0</strong><small>עסקאות נטו לאחר זיכויים</small></div>
-   <div class="box stat"><span>הוצאות קבועות מתוכננות</span><strong id="s-fixed">₪0</strong><small>ממוצע חודשי, לא מחויב מחדש</small></div>
-   <div class="box stat"><span>הפרש הכנסות מול עסקאות</span><strong id="s-balance">₪0</strong><small>הכנסה שאושרה פחות עסקאות • לא יתרת בנק</small></div>
+   <div class="box stat"><span>התחייבויות קבועות לשמירה</span><strong id="s-fixed">₪0</strong><small id="s-fixed-meta">שטרם כלולות בעסקאות האשראי</small></div>
+   <div class="box stat"><span>יתרה לתכנון לאחר התחייבויות</span><strong id="s-balance">₪0</strong><small>הכנסות פחות עסקאות והתחייבויות נוספות • לא יתרת בנק</small></div>
   </div>
+  <section class="box ledger-summary">
+   <div><b>כך חושבה היתרה לתכנון</b><p id="ledger-equation" class="ledger-equation"></p>
+   <p class="note" id="ledger-note">ההוצאות הקבועות נשמרות בתקציב עד שתקשרו אותן לעסקאות שכבר הופיעו בדוח האשראי. זהו אומדן ולא יתרת חשבון הבנק.</p></div>
+   <button type="button" class="secondary" id="ledger-fixed-link">התאמת התחייבויות לעסקאות</button>
+  </section>
   <section class="box categories-main" aria-labelledby="categories-title">
    <div class="section-heading"><div><span class="eyebrow">SPENDING BY CATEGORY</span><h2 id="categories-title">לאן הכסף הולך?</h2><p class="subtitle">ממוין מההוצאה הגבוהה לנמוכה. לחיצה על קטגוריה פותחת את כל העסקאות והזיכויים שלה בחודש הנבחר.</p></div><div class="category-total" id="category-grand-total"></div></div>
    <div class="category-bars" id="category-bars"><p class="empty">ממתין לנתונים.</p></div>
@@ -57,12 +62,12 @@
    <div class="forecast-grid">
     <div><small>כבר נרשם בפועל</small><strong id="forecast-actual">—</strong></div>
     <div><small>הוצאות נוספות משוערות</small><strong id="forecast-rest">—</strong></div>
-    <div class="forecast-total"><small>סה״כ אפשרי בסוף החודש</small><strong id="forecast-end">—</strong></div>
+    <div class="forecast-total"><small>סה״כ חיובי אשראי משוערים בסוף החודש</small><strong id="forecast-end">—</strong></div>
    </div>
    <p class="forecast-range" id="forecast-range"></p>
    <div class="forecast-notes" id="forecast-warning"></div>
-   <div class="forecast-fixed"><b>הוצאות קבועות מתוכננות (מידע נפרד)</b><span id="forecast-planned">—</span></div>
-   <p class="note">ההוצאות הקבועות עשויות כבר להופיע בעסקאות האשראי, ולכן אינן מתווספות שוב לתחזית. חודשי פירוט חסרים, שינוי בתאריכי חיוב והוצאות חד־פעמיות משפיעים על האומדן.</p>
+   <div class="forecast-fixed"><b>התחייבויות קבועות שאינן כלולות בחיובי האשראי</b><span id="forecast-planned">—</span></div><p class="forecast-range" id="forecast-with-fixed"></p>
+   <p class="note">בתחזית ההוצאות הקבועות נכללות רק כסכום נוסף לתכנון, לאחר ניכוי חיובים שקושרו לעסקאות אשראי. חיובים שכבר נקלטו אינם נספרים שוב. הערכות והתחייבויות אינן יתרת בנק.</p>
   </section>
   <div class="two coach-panels">
    <section class="box savings-focus"><div class="section-intro"><span class="eyebrow">SMART SAVING PRIORITIES</span><h2>שלוש הזדמנויות שכדאי לבדוק</h2><p class="subtitle">הצעות מדורגות לפי חריגה או גמישות ההוצאה. סכום אפשרי לחיסכון אינו הבטחה.</p></div><p id="coach-status" class="feedback" role="status" aria-live="polite"></p><div id="coach-priorities"></div></section>
@@ -76,7 +81,7 @@
    <div class="box insight-hub"><div class="section-intro"><span class="eyebrow">SPENDING INTELLIGENCE</span><h2>המלצות וניתוח הוצאות</h2><p class="subtitle" id="analysis-overview">נתונים מהחודש שבחרת</p><p class="feedback" id="analysis-error"></p></div><div id="advanced-insights" class="insights-grid"></div></div>
    <div class="two"><div class="box"><h2>בתי העסק המרכזיים</h2><div id="merchant-leaders"></div></div><div class="box"><h2>שינויים בהוצאות</h2><p class="subtitle" id="analysis-compare">השוואה מול חודש קודם</p><div id="comparison-list"></div></div></div>
   </details>
-  <div class="box disclaimer"><b>איך קוראים את המספרים?</b><p>הוצאות קבועות הן תוכנית בלבד וייתכן שכבר שולמו בעסקאות. הן מוצגות בנפרד כדי למנוע ספירה כפולה. הנתונים אינם מהווים ייעוץ השקעות או המלצה לקחת אשראי.</p></div>
+  <div class="box disclaimer"><b>איך קוראים את המספרים?</b><p>התחייבויות קבועות נכללות כשריון תקציבי, אלא אם שויכו לעסקאות האשראי של החודש. סכומים תקופתיים מוצגים כממוצע חודשי לתכנון בלבד. הנתונים אינם מהווים ייעוץ השקעות או המלצה לקחת אשראי.</p></div>
  </section>
  <section id="history" class="screen hidden">
  <div class="box history-top">
@@ -193,7 +198,7 @@
  <label>קטגוריה<input name="category" maxlength="60" placeholder="דיור" required></label>
  <label>סכום לכל חיוב<input name="amount" type="number" min="0.01" max="100000000" step="0.01" required></label>
  <label>תדירות<select name="cadence"><option value="monthly">חודשי</option><option value="bimonthly">דו-חודשי</option><option value="quarterly">רבעוני</option><option value="yearly">שנתי</option></select></label><button type="submit" class="primary">שמירת הוצאה קבועה</button></form></div>
- <div class="box"><h2>הוצאות קבועות פעילות</h2><div id="fixed-list"></div></div></div></section>
+ <div class="box"><h2>התאמת התחייבויות לעסקאות האשראי</h2><p class="subtitle">ברירת המחדל: כל התחייבות קבועה נשמרת בחישוב היתרה. אם כבר יש בדוח האשראי חיוב מתאים, בחרו את העסקה המדויקת כדי שלא נספור את ההתחייבות שוב.</p><p class="note">ההתאמה נשמרת לחודש הנבחר בלבד. כאשר קובץ אשראי נמחק, ההתאמות לעסקאות שנמחקו מוסרות אוטומטית.</p><div id="fixed-list"></div></div></div></section>
  <section id="budgets" class="screen hidden"><div class="two"><div class="box"><h2>הגדרת תקציב חודשי</h2><form id="budget-form">
  <label>קטגוריה<input name="category" list="finance-category-options" placeholder="בחרו או הקלידו קטגוריה" maxlength="60" required></label>
  <label>מסגרת לחודש שנבחר<input name="amount" type="number" min="0" max="100000000" step="0.01" required></label>
