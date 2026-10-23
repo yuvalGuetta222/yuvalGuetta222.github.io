@@ -27,19 +27,38 @@
 <button type="button" class="link logout">התנתקות</button><p class="feedback" id="pending-message" role="status"></p></div></section>
 <section id="app-view" class="hidden">
  <div class="heading"><div><span class="eyebrow">הנתונים שלכם • עדכון מהענן</span><h1>התמונה הכלכלית שלנו</h1><p class="subtitle">כל הסכומים בשקלים • המערכת מחשבת מנתונים שנשמרו בפועל</p></div><div class="heading-actions"><label class="month-label">בחירת חודש<input type="month" id="month" aria-label="בחירת חודש"></label><button class="secondary logout">התנתקות</button></div></div>
- <div class="navigation" role="navigation" aria-label="ניווט ראשי"><button data-screen="dashboard" class="active">סקירה</button><button data-screen="history">📈 מגמות חודשיות</button><button data-screen="import">⬆ ייבוא אשראי</button><button data-screen="statements">📁 פירוטים שיובאו</button><button data-screen="transactions">עסקאות</button><button data-screen="incomes">הכנסות</button><button data-screen="fixed">הוצאות קבועות</button><button data-screen="budgets">תקציבים</button></div>
+ <nav class="navigation top-navigation" aria-label="ניווט ראשי">
+<button data-screen="dashboard" class="active">סקירה</button>
+<button data-screen="history">השוואת חודשים</button>
+<details class="nav-more" id="nav-more"><summary>ניהול נתונים <span aria-hidden="true">⌄</span></summary>
+<div class="nav-more-menu">
+<button data-screen="import">ייבוא אשראי</button>
+<button data-screen="statements">קבצים שיובאו</button>
+<button data-screen="incomes">הכנסות</button>
+<button data-screen="budgets">תקציבים</button>
+<button data-screen="fixed">הוצאות קבועות</button>
+</div></details></nav>
  <p class="feedback" id="app-error" role="status" aria-live="polite"></p><datalist id="finance-category-options"><option value="מזון וסופר"><option value="מסעדות ומשלוחים"><option value="תחבורה"><option value="בילויים"><option value="בריאות"><option value="קניות"><option value="חשבונות הבית"><option value="שכירות"><option value="מנויים"><option value="חינוך"><option value="ביטוח"><option value="נסיעות ונופש"><option value="אחר"></datalist>
  <section id="dashboard" class="screen">
   <div class="stats">
    <div class="box stat"><span>הכנסות שהתקבלו</span><strong id="s-income">₪0</strong><small>לחודש שנבחר</small></div>
    <div class="box stat"><span>הוצאות מעסקאות</span><strong id="s-spent">₪0</strong><small>עסקאות נטו לאחר זיכויים</small></div>
    <div class="box stat"><span>הוצאות קבועות מתוכננות</span><strong id="s-fixed">₪0</strong><small>ממוצע חודשי, לא מחויב מחדש</small></div>
-   <div class="box stat"><span>הפרש הכנסות מול עסקאות</span><strong id="s-balance">₪0</strong><small>לא יתרת חשבון בנק או תחזית מלאה</small></div>
+   <div class="box stat"><span>הפרש הכנסות מול עסקאות</span><strong id="s-balance">₪0</strong><small>הכנסה שאושרה פחות עסקאות • לא יתרת בנק</small></div>
   </div>
-  <div class="two"><div class="box"><h2>חלוקה לפי קטגוריות</h2><p class="subtitle">סיכום העסקאות בחודש</p><div id="category-lines" class="empty">אין עדיין עסקאות.</div></div>
-  <div class="box"><h2>תובנות ראשוניות</h2><p class="subtitle">מנוע חוקים מקומי, ללא שירות AI חיצוני</p><div id="insight-lines"></div></div></div>
-  <div class="box insight-hub"><div class="section-intro"><span class="eyebrow">SPENDING INTELLIGENCE</span><h2>איפה הכסף הולך ואיך אפשר לשפר?</h2><p class="subtitle" id="analysis-overview">כאן יופיע ניתוח אחרי הזנת עסקאות.</p><p class="feedback" id="analysis-error"></p></div><div id="advanced-insights" class="insights-grid"></div></div>
-  <div class="two"><div class="box"><h2>בתי העסק המרכזיים</h2><p class="subtitle">איפה הוצאתם הכי הרבה בחודש הנבחר?</p><div id="merchant-leaders"></div></div><div class="box"><h2>שינויים בהוצאות</h2><p class="subtitle" id="analysis-compare">השוואה מול חודש קודם</p><div id="comparison-list"></div></div></div>
+  <section class="box categories-main" aria-labelledby="categories-title">
+   <div class="section-heading"><div><span class="eyebrow">SPENDING BY CATEGORY</span><h2 id="categories-title">לאן הכסף הולך?</h2><p class="subtitle">ממוין מההוצאה הגבוהה לנמוכה. לחיצה על קטגוריה פותחת את כל העסקאות והזיכויים שלה בחודש הנבחר.</p></div><div class="category-total" id="category-grand-total"></div></div>
+   <div class="category-bars" id="category-bars"><p class="empty">ממתין לנתונים.</p></div>
+   <p class="note" id="category-footnote">הסכומים הם נטו לאחר זיכויים. קטגוריה מקורית מהאשראי נשמרת לפי שם הקובץ.</p>
+  </section>
+  <div class="two overview-support">
+   <section class="box"><h2>מבט מהיר</h2><div id="quick-summary" class="quick-summary"></div></section>
+   <section class="box"><h2>מה כדאי לבדוק החודש?</h2><div id="insight-lines"></div></section>
+  </div>
+  <details class="deeper-analysis"><summary>להצגת ניתוחים נוספים, בתי עסק והשוואות</summary>
+   <div class="box insight-hub"><div class="section-intro"><span class="eyebrow">SPENDING INTELLIGENCE</span><h2>המלצות וניתוח הוצאות</h2><p class="subtitle" id="analysis-overview">נתונים מהחודש שבחרת</p><p class="feedback" id="analysis-error"></p></div><div id="advanced-insights" class="insights-grid"></div></div>
+   <div class="two"><div class="box"><h2>בתי העסק המרכזיים</h2><div id="merchant-leaders"></div></div><div class="box"><h2>שינויים בהוצאות</h2><p class="subtitle" id="analysis-compare">השוואה מול חודש קודם</p><div id="comparison-list"></div></div></div>
+  </details>
   <div class="box disclaimer"><b>איך קוראים את המספרים?</b><p>הוצאות קבועות הן תוכנית בלבד וייתכן שכבר שולמו בעסקאות. הן מוצגות בנפרד כדי למנוע ספירה כפולה. הנתונים אינם מהווים ייעוץ השקעות או המלצה לקחת אשראי.</p></div>
  </section>
  <section id="history" class="screen hidden">
@@ -125,12 +144,32 @@
  <label>סכום בשקלים<input name="amount" type="number" min="0.01" max="100000000" step="0.01" inputmode="decimal" required placeholder="0.00"></label>
  <label>סוג<select name="entry_kind"><option value="expense">הוצאה</option><option value="refund">זיכוי</option></select></label>
  <button type="submit" class="primary">שמירת עסקה</button></form></div><div class="box"><h2>העסקאות שלכם</h2><p class="subtitle">עסקאות שהוזנו ידנית או יובאו מפירוט אשראי. לשינוי סיווג לאחר ייבוא יש למחוק ולהוסיף מחדש כרגע.</p><div id="tx-list"></div></div></div></section>
- <section id="incomes" class="screen hidden"><div class="two"><div class="box"><h2>הוספת הכנסה</h2><form id="income-form">
- <label>מקור ההכנסה<input name="label" maxlength="120" required placeholder="למשל משכורת"></label>
- <label>סכום בשקלים<input name="amount" type="number" min="0.01" max="100000000" step="0.01" required></label>
- <label>חודש<input name="income_month" type="month" required></label>
- <label class="check"><input name="received" type="checkbox" checked> הסכום התקבל בפועל</label>
- <button type="submit" class="primary">שמירת הכנסה</button></form></div><div class="box"><h2>הכנסות לחודש שנבחר</h2><div id="income-list"></div></div></div></section>
+ <section id="incomes" class="screen hidden">
+ <div class="box income-intro"><span class="eyebrow">INCOME MANAGEMENT</span><h2>ההכנסות שלנו</h2><p class="subtitle">הכנסה קבועה כמו משכורת תופיע כצפויה מדי חודש, וניתן לסמן שהתקבלה בפועל. הכנסה חד־פעמית נרשמת רק לחודש שבוחרים.</p></div>
+ <div class="income-layout">
+  <section class="box"><h2>הכנסה קבועה</h2><p class="subtitle">לדוגמה משכורת חודשית, הכנסה משכירות או קצבה.</p>
+   <form id="recurring-income-form">
+    <label>שם מקור ההכנסה<input name="label" maxlength="120" required placeholder="למשל משכורת"></label>
+    <label>סכום חודשי בשקלים<input name="amount" type="number" min="0.01" max="100000000" step="0.01" required></label>
+    <label>החל מאיזה חודש?<input name="start_month" type="month" required></label>
+    <button type="submit" class="primary">הוסף הכנסה קבועה</button>
+   </form>
+  </section>
+  <section class="box"><h2>הכנסה חד־פעמית</h2><p class="subtitle">לדוגמה בונוס, החזר חד־פעמי, מתנה או עבודה מזדמנת.</p>
+   <form id="income-form">
+    <label>מקור ההכנסה<input name="label" maxlength="120" required placeholder="למשל בונוס"></label>
+    <label>סכום בשקלים<input name="amount" type="number" min="0.01" max="100000000" step="0.01" required></label>
+    <label>חודש<input name="income_month" type="month" required></label>
+    <label class="check"><input name="received" type="checkbox" checked> ההכנסה התקבלה בפועל</label>
+    <button type="submit" class="primary">הוסף הכנסה חד־פעמית</button>
+   </form>
+  </section>
+ </div>
+ <div class="income-layout">
+  <section class="box"><h2>הכנסות קבועות פעילות</h2><p class="subtitle">סכומים צפויים אינם נספרים כהכנסה שהתקבלה עד שתאשרו אותם.</p><div id="recurring-income-list"></div></section>
+  <section class="box"><h2>הכנסות שנרשמו לחודש הנבחר</h2><p class="subtitle">רק מה שסומן כ״התקבל״ נכנס לסך ההכנסות בפועל.</p><div id="income-list"></div></section>
+ </div>
+</section>
  <section id="fixed" class="screen hidden"><div class="two"><div class="box"><h2>הוספת הוצאה קבועה</h2><form id="fixed-form">
  <label>שם ההוצאה<input name="label" maxlength="120" placeholder="למשל שכירות" required></label>
  <label>קטגוריה<input name="category" maxlength="60" placeholder="דיור" required></label>
@@ -142,6 +181,12 @@
  <label>מסגרת לחודש שנבחר<input name="amount" type="number" min="0" max="100000000" step="0.01" required></label>
  <button type="submit" class="primary">שמירת תקציב</button></form></div><div class="box"><h2>מסגרות התקציב</h2><div id="budget-list"></div></div></div></section>
  </section>
-</main><footer>תבונה • ניהול כלכלת משפחה • אין להזין מספרי כרטיסי אשראי או סיסמאות בנק</footer>
+<dialog id="category-detail-dialog" class="category-dialog">
+<div class="category-dialog-inside">
+ <div class="category-dialog-top"><div><span class="eyebrow">CATEGORY TRANSACTIONS</span><h2 id="category-detail-title">עסקאות בקטגוריה</h2><p id="category-detail-meta" class="subtitle"></p></div>
+ <button class="secondary" id="category-detail-close" type="button">סגירה ✕</button></div>
+ <div id="category-detail-list" class="category-detail-list"></div>
+ <p class="note">הסכומים הם לפי תאריך העסקה או החיוב בקובץ. זיכויים מופיעים בערך שלילי ומקטינים את ההוצאה.</p>
+</div></dialog></main><footer>תבונה • ניהול כלכלת משפחה • אין להזין מספרי כרטיסי אשראי או סיסמאות בנק</footer>
 <script type="module" src="./app.js"></script>
 </body></html>
