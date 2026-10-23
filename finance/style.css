@@ -29,3 +29,21 @@ button:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:850px){.insights-grid{grid-template-columns:1fr}.mapping-grid{grid-template-columns:1fr}.table-wrap{margin-inline:-4px;width:calc(100% + 8px)}}
 
 .category-quick-edit{background:#122f40;color:#ddf3eb;border:1px solid #41667c;border-radius:8px;padding:6px;font-size:11px;max-width:130px;min-width:105px;height:36px}.line-item .sub-row{flex-wrap:wrap;justify-content:flex-end}.category-quick-edit:focus-visible{outline:2px solid #71e9c5}
+
+
+/* Historical financial intelligence */
+.history-top,.history-block{margin-bottom:20px}.history-top .heading{align-items:center}.history-top select,.history-block select{background:#102d42;color:#f3fafb;border:1px solid #456779;border-radius:10px;padding:10px;min-height:40px}
+.history-card span{display:block;color:#bdd0df;font-size:13px}.history-main-value{display:block;font-size:clamp(20px,2.4vw,28px);direction:ltr;text-align:right;margin:14px 0;word-break:break-word}.history-card small{color:#9fb7c7;font-size:12px;line-height:1.6}
+.history-chart{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(50px,1fr);overflow-x:auto;gap:14px;padding:26px 10px 8px;min-height:225px;align-items:end;border-bottom:1px solid #34576d}
+.history-column{display:flex;flex-direction:column;align-items:center;justify-content:end;min-width:50px;gap:10px}
+.history-bars{width:100%;height:150px;display:flex;align-items:end;justify-content:center;gap:7px}
+.history-bar{width:22px;max-width:40%;border-radius:7px 7px 2px 2px;min-height:3px}
+.history-bar.income{background:linear-gradient(#85efca,#3db699)}.history-bar.expense{background:linear-gradient(#ffb07d,#e4807c)}.history-bar.unreported{background:transparent;border:1px dashed #587084}
+.history-month-button{background:transparent;border:0;color:#afc6d6;font-size:11px;border-radius:7px;padding:7px 3px;min-width:40px}.history-month-button.selected,.history-month-button:hover{background:#284b60;color:#d0ffef;font-weight:700}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-inline:2px}.dot.income{background:#5cd2b1}.dot.expense{background:#ec9585}
+.history-table{min-width:820px}.history-trow{cursor:pointer}.history-trow:hover td,.history-trow.is-selected td{background:#26475a}.history-table td{white-space:nowrap}.category-changes{max-height:410px;overflow-y:auto}
+.category-change-row{border-bottom:1px solid #28465d;display:flex;justify-content:space-between;align-items:center;padding:12px 2px;gap:15px}.category-change-name{min-width:0}.category-change-name b{display:block;overflow-wrap:anywhere}.category-change-name small,.category-change-amount small{display:block;color:#afc4d2;font-size:12px;line-height:1.7;margin-top:5px}
+.category-change-amount{text-align:left;flex-shrink:0}.category-change-amount small{text-align:left}.trend-subtotal{font-size:14px;color:#cce5e9;font-weight:700;margin:8px 0 15px}.trend-note{border:1px solid #385a69;border-radius:13px;background:#183749;padding:15px;margin-bottom:11px}
+.trend-note.warning{border-color:#876653;background:#45372e}.trend-note.positive{border-color:#3b7565;background:#183e3a}.trend-note b{color:#f0fafa}.trend-note p{line-height:1.85;color:#c8dce6;font-size:13px;margin:6px 0 0}
+.import-source-indicator{color:#95eed0}.history-block .heading-actions{width:auto}
+@media(max-width:700px){.history-chart{grid-auto-columns:minmax(60px,1fr)}.history-block .heading-actions{width:100%}.category-change-amount{font-size:13px}.history-card{padding:15px}.history-main-value{font-size:19px}}
