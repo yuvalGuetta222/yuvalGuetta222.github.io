@@ -26,10 +26,11 @@ function render(){
  for(const b of records){
   const card=el("article","","box statement-card");
   const main=el("div","","statement-main");
-  main.append(el("div","פירוט אשראי • "+period(b),"statement-period"));
+  main.append(el("div",b.statement_month?"פירוט אשראי • "+labelMonth(b.statement_month):"פירוט אשראי • "+period(b),"statement-period"));
   main.append(el("h3",b.filename,"statement-filename"));
   const details=el("p",[
     "גיליון: "+(b.sheet_name||"CSV"),"יובא: "+niceDate(b.imported_at),
+    "תאריכי עסקאות: "+period(b),
     Number(b.transaction_count)+" עסקאות שנשמרו","סכום נטו: "+money(b.net_amount_agorot)
    ].join("  •  "),"statement-details");
   main.append(details);
@@ -43,7 +44,7 @@ function openConfirm(batch){
  if(!runtime?.getContext()?.household)return;
  selected=batch;
  $("delete-statement-filename").textContent=batch.filename;
- $("delete-statement-info").textContent=period(batch)+" • "+batch.transaction_count+" עסקאות • "+money(batch.net_amount_agorot);
+ $("delete-statement-info").textContent=(batch.statement_month?"חודש פירוט "+labelMonth(batch.statement_month)+" • ":"")+period(batch)+" • "+batch.transaction_count+" עסקאות • "+money(batch.net_amount_agorot);
  $("delete-statement-warning").textContent="כל "+batch.transaction_count+" העסקאות ששויכו לייבוא הזה יימחקו לצמיתות ממאגר הנתונים, מהתקציב ומהגרפים. עסקאות ידניות, הכנסות, וייבואים אחרים לא יימחקו. לא ניתן לבטל את המחיקה.";
  $("delete-statement-error").textContent="";
  $("delete-statement-confirm").disabled=false;
@@ -78,7 +79,7 @@ async function refresh(){
  const current=++seq;
  if(!$("statements").classList.contains("hidden"))status("טוען פירוטי אשראי…");
  const {data,error}=await runtime.supabase.from("tevuna_import_batch_summary")
-  .select("id,filename,sheet_name,file_kind,imported_at,transaction_count,net_amount_agorot,first_transaction_date,last_transaction_date")
+  .select("id,filename,sheet_name,file_kind,imported_at,transaction_count,net_amount_agorot,first_transaction_date,last_transaction_date,statement_month")
   .eq("household_id",ctx.household).order("imported_at",{ascending:false}).limit(400);
  if(current!==seq)return;
  if(error){status("לא ניתן לטעון את פירוטי האשראי. "+String(error.message).slice(0,150));return}
