@@ -119,3 +119,16 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .fixed-reconcile .secondary{font-size:12px;min-height:37px;padding:8px 12px}.fixed-linked{font-size:12px;color:#9eeed3;flex:1;line-height:1.7}
 @media(max-width:840px){.ledger-summary{flex-direction:column;align-items:stretch}.ledger-summary .secondary{align-self:flex-start}}
 @media(max-width:500px){.ledger-summary{padding:16px}.ledger-equation{font-size:12px}.fixed-reconcile{display:grid}.fixed-reconcile select{min-width:0;width:100%}}
+
+
+/* Three-way history chart: actual credit, additional fixed obligations, actual income */
+.history-expense-stack{width:22px;max-width:40%;height:150px;display:flex;flex-direction:column-reverse;justify-content:flex-start;gap:0;align-items:stretch}
+.history-expense-credit{flex-shrink:0;background:linear-gradient(#ffb07d,#e4807c);border-radius:4px 4px 0 0;min-height:0}
+.history-expense-credit.unreported{background:transparent;border:1px dashed #6c849c;height:3px}
+.history-expense-fixed{flex-shrink:0;background:repeating-linear-gradient(135deg,#a1add8 0,#a1add8 4px,#546a95 4px,#546a95 7px);border-radius:4px 4px 0 0;min-height:0}
+.history-expense-fixed:empty{font-size:0}
+.dot.fixed{background:repeating-linear-gradient(135deg,#a1add8 0,#a1add8 4px,#546a95 4px,#546a95 7px)}
+.history-fixed-val{color:#bbc9ec}
+.history-table{min-width:1070px}
+.history-block .note{line-height:1.75}
+@media(max-width:700px){.history-expense-stack{width:19px}}
