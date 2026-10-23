@@ -131,7 +131,8 @@ async function save(){
   const selectedSheet=workbook[Number($("sheet-select").value)]?.name||null;
   const {data:batch,error:batchError}=await runtime.supabase.from("tevuna_import_batches").insert({
    household_id:context.household,created_by:context.user.id,filename,
-   sheet_name:selectedSheet?String(selectedSheet).slice(0,120):null,file_kind:fileType
+   sheet_name:selectedSheet?String(selectedSheet).slice(0,120):null,file_kind:fileType,
+   statement_month:$("import-statement-month").value?$("import-statement-month").value+"-01":null
   }).select("id").single();
   if(batchError)throw batchError;
   batchId=batch.id;
