@@ -55,7 +55,7 @@ async function deleteBatch(){
  if(!batch||!context?.household||loading)return;
  loading=true;
  $("delete-statement-confirm").disabled=true;
- $("delete-statement-error").textContent="מוחק את הפירוט ואת כל העסקאות השייכות אליו…";
+ $("delete-statement-error").textContent="מסיר את הפירוט ועסקאות בלעדיות בלבד…";
  try{
   const {data,error}=await runtime.supabase.rpc("tevuna_delete_import_batch",{p_batch_id:batch.id});
   if(error)throw error;
@@ -63,9 +63,9 @@ async function deleteBatch(){
   const preserved=Number(batch.transaction_count)-data;
   selected=null;
   $("delete-statement-dialog").close();
-  status("הפירוט '"+batch.filename+"' נמחק לצמיתות. העסקאות ששויכו אליו לא יופיעו עוד בחישובים.");
   await runtime.reload();
   await refresh();
+  status("הפירוט '"+batch.filename+"' הוסר. "+data+" עסקאות שהיו שייכות רק לו נמחקו, ו-"+Math.max(0,preserved)+" עסקאות שמופיעות גם בדוחות אחרים נשמרו.");
   document.dispatchEvent(new CustomEvent("tevuna:batches-changed"));
  }catch(err){
   $("delete-statement-error").textContent="לא ניתן להשלים את המחיקה: "+String(err?.message||err).slice(0,175);
