@@ -30,19 +30,32 @@ async function loadHistory(){
  const from=addMonths(endMonth,-count)+"-01",to=addMonths(endMonth,1)+"-01";
  try{
   const {household}=runtime.getContext();
-  const [tx,income,fixedResponse,coverageResponse]=await Promise.all([
-   fetchPaged("tevuna_transactions","id,occurred_on,category,merchant,entry_kind,amount_agorot",from,to,"occurred_on"),
+  const billing=$("date-basis").value==="billing";
+  const cardSource=billing?fetchPaged("tevuna_transactions","id,occurred_on,billing_month,category,merchant,entry_kind,amount_agorot",from,to,"billing_month"):
+   fetchPaged("tevuna_transactions","id,occurred_on,billing_month,category,merchant,entry_kind,amount_agorot",from,to,"occurred_on");
+  const [txSource,income,fixedResponse,coverageResponse]=await Promise.all([
+   cardSource,
    fetchPaged("tevuna_incomes","id,income_month,label,received,amount_agorot",from,to,"income_month"),
-   runtime.supabase.from("tevuna_fixed_expenses").select("id,label,amount_agorot,cadence,active").eq("household_id",household),
+   runtime.supabase.from("tevuna_fixed_expenses").select("id,label,amount_agorot,cadence,active,start_month,end_month").eq("household_id",household),
    runtime.supabase.from("tevuna_fixed_expense_card_coverage")
     .select("fixed_expense_id,transaction_id,expense_month")
     .eq("household_id",household).gte("expense_month",from).lt("expense_month",to)
   ]);
   if(fixedResponse.error)throw fixedResponse.error;
   if(coverageResponse.error)throw coverageResponse.error;
+  let tx=txSource;
+  if(billing){
+   const manual=await fetchPaged("tevuna_transactions","id,occurred_on,billing_month,category,merchant,entry_kind,amount_agorot",from,to,"occurred_on");
+   const all=await runtime.supabase.from("tevuna_transactions").select("id").eq("household_id",household).eq("source","manual").limit(1);
+   if(all.error)throw all.error;
+   // Billing-month view deliberately shows imported cards only; manually entered transactions
+   // follow their entered date and are available in the purchase-date view.
+   tx=txSource.map(t=>({...t,occurred_on:t.billing_month||t.occurred_on}));
+  }
   if(ticket!==requestId)return;
   today=new Date();
-  months=applyFixedToTimeline(makeTimeline({transactions:tx,incomes:income,endMonth,count:count+1,now:today}),{fixed:fixedResponse.data||[],coverage:coverageResponse.data||[]});
+  months=applyFixedToTimeline(makeTimeline({transactions:tx,incomes:income,endMonth,count:count+1,now:today}),
+   {fixed:fixedResponse.data||[],coverage:coverageResponse.data||[],now:today});
   $("history-error").textContent="";
   const select=$("history-focus-month");select.replaceChildren();
   for(const m of months.slice(1).reverse()){const opt=element("option",formatMonth(m.key)+(m.partial?" • חודש פתוח":"" ));opt.value=m.key;select.append(opt)}
@@ -61,7 +74,8 @@ function render(){
  const expMonths=display.filter(x=>x.hasExpenseData).length;
  const incomeMonths=display.filter(x=>x.hasIncomeData).length;
  const expTotal=display.reduce((a,m)=>a+m.expenses,0),incomeTotal=display.reduce((a,m)=>a+m.income,0);
- $("history-coverage").textContent="קיימים דיווחי עסקאות ב-"+expMonths+" מתוך "+display.length+" חודשים והכנסות ב-"+incomeMonths+" חודשים. חישוב היתרה אפשרי רק ב-"+display.filter(x=>x.fullBalanceCoverage).length+" חודשים שבהם יש את שניהם. ההתחייבויות הקבועות מחושבות לפי ההגדרות הנוכחיות גם לחודשים קודמים, כהערכה בלבד. חודש בלי פירוט אינו חודש עם אפס הוצאות.";
+ if(unknownMonths>0)$("history-coverage").textContent+=" • ב-"+unknownMonths+" חודשים חסר תאריך תחילה של התחייבות קיימת, ולכן היתרה לתכנון אינה מוצגת בהם עד לעדכון ההתחייבויות.";
+ $("history-coverage").textContent="קיימים דיווחי עסקאות ב-"+expMonths+" מתוך "+display.length+" חודשים והכנסות ב-"+incomeMonths+" חודשים. חישוב היתרה אפשרי רק ב-"+display.filter(x=>x.fullBalanceCoverage).length+" חודשים שבהם יש את שניהם. ההתחייבויות קבועות עם תאריכי תוקף משויכות רק לחודשים המתאימים. חודש בלי פירוט אינו חודש עם אפס הוצאות.";
  const covered=display.filter(m=>m.fullBalanceCoverage);
  const totalReserved=covered.reduce((sum,m)=>sum+m.unlinkedFixed,0);
  $("history-cards").replaceChildren(
@@ -106,9 +120,9 @@ function render(){
   const monthCell=element("td",formatMonth(m.key)+(m.partial?" • חלקי":""));
   const expenses=element("td",m.hasExpenseData?formatILS(m.expenses):"אין דיווח");
   const income=element("td",m.hasIncomeData?formatILS(m.income):"אין דיווח");
-  const fixedPlan=element("td",formatILS(m.unlinkedFixed),"history-fixed-val");
-  const totalSpend=element("td",m.hasExpenseData?formatILS(m.spendingWithFixed):"חסר פירוט");
-  const difference=element("td",m.plannedBalance===null?"אין נתונים מלאים":formatILS(m.plannedBalance),
+  const fixedPlan=element("td",m.fixedHistoryUnknown?"דורש תאריך תחילה":formatILS(m.unlinkedFixed),"history-fixed-val");
+  const totalSpend=element("td",m.fixedHistoryUnknown?"תוקף קבועות לא ידוע":m.hasExpenseData?formatILS(m.spendingWithFixed):"חסר פירוט");
+  const difference=element("td",m.plannedBalance===null?"אין נתונים מאומתים":formatILS(m.plannedBalance),
    m.plannedBalance!==null?m.plannedBalance>=0?"positive":"negative":"");
   const expDiff=element("td",compare?.covered?differenceLabel(compare.expenseDifference)+" ("+formatPerc(compare.expensePercent)+")":"אין בסיס");
   const incomeDiff=element("td",compare?.incomeCovered?differenceLabel(compare.incomeDifference)+" ("+formatPerc(compare.incomePercent)+")":"אין בסיס");
@@ -130,7 +144,7 @@ function renderDetails(){
  $("history-income-compare").textContent=compare.incomeCovered
   ?"הכנסות: "+differenceLabel(compare.incomeDifference)+" ("+formatPerc(compare.incomePercent)+")":"הכנסות: חסרים נתונים באחד מהחודשים";
  const current=months.find(x=>x.key===focus);
- $("history-fixed-compare").textContent=current
+ $("history-fixed-compare").textContent=current?.fixedHistoryUnknown?"לא ניתן לחשב התחייבויות היסטוריות: יש להגדיר תאריך תחילה בהוצאות קבועות.":current
   ?"קבועות נוספות לתכנון: "+formatILS(current.unlinkedFixed)+" (מתוך "+formatILS(current.monthlyFixedPlan)+" קבועות חודשיות; "+formatILS(current.linkedFixed)+" כבר כלולות בעסקאות אשראי)"
   :"לא נמצאו נתוני התחייבויות";
  $("history-expense-compare").textContent=compare.covered
@@ -161,4 +175,5 @@ export function setupHistory(context){
  $("history-focus-month").addEventListener("change",e=>{focus=e.target.value;render()});
  document.addEventListener("tevuna:screen-changed",e=>{if(e.detail?.screen==="history")loadHistory()});
  document.addEventListener("tevuna:loaded",()=>{if(active())loadHistory()});
+ $("date-basis").addEventListener("change",()=>{if(active())loadHistory()});
 }
