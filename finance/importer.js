@@ -135,6 +135,7 @@ async function save(){
   }
   say("✓ הייבוא הסתיים. נשמרו "+stored+" עסקאות חדשות; "+duplicates+" עסקאות חוזרות לא נשמרו שוב. לחצו על סקירה לצפייה בניתוח.");
   $("import-file").value="";reset();
+  if(stored>0){const months=new Map();for(const x of items){const month=x.occurred_on.slice(0,7);months.set(month,(months.get(month)||0)+1)}const mostCommon=[...months].sort((a,b)=>b[1]-a[1])[0]?.[0];if(mostCommon)$("month").value=mostCommon;}
   await runtime.reload();
   document.dispatchEvent(new CustomEvent("tevuna:imported"));
  }catch(err){
