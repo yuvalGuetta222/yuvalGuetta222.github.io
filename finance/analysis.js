@@ -41,7 +41,17 @@ export function setupAnalysis(context){
  runtime=context;
  document.addEventListener("tevuna:loaded",async e=>{
   const {data,month,household}=e.detail||{};if(!household||!data)return;
-  const current=++seq;const [yy,mm]=month.split("-").map(Number);
+  const current=++seq;
+  if($("date-basis").value==="billing"){
+   $("analysis-error").textContent="המלצות על התנהגות קנייה זמינות לפי תאריך עסקה; השוואת חודשי חיוב זמינה במסך 'השוואת חודשים'.";
+   $("analysis-overview").textContent="הצגה לפי חודש חיוב: לא מחשבים כאן מגמות קנייה לפי תאריך אחר.";
+   $("advanced-insights").replaceChildren();
+   $("merchant-leaders").replaceChildren();
+   $("analysis-compare").textContent="מגמות חיוב מוצגות במסך השוואת חודשים";
+   $("comparison-list").replaceChildren();
+   return;
+  }
+  const [yy,mm]=month.split("-").map(Number);
   const prevMonth=mm===1?[yy-1,12]:[yy,mm-1];
   const prevKey=prevMonth[0]+"-"+String(prevMonth[1]).padStart(2,"0");
   const {data:previous,error}=await runtime.supabase.from("tevuna_transactions")
