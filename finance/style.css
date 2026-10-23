@@ -47,3 +47,14 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .trend-note.warning{border-color:#876653;background:#45372e}.trend-note.positive{border-color:#3b7565;background:#183e3a}.trend-note b{color:#f0fafa}.trend-note p{line-height:1.85;color:#c8dce6;font-size:13px;margin:6px 0 0}
 .import-source-indicator{color:#95eed0}.history-block .heading-actions{width:auto}
 @media(max-width:700px){.history-chart{grid-auto-columns:minmax(60px,1fr)}.history-block .heading-actions{width:100%}.category-change-amount{font-size:13px}.history-card{padding:15px}.history-main-value{font-size:19px}}
+
+
+/* Whole imported statement management */
+.statement-head{margin-bottom:18px}.statement-list{display:grid;gap:15px}.statement-card{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 24px}
+.statement-main{min-width:0}.statement-period{font-size:12px;color:#82e4c7;margin-bottom:7px;font-weight:700}.statement-filename{font-size:18px;line-height:1.5;margin:0 0 10px;overflow-wrap:anywhere;color:#f0f9ff}.statement-details{font-size:12px;color:#afc3d4;line-height:1.85;margin:0}.statement-count{font-size:12px;color:#97cfbe;font-weight:700}
+.delete-statement{white-space:nowrap;padding:12px 16px;min-height:42px}.import-empty{text-align:center;padding:40px}.import-empty p{color:#a4b9cd;line-height:1.9}
+.delete-dialog{border:1px solid #456079;background:#12253b;color:#f1f8ff;border-radius:19px;width:min(550px,calc(100vw - 26px));padding:0;max-height:85vh;overflow:auto;box-shadow:0 20px 70px #030a14aa;direction:rtl}
+.delete-dialog::backdrop{background:#030711b8;backdrop-filter:blur(5px)}.delete-dialog-body{padding:26px}.delete-dialog h2{font-size:22px;margin:13px 0 16px}
+.delete-warning{border:1px solid #865362;background:#432b39;padding:15px;border-radius:12px;margin:18px 0}.delete-warning strong{color:#ffd0d5}.delete-warning p{color:#f2cad1;line-height:1.9;font-size:13px;margin:8px 0 0}
+.delete-dialog .danger{padding:12px 18px}.delete-dialog .import-actions{justify-content:flex-end;margin:20px 0 0}
+@media(max-width:700px){.statement-card{flex-direction:column;align-items:stretch}.delete-statement{width:100%}.delete-dialog-body{padding:18px}.delete-dialog .import-actions{flex-direction:column-reverse}.delete-dialog .import-actions button{width:100%}}
