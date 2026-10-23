@@ -112,6 +112,13 @@
     <div class="table-wrap"><table><thead><tr><th>ייבוא</th><th>תאריך</th><th>בית העסק</th><th>סוג</th><th>קטגוריה</th><th>מקור קטגוריה</th><th>סכום</th></tr></thead><tbody id="import-preview"></tbody></table></div>
     <div class="import-actions"><button type="button" class="primary" id="import-save" disabled>אישור ושמירת העסקאות</button></div>
   </div>
+  <details class="manual-transaction-entry box"><summary>הוספת עסקה ידנית (אופציונלי)</summary><p class="subtitle">למקרה של תשלום במזומן או הוצאה שלא מופיעה בקובץ האשראי.</p><form id="tx-form">
+ <label>תאריך<input name="occurred_on" type="date" required></label>
+ <label>בית עסק / פירוט<input name="merchant" maxlength="150" required placeholder="למשל סופרמרקט"></label>
+ <label>קטגוריה<input name="category" list="finance-category-options" placeholder="בחרו או הקלידו קטגוריה" maxlength="60" required></label>
+ <label>סכום בשקלים<input name="amount" type="number" min="0.01" max="100000000" step="0.01" inputmode="decimal" required placeholder="0.00"></label>
+ <label>סוג<select name="entry_kind"><option value="expense">הוצאה</option><option value="refund">זיכוי</option></select></label>
+ <button type="submit" class="primary">שמירת עסקה</button></form></details>
   <p class="feedback" id="import-status" role="status" aria-live="polite"></p>
  </section>
  <section id="statements" class="screen hidden">
@@ -137,13 +144,7 @@
    <div class="import-actions"><button type="button" class="secondary" id="delete-statement-cancel">ביטול</button><button type="button" class="danger" id="delete-statement-confirm">כן, מחק את כל הפירוט</button></div>
   </div>
  </dialog>
- <section id="transactions" class="screen hidden"><div class="two"><div class="box"><h2>הוספת עסקה</h2><form id="tx-form">
- <label>תאריך<input name="occurred_on" type="date" required></label>
- <label>בית עסק / פירוט<input name="merchant" maxlength="150" required placeholder="למשל סופרמרקט"></label>
- <label>קטגוריה<input name="category" list="finance-category-options" placeholder="בחרו או הקלידו קטגוריה" maxlength="60" required></label>
- <label>סכום בשקלים<input name="amount" type="number" min="0.01" max="100000000" step="0.01" inputmode="decimal" required placeholder="0.00"></label>
- <label>סוג<select name="entry_kind"><option value="expense">הוצאה</option><option value="refund">זיכוי</option></select></label>
- <button type="submit" class="primary">שמירת עסקה</button></form></div><div class="box"><h2>העסקאות שלכם</h2><p class="subtitle">עסקאות שהוזנו ידנית או יובאו מאשראי. ניתן לשנות קטגוריה, אך בדרך כלל נוח יותר לפתוח קטגוריה במסך הסקירה.</p><div id="tx-list"></div></div></div></section>
+
  <section id="incomes" class="screen hidden">
  <div class="box income-intro"><span class="eyebrow">INCOME MANAGEMENT</span><h2>ההכנסות שלנו</h2><p class="subtitle">הכנסה קבועה כמו משכורת תופיע כצפויה מדי חודש, וניתן לסמן שהתקבלה בפועל. הכנסה חד־פעמית נרשמת רק לחודש שבוחרים.</p></div>
  <div class="income-layout">
