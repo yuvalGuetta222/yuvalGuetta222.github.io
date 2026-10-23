@@ -1,4 +1,4 @@
-import {makeTimeline,compareMonthly,actionableMonthlyNotes,addMonths,formatILS,percentChange} from "./financial-trends.mjs";
+import {makeTimeline,compareMonthly,actionableMonthlyNotes,addMonths,formatILS,percentChange,applyFixedToTimeline} from "./financial-trends.mjs";
 const $=id=>document.getElementById(id);
 let runtime=null,requestId=0,months=[],focus="",today=new Date();
 const formatMonth=key=>{const [y,m]=key.split("-").map(Number);return new Intl.DateTimeFormat("he-IL",{month:"short",year:"numeric"}).format(new Date(y,m-1,1));};
@@ -29,13 +29,20 @@ async function loadHistory(){
  $("history-error").textContent="טוען נתוני חודשים…";
  const from=addMonths(endMonth,-count)+"-01",to=addMonths(endMonth,1)+"-01";
  try{
-  const [tx,income]=await Promise.all([
+  const {household}=runtime.getContext();
+  const [tx,income,fixedResponse,coverageResponse]=await Promise.all([
    fetchPaged("tevuna_transactions","id,occurred_on,category,merchant,entry_kind,amount_agorot",from,to,"occurred_on"),
-   fetchPaged("tevuna_incomes","id,income_month,label,received,amount_agorot",from,to,"income_month")
+   fetchPaged("tevuna_incomes","id,income_month,label,received,amount_agorot",from,to,"income_month"),
+   runtime.supabase.from("tevuna_fixed_expenses").select("id,label,amount_agorot,cadence,active").eq("household_id",household),
+   runtime.supabase.from("tevuna_fixed_expense_card_coverage")
+    .select("fixed_expense_id,transaction_id,expense_month")
+    .eq("household_id",household).gte("expense_month",from).lt("expense_month",to)
   ]);
+  if(fixedResponse.error)throw fixedResponse.error;
+  if(coverageResponse.error)throw coverageResponse.error;
   if(ticket!==requestId)return;
   today=new Date();
-  months=makeTimeline({transactions:tx,incomes:income,endMonth,count:count+1,now:today});
+  months=applyFixedToTimeline(makeTimeline({transactions:tx,incomes:income,endMonth,count:count+1,now:today}),{fixed:fixedResponse.data||[],coverage:coverageResponse.data||[]});
   $("history-error").textContent="";
   const select=$("history-focus-month");select.replaceChildren();
   for(const m of months.slice(1).reverse()){const opt=element("option",formatMonth(m.key)+(m.partial?" • חודש פתוח":"" ));opt.value=m.key;select.append(opt)}
@@ -54,27 +61,39 @@ function render(){
  const expMonths=display.filter(x=>x.hasExpenseData).length;
  const incomeMonths=display.filter(x=>x.hasIncomeData).length;
  const expTotal=display.reduce((a,m)=>a+m.expenses,0),incomeTotal=display.reduce((a,m)=>a+m.income,0);
- $("history-coverage").textContent="בטווח שנבחר קיימים דיווחי עסקאות ב-"+expMonths+" מתוך "+display.length+" חודשים והכנסות ב-"+incomeMonths+" חודשים. חודש ללא נתונים אינו בהכרח חודש ללא הוצאות או הכנסות.";
+ $("history-coverage").textContent="קיימים דיווחי עסקאות ב-"+expMonths+" מתוך "+display.length+" חודשים והכנסות ב-"+incomeMonths+" חודשים. חישוב היתרה אפשרי רק ב-"+display.filter(x=>x.fullBalanceCoverage).length+" חודשים שבהם יש את שניהם. ההתחייבויות הקבועות מחושבות לפי ההגדרות הנוכחיות גם לחודשים קודמים, כהערכה בלבד. חודש בלי פירוט אינו חודש עם אפס הוצאות.";
+ const covered=display.filter(m=>m.fullBalanceCoverage);
+ const totalReserved=covered.reduce((sum,m)=>sum+m.unlinkedFixed,0);
  $("history-cards").replaceChildren(
-  createCard("הוצאות שנרשמו בתקופה",formatILS(expTotal),expMonths+" חודשים עם עסקאות"),
-  createCard("הכנסות שהתקבלו בתקופה",formatILS(incomeTotal),incomeMonths+" חודשים עם דיווח הכנסה"),
-  createCard("הפרש בתקופה שבה יש שני סוגי נתונים",formatILS(display.reduce((s,m)=>s+(m.balance??0),0)),display.filter(m=>m.balance!==null).length+" חודשים מכוסים • לא יתרת הבנק"),
-  createCard("חודשי כיסוי",expMonths+" / "+display.length,"נתוני עסקאות; פרטי כיסוי בהמשך")
+  createCard("הכנסות שהתקבלו בתקופה",formatILS(incomeTotal),incomeMonths+" חודשים עם הכנסות מדווחות"),
+  createCard("עסקאות אשראי בתקופה",formatILS(expTotal),expMonths+" חודשים עם עסקאות נטו"),
+  createCard("קבועות נוספות לתכנון",formatILS(totalReserved),"ב-"+covered.length+" חודשים מכוסים בלבד • אחרי התאמות לאשראי"),
+  createCard("יתרה לתכנון אחרי התחייבויות",covered.length?formatILS(covered.reduce((sum,m)=>sum+m.plannedBalance,0)):"אין מספיק נתונים",
+    "מחושב עבור "+covered.length+" חודשים מכוסים בלבד • לא יתרת בנק",
+    covered.length&&covered.reduce((sum,m)=>sum+m.plannedBalance,0)<0?"negative":"positive")
  );
  // side-by-side bars have one shared monetary scale to prevent confusing visuals
  const chart=$("history-chart");chart.replaceChildren();
- const largest=Math.max(1,...display.flatMap(m=>[m.income,m.expenses]).filter(Number.isFinite));
+ const largest=Math.max(1,...display.flatMap(m=>[m.income,m.hasExpenseData?m.spendingWithFixed:m.unlinkedFixed]).filter(Number.isFinite));
  for(const m of display){
   const column=element("div","","history-column");
-  column.setAttribute("aria-label",formatMonth(m.key)+" הוצאות "+(m.hasExpenseData?formatILS(m.expenses):"חסרות")+" הכנסות "+(m.hasIncomeData?formatILS(m.income):"חסרות"));
+  const cardLabel=m.hasExpenseData?formatILS(m.expenses):"חסרות עסקאות";
+  column.setAttribute("aria-label",formatMonth(m.key)+" הכנסות "+(m.hasIncomeData?formatILS(m.income):"חסרות")+
+   ", עסקאות אשראי "+cardLabel+", התחייבויות קבועות נוספות "+formatILS(m.unlinkedFixed)+
+   (m.hasExpenseData?", הוצאות לתכנון "+formatILS(m.spendingWithFixed):", הוצאות לתכנון אינן מלאות"));
   const group=element("div","","history-bars");
-  const expBar=element("div","","history-bar expense"+(!m.hasExpenseData?" unreported":""));
+  const expenseStack=element("div","","history-expense-stack");
+  const creditPart=element("div","","history-expense-credit"+(!m.hasExpenseData?" unreported":""));
+  const fixedPart=element("div","","history-expense-fixed");
   const incBar=element("div","","history-bar income"+(!m.hasIncomeData?" unreported":""));
-  expBar.style.height=(m.hasExpenseData?Math.max(3,Math.max(0,m.expenses)/largest*145):3)+"px";
+  creditPart.style.height=(m.hasExpenseData?Math.max(2,Math.max(0,m.expenses)/largest*145):3)+"px";
+  fixedPart.style.height=m.unlinkedFixed>0?Math.max(2,m.unlinkedFixed/largest*145)+"px":"0px";
+  expenseStack.title="עסקאות אשראי: "+cardLabel+"; התחייבויות נוספות: "+formatILS(m.unlinkedFixed)+
+   (m.hasExpenseData?"; ביחד לתכנון: "+formatILS(m.spendingWithFixed):"; לא הוזנו עסקאות אשראי לחודש");
   incBar.style.height=(m.hasIncomeData?Math.max(3,Math.max(0,m.income)/largest*145):3)+"px";
-  expBar.title=m.hasExpenseData?"הוצאות "+formatILS(m.expenses):"חסרות עסקאות";
   incBar.title=m.hasIncomeData?"הכנסות "+formatILS(m.income):"חסרות הכנסות";
-  group.append(expBar,incBar);
+  expenseStack.append(creditPart,fixedPart);
+  group.append(expenseStack,incBar);
   const label=element("button",formatMonth(m.key).split(" ")[0]+(m.partial?"*":""),"history-month-button"+(m.key===focus?" selected":""));
   label.type="button";label.title="הצגת פירוט "+formatMonth(m.key);label.addEventListener("click",()=>{focus=m.key;$("history-focus-month").value=focus;render()});
   column.append(group,label);chart.append(column);
@@ -87,12 +106,15 @@ function render(){
   const monthCell=element("td",formatMonth(m.key)+(m.partial?" • חלקי":""));
   const expenses=element("td",m.hasExpenseData?formatILS(m.expenses):"אין דיווח");
   const income=element("td",m.hasIncomeData?formatILS(m.income):"אין דיווח");
-  const difference=element("td",m.balance===null?"לא זמין":formatILS(m.balance),m.balance!==null?m.balance>=0?"positive":"negative":"");
+  const fixedPlan=element("td",formatILS(m.unlinkedFixed),"history-fixed-val");
+  const totalSpend=element("td",m.hasExpenseData?formatILS(m.spendingWithFixed):"חסר פירוט");
+  const difference=element("td",m.plannedBalance===null?"אין נתונים מלאים":formatILS(m.plannedBalance),
+   m.plannedBalance!==null?m.plannedBalance>=0?"positive":"negative":"");
   const expDiff=element("td",compare?.covered?differenceLabel(compare.expenseDifference)+" ("+formatPerc(compare.expensePercent)+")":"אין בסיס");
   const incomeDiff=element("td",compare?.incomeCovered?differenceLabel(compare.incomeDifference)+" ("+formatPerc(compare.incomePercent)+")":"אין בסיס");
   expDiff.className=compare?.covered?clsFor(compare.expenseDifference):"";
   incomeDiff.className=compare?.incomeCovered?(compare.incomeDifference<0?"negative":compare.incomeDifference>0?"positive":""):"";
-  row.append(monthCell,income,expenses,difference,expDiff,incomeDiff);
+  row.append(monthCell,income,expenses,fixedPlan,totalSpend,difference,expDiff,incomeDiff);
   row.addEventListener("click",()=>{focus=m.key;$("history-focus-month").value=focus;render()});
   row.className="history-trow"+(focus===m.key?" is-selected":"");
   table.append(row);
@@ -107,6 +129,10 @@ function renderDetails(){
  head.textContent="השוואת "+formatMonth(focus)+" לעומת "+formatMonth(compare.previous)+(compare.sameDay?" עד אותו יום":"")+". עליות וירידות מוצגות רק בהינתן עסקאות בשני החודשים.";
  $("history-income-compare").textContent=compare.incomeCovered
   ?"הכנסות: "+differenceLabel(compare.incomeDifference)+" ("+formatPerc(compare.incomePercent)+")":"הכנסות: חסרים נתונים באחד מהחודשים";
+ const current=months.find(x=>x.key===focus);
+ $("history-fixed-compare").textContent=current
+  ?"קבועות נוספות לתכנון: "+formatILS(current.unlinkedFixed)+" (מתוך "+formatILS(current.monthlyFixedPlan)+" קבועות חודשיות; "+formatILS(current.linkedFixed)+" כבר כלולות בעסקאות אשראי)"
+  :"לא נמצאו נתוני התחייבויות";
  $("history-expense-compare").textContent=compare.covered
   ?"הוצאות: "+differenceLabel(compare.expenseDifference)+" ("+formatPerc(compare.expensePercent)+")":"הוצאות: חסרים נתונים באחד מהחודשים";
  if(!compare.covered){boxEmpty(target,"לצורך השוואת קטגוריות, יש לייבא עסקאות לשני החודשים. מידע חסר אינו נספר כאפס.");}
