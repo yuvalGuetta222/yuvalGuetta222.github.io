@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101c30"><title>תבונה | תכנון כלכלי זוגי • הדגמה</title>
+<style>
+:root{font-family:Arial,"Segoe UI",sans-serif;color:#eaf2ff;background:#091223;font-synthesis:none}*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at 100% 0,#1b3554 0,transparent 45%),#091223;color:#eaf2ff}
+button{font:inherit;cursor:pointer}button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #65e8c5;outline-offset:3px}
+.shell{display:grid;grid-template-columns:240px 1fr;min-height:100vh}.side{background:#111f34;border-left:1px solid #2e4160;padding:26px 18px;display:flex;flex-direction:column;gap:20px}
+.logo{display:flex;gap:12px;align-items:center;font-size:25px;font-weight:800}.logo-mark{display:grid;place-items:center;background:#6ce0c2;border-radius:14px;color:#0a2833;width:43px;height:43px;font-size:26px}.sub{font-size:12px;color:#9eacc4;margin:6px 0 0}.menu{display:grid;gap:7px}
+.menu button,.mobile-nav button{border:0;background:transparent;text-align:right;color:#aebbd0;border-radius:12px;padding:13px 14px;font-weight:650;transition:background .15s}
+.menu button:hover,.menu button.active{background:#263a53;color:#f8fbff}.side-bottom{margin-top:auto;color:#92a9bb;font-size:12px;line-height:1.7}
+.main{min-width:0;padding:30px clamp(16px,3.8vw,56px);max-width:1500px;width:100%;margin:auto}
+.demo-alert{padding:11px 16px;background:#2c2934;border:1px solid #746646;border-radius:13px;color:#ffe6af;font-size:13px;margin-bottom:20px;line-height:1.6}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:20px 0 27px;flex-wrap:wrap}.eyebrow{color:#72dec3;font-size:13px;font-weight:700}.top h1{margin:8px 0 7px;font-size:clamp(25px,3.2vw,38px);letter-spacing:-.7px}.top p{margin:0;color:#adbed1;font-size:14px}
+.month{background:#17273e;border:1px solid #30455f;border-radius:12px;color:#eef5ff;padding:11px;font-size:14px}
+.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px;margin-bottom:22px}
+.card,.panel{background:linear-gradient(145deg,#182b43,#152339);border:1px solid #2d415a;border-radius:20px;box-shadow:0 12px 40px #020a1622}
+.card{padding:20px}.card .key{font-size:13px;color:#adbcd2}.card .value{font-size:clamp(19px,2.2vw,30px);font-weight:800;display:block;direction:ltr;text-align:right;margin-top:15px;white-space:nowrap}.muted{color:#9fadc3;font-size:12px;line-height:1.6}.good{color:#72e4bc!important}.bad{color:#ff9eaa!important}
+.grid{display:grid;grid-template-columns:1.35fr 1fr;gap:20px}.panel{padding:23px;margin-bottom:20px}.panel h2{margin:0 0 7px;font-size:18px}.panel-header{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:17px}.tag{border:1px solid #37556b;background:#24425a;border-radius:20px;padding:5px 10px;font-size:11px;color:#bbefdd}
+.graph{display:flex;align-items:end;gap:14px;height:200px;padding:15px 5px 0;border-bottom:1px solid #476078}.bar-holder{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:8px;min-width:0}
+.bar{background:linear-gradient(0deg,#4285aa,#70dec1);width:min(70%,44px);border-radius:9px 9px 3px 3px;min-height:5px;transition:height .4s}.bar-holder span{font-size:11px;color:#a5b5c7;white-space:nowrap}.legend{font-size:12px;color:#b8c4d6;margin-top:14px}
+.insight{border:1px solid #2e4a5d;border-radius:14px;padding:15px;margin:10px 0;background:#172f42}
+.insight b{display:block;margin-bottom:7px}.insight p{color:#b6c5d5;margin:0;font-size:13px;line-height:1.8}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:15px 0;font-size:13px}.progress{height:9px;background:#263750;border-radius:20px;overflow:hidden}.progress>div{height:100%;background:#69dcbf;border-radius:20px}.progress>div.over{background:#f38a95}
+table{width:100%;border-collapse:collapse;font-size:14px}td,th{text-align:right;padding:14px 11px;border-bottom:1px solid #2b3d55}th{font-size:12px;color:#9caec1;font-weight:600}tr:last-child td{border:0}
+.category{background:#2b4056;border-radius:8px;padding:5px 9px;font-size:12px;color:#c4deea;white-space:nowrap}
+.money{text-align:left;direction:ltr;font-variant-numeric:tabular-nums}.hidden{display:none!important}
+.note{color:#a7bdd1;font-size:13px;line-height:1.75}.scenario{padding:20px;background:#1a3445;border:1px solid #31566b;border-radius:15px}
+.scenario input[type=range]{width:100%;accent-color:#6de4bf}.scenario-result{font-size:28px;font-weight:800;color:#78ecc9}
+.questions{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}.questions button,.btn{border:1px solid #37617d;border-radius:11px;background:#233f55;color:#e7f6ff;padding:10px 13px;font-size:13px}
+.questions button:hover,.btn:hover{background:#355e77}.answer{border:1px solid #37586b;border-radius:16px;background:#172e42;padding:18px;line-height:1.9;min-height:120px;color:#d8e5f5;font-size:14px}
+.stamp{background:#29433e;color:#8cf0cb;padding:6px 9px;border-radius:8px;font-size:11px}
+.mobile-nav{display:none}.footer{font-size:12px;color:#869ab5;text-align:center;margin:25px 0 0}
+@media(max-width:1050px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.grid{grid-template-columns:1fr}}
+@media(max-width:700px){.shell{display:block}.side{display:none}.main{padding:16px 14px 100px}.top{margin-top:8px}.cards{gap:10px}.card{padding:14px}.card .value{font-size:20px}.panel{padding:16px;border-radius:16px}.mobile-nav{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-around;z-index:10;background:#11243aef;backdrop-filter:blur(15px);border-top:1px solid #38516a;padding:8px 5px max(8px,env(safe-area-inset-bottom))}.mobile-nav button{font-size:12px;text-align:center;padding:10px 6px}.mobile-nav button.active{background:#2a4b64;color:#fff}.graph{gap:8px}td,th{padding:10px 5px;font-size:11px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="shell"><aside class="side">
+<div><div class="logo"><span class="logo-mark">✦</span><span>תבונה</span></div><p class="sub">היועץ הכלכלי המשפחתי • דמו</p></div>
+<nav class="menu" id="side-menu"><button data-tab="overview" class="active">◫ &nbsp; סקירה כללית</button><button data-tab="transactions">▤ &nbsp; עסקאות והוצאות</button><button data-tab="budgets">◉ &nbsp; ניהול תקציב</button><button data-tab="advisor">✧ &nbsp; יועץ חיסכון</button></nav>
+<p class="side-bottom">זוהי הדגמה ללא הרשמה, ללא מאגר מידע וללא שירות AI חיצוני. אין להזין מידע אמיתי.</p>
+</aside>
+<main class="main">
+<div class="demo-alert">🔒 <strong>גרסת הדגמה ציבורית:</strong> מוצגים נתונים פיקטיביים בלבד. אין להעלות דוחות אשראי, סיסמאות או פרטים פיננסיים אמיתיים. התחברות זוגית ו-AI אמיתי יתווספו לאחר הגדרת אבטחה ושרת.</div>
+<header class="top"><div><span class="eyebrow">FAMILY FINANCIAL INTELLIGENCE</span><h1 id="heading">התמונה הכלכלית שלנו</h1><p id="subtitle">תובנות שיעזרו לכם להבין לאן הכסף הולך</p></div><select class="month" id="month" aria-label="חודש"><option value="2026-10">אוקטובר 2026</option><option value="2026-09">ספטמבר 2026</option><option value="2026-08">אוגוסט 2026</option></select></header>
+<section id="overview">
+<div class="cards"><div class="card"><span class="key">הכנסות חודשיות</span><strong class="value" id="income"></strong><small class="muted">שתי משכורות בדוגמה</small></div><div class="card"><span class="key">עסקאות שנרשמו</span><strong class="value" id="spent"></strong><small class="muted">ללא הוצאות צפויות</small></div><div class="card"><span class="key">התחייבויות קבועות צפויות</span><strong class="value" id="fixed"></strong><small class="muted">לא נכללות בעסקאות הדוגמה</small></div><div class="card"><span class="key">יתרה חודשית חזויה</span><strong class="value good" id="remaining"></strong><small class="muted">הערכה, לא יתרת חשבון</small></div></div>
+<div class="grid"><section class="panel"><div class="panel-header"><div><h2>מגמת הוצאות</h2><p class="note">עסקאות שנרשמו בדוגמה, לפי חודשים</p></div><span class="tag">3 חודשים</span></div><div class="graph" id="graph"></div><div class="legend">השוואה בין חודשים על בסיס נתונים פיקטיביים</div></section><section class="panel"><div class="panel-header"><div><h2>הוצאות לפי קטגוריה</h2><p class="note">איפה מתרכזות העסקאות?</p></div></div><div id="categories"></div></section></div>
+<section class="panel"><div class="panel-header"><div><h2>התובנות המרכזיות</h2><p class="note">המלצות מחושבות מכללים פשוטים בלבד</p></div><span class="tag">✦ תובנות</span></div><div id="insights"></div></section>
+</section>
+<section id="transactions" class="hidden"><section class="panel"><div class="panel-header"><h2>עסקאות לדוגמה</h2><span class="tag">נתונים פיקטיביים</span></div><div style="overflow-x:auto"><table><thead><tr><th>תאריך</th><th>בית עסק</th><th>קטגוריה</th><th class="money">סכום</th></tr></thead><tbody id="tx-rows"></tbody></table></div><p class="note">ייבוא דוחות אשראי ועריכה יפעלו באתר הפרטי רק לאחר השלמת ההתחברות וההרשאות.</p></section></section>
+<section id="budgets" class="hidden"><div class="grid"><section class="panel"><h2>מעקב תקציב לפי קטגוריה</h2><p class="note">השוואה בין עסקאות לתקציב שהוגדר</p><div id="budget-items"></div></section><section class="panel"><h2>מה יקרה אם?</h2><p class="note">תרחיש המחשה לצמצום הוצאות על מסעדות</p><div class="scenario"><div class="row"><span>שיעור צמצום תיאורטי</span><strong id="percent">20%</strong></div><input type="range" id="slider" min="0" max="50" value="20" step="5" aria-label="אחוז צמצום"><p class="note">חיסכון חודשי תיאורטי</p><div class="scenario-result" id="savings"></div><p class="note" id="annual"></p></div><p class="note">הסימולטור אינו מבטיח חיסכון בפועל, ואינו המלצה אישית.</p></section></div></section>
+<section id="advisor" class="hidden"><div class="grid"><section class="panel"><div class="panel-header"><h2>✧ היועץ הכלכלי</h2><span class="stamp">הדמיית תשובות</span></div><p class="note">כעת זהו מנגנון הסברים המבוסס על נתוני הדוגמה. מודל AI אמיתי אינו מחובר עדיין.</p><div class="questions"><button data-question="biggest">איפה מוציאים הכי הרבה?</button><button data-question="save">מה אפשר לבדוק כדי לחסוך?</button><button data-question="budget">מה מצב התקציב?</button></div><div class="answer" id="answer">בחרו אחת מהשאלות כדי לראות תשובה מתוך נתוני הדוגמה.</div></section><section class="panel"><h2>הדרך לאתר פרטי וחכם</h2><p class="note">הגרסה המלאה תדרוש כניסה מאובטחת לשני משתמשים, מסד נתונים פרטי, העלאת דוחות עם בדיקת כפילויות וחיבור לשירות AI חיצוני רק לאחר הסכמה. ניתן יהיה להשתמש בכל התכונות הבסיסיות גם ללא AI.</p><div class="insight"><b>הפרדה חשובה</b><p>החישובים הכספיים מתבצעים בקוד, וה-AI יפרש אותם. כך ניתן לבקר כל מספר לפני הצגת המלצה.</p></div></section></div></section>
+<p class="footer">תבונה • אב-טיפוס ציבורי ללא נתונים אישיים • כל הסכומים בשקלים</p>
+</main></div>
+<nav class="mobile-nav" id="mobile-nav"><button class="active" data-tab="overview">◫<br>סקירה</button><button data-tab="transactions">▤<br>עסקאות</button><button data-tab="budgets">◉<br>תקציב</button><button data-tab="advisor">✧<br>יועץ</button></nav>
+<script>
+"use strict";
+const income=25300,fixed=[["שכירות",6200],["חשמל ומים",650],["ביטוחים",520],["אינטרנט וסלולר",270],["מנויים",129]];
+const budgets={"מזון וסופר":2500,"מסעדות":900,"תחבורה":750,"קניות":600,"בילויים":700};
+const transactions=[
+["2026-10-03","סופר שכונתי","מזון וסופר",520],["2026-10-05","מסעדה","מסעדות",320],["2026-10-09","משלוח אוכל","מסעדות",180],["2026-10-12","דלק","תחבורה",340],["2026-10-16","סופרמרקט","מזון וסופר",735],["2026-10-18","ביגוד","קניות",460],["2026-10-19","מסעדה","מסעדות",510],["2026-10-20","בילוי","בילויים",225],["2026-10-21","סופרמרקט","מזון וסופר",620],
+["2026-09-05","סופרמרקט","מזון וסופר",990],["2026-09-08","מסעדה","מסעדות",670],["2026-09-12","דלק","תחבורה",360],["2026-09-17","סופרמרקט","מזון וסופר",860],["2026-09-22","ביגוד","קניות",350],["2026-09-25","מסעדה","מסעדות",420],
+["2026-08-04","סופרמרקט","מזון וסופר",880],["2026-08-10","מסעדה","מסעדות",420],["2026-08-13","דלק","תחבורה",310],["2026-08-20","סופרמרקט","מזון וסופר",940],["2026-08-25","מסעדה","מסעדות",490]];
+const money=n=>new Intl.NumberFormat("he-IL",{style:"currency",currency:"ILS",maximumFractionDigits:0}).format(n);
+const $=id=>document.getElementById(id);let month="2026-10";
+const monthly=m=>transactions.filter(t=>t[0].startsWith(m));const total=rows=>rows.reduce((s,t)=>s+t[3],0);
+function categoryTotals(rows){const c={};for(const t of rows)c[t[2]]=(c[t[2]]||0)+t[3];return Object.entries(c).sort((a,b)=>b[1]-a[1]);}
+const sumFixed=fixed.reduce((s,f)=>s+f[1],0);
+function display(){
+const tx=monthly(month),spent=total(tx),left=income-spent-sumFixed,rows=categoryTotals(tx),prev=month==="2026-10"?"2026-09":"2026-08";
+$("income").textContent=money(income);$("spent").textContent=money(spent);$("fixed").textContent=money(sumFixed);$("remaining").textContent=money(left);$("remaining").className="value "+(left>=0?"good":"bad");
+$("graph").replaceChildren(...["2026-08","2026-09","2026-10"].map((m)=>{const d=document.createElement("div");d.className="bar-holder";const bar=document.createElement("div");bar.className="bar";bar.style.height=Math.max(2,(total(monthly(m))/Math.max(...["2026-08","2026-09","2026-10"].map(x=>total(monthly(x)))))*145)+"px";bar.title=money(total(monthly(m)));const label=document.createElement("span");label.textContent=({ "2026-08":"אוגוסט","2026-09":"ספטמבר","2026-10":"אוקטובר"})[m];d.append(bar,label);return d;}));
+$("categories").innerHTML=rows.map(([cat,amount])=>'<div class="row"><span>'+cat+'</span><b>'+money(amount)+'</b></div><div class="progress"><div style="width:'+Math.min(100,amount/Math.max(1,rows[0][1])*100)+'%"></div></div>').join("");
+const ins=[];
+for(const [cat,amount] of rows){const budget=budgets[cat];if(budget&&amount>budget)ins.push(["חריגה בתקציב "+cat,"נרשמו "+money(amount)+" מול תקציב "+money(budget)+". כדאי לבדוק את העסקאות לפני קבלת החלטה."])}
+const prevRows=categoryTotals(monthly(prev));
+for(const [cat,amount] of rows){const was=prevRows.find(r=>r[0]===cat)?.[1]||0;if(was>0&&amount>was*1.2&&amount-was>=150)ins.push(["עלייה בהוצאות "+cat,"עלייה של "+money(amount-was)+" לעומת החודש הקודם. חודש בודד אינו מוכיח מגמה."])}
+ins.push(["יתרה חזויה "+(left>=0?"חיובית":"שלילית"),"לפי נתוני הדוגמה נותרת יתרה חזויה של "+money(left)+". זו אינה יתרה בבנק ואינה כוללת הוצאות שלא דווחו."]);
+$("insights").innerHTML=ins.map(i=>'<div class="insight"><b>'+i[0]+'</b><p>'+i[1]+'</p></div>').join("");
+$("tx-rows").innerHTML=tx.map(t=>'<tr><td>'+t[0].slice(8)+'/'+t[0].slice(5,7)+'</td><td>'+t[1]+'</td><td><span class="category">'+t[2]+'</span></td><td class="money">'+money(t[3])+'</td></tr>').join("");
+$("budget-items").innerHTML=Object.entries(budgets).map(([cat,limit])=>{const spent=rows.find(r=>r[0]===cat)?.[1]||0;const percent=Math.round(spent/limit*100);return '<div class="row"><strong>'+cat+'</strong><span>'+money(spent)+' / '+money(limit)+'</span></div><div class="progress"><div class="'+(percent>100?'over':'')+'" style="width:'+Math.min(100,percent)+'%"></div></div><p class="muted">'+(percent>100?'חריגה של '+money(spent-limit):'נוצלו '+percent+'%')+'</p>';}).join("");
+scenario();
+}
+function scenario(){const pct=Number($("slider").value);const spent=categoryTotals(monthly(month)).find(r=>r[0]==="מסעדות")?.[1]||0;const saving=Math.round(spent*pct/100);$("percent").textContent=pct+"%";$("savings").textContent=money(saving);$("annual").textContent="חיסכון שנתי תיאורטי בהנחת התמדה: "+money(saving*12);}
+const tabs={overview:["התמונה הכלכלית שלנו","תובנות שיעזרו לכם להבין לאן הכסף הולך"],transactions:["העסקאות שלנו","דוח הוצאות חודשי מפורט"],budgets:["התקציב המשפחתי","לשלוט בהוצאות בלי לוותר על איכות החיים"],advisor:["היועץ הכלכלי שלנו","המחשה של ניתוח נתונים לפני חיבור AI"]};
+function switchTab(tab){for(const name of Object.keys(tabs))$(name).classList.toggle("hidden",tab!==name);document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));$("heading").textContent=tabs[tab][0];$("subtitle").textContent=tabs[tab][1];window.scrollTo({top:0,behavior:"smooth"});}
+document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
+$("month").addEventListener("change",e=>{month=e.target.value;display();});
+$("slider").addEventListener("input",scenario);
+document.querySelectorAll("[data-question]").forEach(b=>b.addEventListener("click",()=>{const rows=categoryTotals(monthly(month)),high=rows[0],spent=total(monthly(month));const answers={biggest:"הקטגוריה עם ההוצאות המדווחות הגבוהות ביותר בחודש זה היא "+(high?high[0]:"ללא עסקאות")+" בסך "+money(high?high[1]:0)+". מומלץ לבדוק קודם את העסקאות עצמן לפני שמחליטים לצמצם.",save:"כדאי להתחיל בקטגוריות שבהן חרגתם מתקציב, ובהמשך לבדוק מנויים והוצאות קבועות. זו הדגמה בלבד: אין כאן בדיקת מחירי שוק או חישוב חיסכון אמיתי.",budget:"בחודש הנבחר נרשמו עסקאות בסך "+money(spent)+". היתרה החזויה על בסיס הכנסה, עסקאות והתחייבויות פיקטיביות היא "+money(income-spent-sumFixed)+". אין להסיק ממנה את היתרה בבנק."};$("answer").textContent=answers[b.dataset.question];}));
+display();
+</script>
+</body></html>
