@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {makeTimeline,compareMonthly,actionableMonthlyNotes,addMonths,percentChange} from "./financial-trends.mjs";
+import {makeTimeline,compareMonthly,actionableMonthlyNotes,addMonths,percentChange,applyFixedToTimeline} from "./financial-trends.mjs";
 const expense=(occurred_on,category,amount_agorot,entry_kind="expense")=>({occurred_on,category,amount_agorot,entry_kind,merchant:category});
 const income=(income_month,amount_agorot,received=true)=>({income_month,amount_agorot,received});
 test("timeline fills past 6 months and handles year boundary",()=>{
@@ -63,4 +63,65 @@ test("comparison warns if missing baseline rather than inventing a trend",()=>{
  assert.equal(c.covered,false);
  assert.equal(c.categoryChanges.length,1);
  assert.equal(c.expensePercent,null);
+});
+
+test("History planning balance subtracts unmatched recurring rent for every covered month",()=>{
+ const tx=[
+  {id:"aug-credit",occurred_on:"2026-08-12",merchant:"Food",category:"מזון",amount_agorot:50000,entry_kind:"expense"},
+  {id:"sep-credit",occurred_on:"2026-09-12",merchant:"Food",category:"מזון",amount_agorot:45000,entry_kind:"expense"},
+  {id:"oct-credit",occurred_on:"2026-10-12",merchant:"Food",category:"מזון",amount_agorot:60000,entry_kind:"expense"}
+ ];
+ const income=[
+  {income_month:"2026-08-01",amount_agorot:2444800,received:true},
+  {income_month:"2026-09-01",amount_agorot:2444800,received:true},
+  {income_month:"2026-10-01",amount_agorot:2444800,received:true}
+ ];
+ const fixed=[{id:"rent",label:"שכירות",active:true,amount_agorot:450000,cadence:"monthly"}];
+ const before=makeTimeline({endMonth:"2026-10",count:3,transactions:tx,incomes});
+ const months=applyFixedToTimeline(before,{fixed});
+ assert.equal(months.length,3);
+ assert.deepEqual(months.map(m=>m.unlinkedFixed),[450000,450000,450000]);
+ assert.deepEqual(months.map(m=>m.plannedBalance),[1944800,1949800,1934800]);
+ assert.equal(months.reduce((s,m)=>s+m.plannedBalance,0),5839400);
+});
+test("Fixed expense matched to a specific month only prevents double counting there",()=>{
+ const transaction=[
+  {id:"sep-card",occurred_on:"2026-09-10",merchant:"Rent",category:"Housing",amount_agorot:450000,entry_kind:"expense"},
+  {id:"oct-card",occurred_on:"2026-10-10",merchant:"Rent",category:"Housing",amount_agorot:450000,entry_kind:"expense"}
+ ];
+ const incomes=[
+  {income_month:"2026-09-01",amount_agorot:2444800,received:true},
+  {income_month:"2026-10-01",amount_agorot:2444800,received:true}
+ ];
+ const fixed=[{id:"rent",label:"rent",active:true,cadence:"monthly",amount_agorot:450000}];
+ const coverage=[{fixed_expense_id:"rent",transaction_id:"sep-card",expense_month:"2026-09-01"}];
+ const months=applyFixedToTimeline(makeTimeline({endMonth:"2026-10",count:2,transactions:transaction,incomes}),{fixed,coverage});
+ assert.equal(months[0].linkedFixed,450000);
+ assert.equal(months[0].unlinkedFixed,0);
+ assert.equal(months[0].plannedBalance,1994800);
+ assert.equal(months[1].linkedFixed,0);
+ assert.equal(months[1].unlinkedFixed,450000);
+ assert.equal(months[1].plannedBalance,1544800);
+});
+test("History with missing credit data cannot produce misleading spend or balance",()=>{
+ const base=makeTimeline({endMonth:"2026-10",count:2,
+  incomes:[{income_month:"2026-10-01",amount_agorot:2444800,received:true}]});
+ const fixed=[{id:"rent",active:true,amount_agorot:450000,cadence:"monthly"}];
+ const months=applyFixedToTimeline(base,{fixed});
+ assert.equal(months[1].unlinkedFixed,450000);
+ assert.equal(months[1].spendingWithFixed,null);
+ assert.equal(months[1].plannedBalance,null);
+ assert.equal(months[1].fullBalanceCoverage,false);
+});
+test("Annual obligations are averaged rather than double counted in each covered month",()=>{
+ const base=makeTimeline({endMonth:"2026-10",count:1,
+  transactions:[{id:"one",occurred_on:"2026-10-10",amount_agorot:10000,entry_kind:"expense",category:"מזון"}],
+  incomes:[{income_month:"2026-10-01",amount_agorot:1000000,received:true}]});
+ const result=applyFixedToTimeline(base,{fixed:[
+  {id:"insurance",active:true,cadence:"yearly",amount_agorot:120000},
+  {id:"inactive",active:false,cadence:"monthly",amount_agorot:200000}
+ ]});
+ assert.equal(result[0].unlinkedFixed,10000);
+ assert.equal(result[0].spendingWithFixed,20000);
+ assert.equal(result[0].plannedBalance,980000);
 });
