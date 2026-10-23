@@ -1,3 +1,4 @@
+import {setupBackup} from "./export-view.js";
 import {householdBalance} from "./household-ledger.mjs";
 import {setupCoach} from "./coach-view.js";
 import {setupIncomeManagement} from "./income-view.js";
@@ -70,7 +71,8 @@ const screenTitles={
  statements:["פירוטי אשראי שיובאו","ניהול ומחיקה של קובצי עסקאות שלמים"],
  incomes:["ניהול הכנסות","הכנסות קבועות, חד־פעמיות ומה התקבל בפועל"],
  budgets:["ניהול תקציב","מסגרת חודשית לכל קטגוריה לפי שמות הקטגוריות של חברת האשראי"],
- fixed:["הוצאות קבועות","התחייבויות חוזרות לתכנון משפחתי"]
+ fixed:["הוצאות קבועות","התחייבויות חוזרות לתכנון משפחתי"],
+ backup:["גיבוי וייצוא","שמירת עותק פרטי של נתוני המשפחה והעסקאות"]
 };
 function switchScreen(name){
  for(const screen of document.querySelectorAll(".screen"))screen.classList.toggle("hidden",screen.id!==name);
@@ -252,6 +254,7 @@ $("budget-form").addEventListener("submit",async e=>{
  }catch(err){notice(authError(err))}finally{button.disabled=false}
 });
 setupImporter({supabase,notice,reload,getContext:()=>({user,household})});
+setupBackup({supabase,getContext:()=>({user,household})});
 setupBatches({supabase,notice,reload,getContext:()=>({user,household})});
 setupAnalysis({supabase,getContext:()=>({user,household})});
 setupHistory({supabase,getContext:()=>({user,household})});
