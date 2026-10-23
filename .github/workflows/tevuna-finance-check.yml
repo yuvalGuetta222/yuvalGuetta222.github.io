@@ -16,7 +16,14 @@ jobs:
         with:
           persist-credentials: false
       - name: Check Javascript syntax
-        run: node --check finance/app.js
+        run: |
+          node --check finance/app.js
+          node --check finance/importer.js
+          node --check finance/analysis.js
+          node --check finance/credit-core.mjs
+          node --check finance/financial-insights.mjs
+      - name: Run statement parser and analytics tests
+        run: node --test finance/*.test.mjs
       - name: Ensure required pages exist
         run: |
           test -s finance/index.html
