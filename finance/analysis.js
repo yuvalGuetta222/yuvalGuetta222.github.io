@@ -23,7 +23,9 @@ function safeRender(previous,curr,month){
  }):[text("p","אין עסקאות בחודש שנבחר.","empty")]));
  const comparison=$("analysis-compare");comparison.textContent="השוואת הוצאות בקטגוריות מול "+comparisonLabel+". אם חסרים דוחות, ההשוואה חלקית.";
  const categories=$("comparison-list");categories.replaceChildren();
- const prevCat=new Map((previous||[]).reduce((list,t)=>{const category=t.category||"אחר",v=t.entry_kind==="refund"?-t.amount_agorot:t.amount_agorot;const existing=list.find(x=>x[0]===category);if(existing)existing[1]+=v;else list.push([category,v]);return list},[]));
+ const clock=new Date();const actualMonth=[clock.getFullYear(),String(clock.getMonth()+1).padStart(2,"0")].join("-");
+ const comparableMonth=month===actualMonth?previous.filter(t=>Number(String(t.occurred_on).slice(-2))<=clock.getDate()):previous;
+ const prevCat=new Map((comparableMonth||[]).reduce((list,t)=>{const category=t.category||"אחר",v=t.entry_kind==="refund"?-t.amount_agorot:t.amount_agorot;const existing=list.find(x=>x[0]===category);if(existing)existing[1]+=v;else list.push([category,v]);return list},[]));
  for(const [name,amount] of summary.categories.filter(x=>x[1]>0).slice(0,7)){
   const prevAmount=prevCat.get(name)||0;
   const d=document.createElement("div");d.className="line-item";
