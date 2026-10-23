@@ -27,6 +27,7 @@ function toAgorot(input,allowZero=false){
   return n;
 }
 let household=null, user=null, signup=false, data={income:[],transactions:[],fixed:[],budgets:[],recurring:[],coverage:[]},busy=false;
+let reloadSequence=0;
 const view=id=>{for(const n of ["auth-view","pending-view","app-view"])$(n).classList.toggle("hidden",n!==id)};
 function notice(msg,target="app-error"){const el=$(target);el.textContent=msg??"";if(msg){el.scrollIntoView({block:"nearest",behavior:"smooth"})}}
 function defaultDates(){$("month").value=currentMonth();document.querySelector('input[name="occurred_on"]').value=today();document.querySelector('input[name="income_month"]').value=currentMonth()}
@@ -113,6 +114,7 @@ async function loadTransactions(start,next){
 
 async function reload(){
  if(!household)return;
+ const request=++reloadSequence,requestedHousehold=household;
  try {const m=$("month").value||currentMonth();const start=m+"-01";
  const yr=Number(m.slice(0,4)),mo=Number(m.slice(5,7));const next=(mo===12?yr+1:yr)+"-"+String(mo===12?1:mo+1).padStart(2,"0")+"-01";
  notice("טוען נתונים…");
@@ -123,6 +125,7 @@ async function reload(){
  supabase.from("tevuna_budgets").select("id,category,amount_agorot,budget_month").eq("household_id",household).eq("budget_month",start).order("category"),
  supabase.from("tevuna_recurring_incomes").select("id,label,amount_agorot,start_month,end_month,active").eq("household_id",household).order("created_at",{ascending:false}),
  supabase.from("tevuna_fixed_expense_card_coverage").select("fixed_expense_id,transaction_id,expense_month").eq("household_id",household).eq("expense_month",start)]);
+ if(request!==reloadSequence||household!==requestedHousehold||$("month").value!==m)return;
  const err=[i.error,t.error,f.error,b.error,r.error,c.error].find(Boolean);
  if(err){notice("שגיאה בטעינת הנתונים. בדוק את החיבור ונסה שוב.");return}
  data={income:i.data||[],transactions:t.data||[],fixed:f.data||[],budgets:b.data||[],recurring:r.data||[],coverage:c.data||[]};
@@ -130,6 +133,7 @@ async function reload(){
  notice("");
  document.dispatchEvent(new CustomEvent("tevuna:loaded",{detail:{data,month:m,household}}));
  }catch(error){
+  if(request!==reloadSequence||household!==requestedHousehold)return;
   console.error("Tevuna: error loading or rendering a financial month",error);
   notice("לא ניתן להשלים את טעינת החודש. הנתונים לא נמחקו. נסו לרענן את הדף; אם התקלה נמשכת, פתחו את האתר בדפדפן מעודכן.");
  }
