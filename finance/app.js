@@ -1,3 +1,4 @@
+import {householdBalance} from "./household-ledger.mjs";
 import {setupCoach} from "./coach-view.js";
 import {setupIncomeManagement} from "./income-view.js";
 import {setupCategoryDashboard} from "./category-view.js";
@@ -24,7 +25,7 @@ function toAgorot(input,allowZero=false){
   if(!Number.isSafeInteger(n)||n>100000000000||(!allowZero&&n<=0))throw Error("הסכום אינו בטווח המותר");
   return n;
 }
-let household=null, user=null, signup=false, data={income:[],transactions:[],fixed:[],budgets:[],recurring:[]},busy=false;
+let household=null, user=null, signup=false, data={income:[],transactions:[],fixed:[],budgets:[],recurring:[],coverage:[]},busy=false;
 const view=id=>{for(const n of ["auth-view","pending-view","app-view"])$(n).classList.toggle("hidden",n!==id)};
 function notice(msg,target="app-error"){const el=$(target);el.textContent=msg??"";if(msg){el.scrollIntoView({block:"nearest",behavior:"smooth"})}}
 function defaultDates(){$("month").value=currentMonth();document.querySelector('input[name="occurred_on"]').value=today();document.querySelector('input[name="income_month"]').value=currentMonth()}
@@ -61,7 +62,7 @@ async function showFor(nextUser){
  household=d.household_id;view("app-view");await reload();
 }
 $("pending-refresh").addEventListener("click",async()=>{notice("בודק הרשאות…","pending-message");const {data:{user:u},error}=await supabase.auth.getUser();if(error){notice("בדיקת האימות נכשלה. נסה להתחבר מחדש.","pending-message");return}await showFor(u)});
-document.querySelectorAll(".logout").forEach(btn=>btn.addEventListener("click",async()=>{const {error}=await supabase.auth.signOut();if(error){notice(authError(error));return}user=null;household=null;data={income:[],transactions:[],fixed:[],budgets:[],recurring:[]};$("password").value="";view("auth-view")}));
+document.querySelectorAll(".logout").forEach(btn=>btn.addEventListener("click",async()=>{const {error}=await supabase.auth.signOut();if(error){notice(authError(error));return}user=null;household=null;data={income:[],transactions:[],fixed:[],budgets:[],recurring:[],coverage:[]};$("password").value="";view("auth-view")}));
 const screenTitles={
  dashboard:["התמונה הכלכלית שלנו","הוצאות, הכנסות ותובנות שמבוססות על מה שנשמר בפועל"],
  history:["השוואת חודשים","איך ההוצאות וההכנסות השתנו לאורך זמן"],
@@ -84,6 +85,7 @@ function switchScreen(name){
  document.dispatchEvent(new CustomEvent("tevuna:screen-changed",{detail:{screen:name}}));
 }
 document.querySelectorAll("[data-screen]").forEach(btn=>btn.addEventListener("click",()=>switchScreen(btn.dataset.screen)));
+$("ledger-fixed-link").addEventListener("click",()=>switchScreen("fixed"));
 $("month").addEventListener("change",()=>{if($("recurring-income-form"))$("recurring-income-form").elements.start_month.value=$("month").value;reload()});
 const cadenceMonths={monthly:1,bimonthly:2,quarterly:3,yearly:12};
 async function loadTransactions(start,next){
@@ -102,15 +104,16 @@ async function reload(){
  if(!household)return;const m=$("month").value||currentMonth();const start=m+"-01";
  const yr=Number(m.slice(0,4)),mo=Number(m.slice(5,7));const next=(mo===12?yr+1:yr)+"-"+String(mo===12?1:mo+1).padStart(2,"0")+"-01";
  notice("טוען נתונים…");
- const [i,t,f,b,r]=await Promise.all([
+ const [i,t,f,b,r,c]=await Promise.all([
  supabase.from("tevuna_incomes").select("id,label,amount_agorot,income_month,received,recurring_income_id").eq("household_id",household).eq("income_month",start).order("created_at",{ascending:false}),
  loadTransactions(start,next),
  supabase.from("tevuna_fixed_expenses").select("id,label,category,amount_agorot,cadence,active").eq("household_id",household).order("created_at",{ascending:false}),
  supabase.from("tevuna_budgets").select("id,category,amount_agorot,budget_month").eq("household_id",household).eq("budget_month",start).order("category"),
- supabase.from("tevuna_recurring_incomes").select("id,label,amount_agorot,start_month,end_month,active").eq("household_id",household).order("created_at",{ascending:false})]);
- const err=[i.error,t.error,f.error,b.error,r.error].find(Boolean);
+ supabase.from("tevuna_recurring_incomes").select("id,label,amount_agorot,start_month,end_month,active").eq("household_id",household).order("created_at",{ascending:false}),
+ supabase.from("tevuna_fixed_expense_card_coverage").select("fixed_expense_id,transaction_id,expense_month").eq("household_id",household).eq("expense_month",start)]);
+ const err=[i.error,t.error,f.error,b.error,r.error,c.error].find(Boolean);
  if(err){notice("שגיאה בטעינת הנתונים. בדוק את החיבור ונסה שוב.");return}
- data={income:i.data||[],transactions:t.data||[],fixed:f.data||[],budgets:b.data||[],recurring:r.data||[]};notice("");render();document.dispatchEvent(new CustomEvent("tevuna:loaded",{detail:{data,month:m,household}}));
+ data={income:i.data||[],transactions:t.data||[],fixed:f.data||[],budgets:b.data||[],recurring:r.data||[],coverage:c.data||[]};notice("");render();document.dispatchEvent(new CustomEvent("tevuna:loaded",{detail:{data,month:m,household}}));
 }
 function line(label,sub,val,id=null,table=null){
  const row=document.createElement("div");row.className="line-item";
@@ -130,15 +133,52 @@ function updateCategorySuggestions(){
   const option=document.createElement("option");option.value=name;dataList.append(option);
  }
 }
+function fixedRow(item){
+ const provision=householdBalance({fixed:[item]}).planned;
+ const base=line(item.label,item.category+" • "+({monthly:"חודשי",bimonthly:"דו־חודשי",quarterly:"רבעוני",yearly:"שנתי"})[item.cadence]+(item.active?"":" • לא פעיל"),item.amount_agorot,item.id,"tevuna_fixed_expenses");
+ if(!item.active)return base;
+ const bar=document.createElement("div");bar.className="fixed-reconcile";
+ const current=data.coverage.find(c=>c.fixed_expense_id===item.id);
+ const trx=current&&data.transactions.find(t=>t.id===current.transaction_id&&t.entry_kind!=="refund");
+ const remaining=householdBalance({transactions:data.transactions,fixed:[item],coverage:data.coverage}).unmatched;
+ const helper=document.createElement("p");helper.className="note";helper.textContent="שריון חודשי: "+money(provision)+" • שעדיין נלקח בחשבון: "+money(remaining);bar.append(helper);
+ if(trx){
+  const lbl=document.createElement("div");lbl.className="fixed-linked";lbl.textContent="נכלל בעסקת אשראי: "+trx.merchant+" • "+money(trx.amount_agorot)+" • "+trx.occurred_on;
+  const undo=document.createElement("button");undo.type="button";undo.className="secondary";undo.textContent="בטל התאמה";
+  undo.addEventListener("click",async()=>{undo.disabled=true;notice("מעדכן התאמה…");const {error}=await supabase.from("tevuna_fixed_expense_card_coverage").delete().eq("household_id",household).eq("fixed_expense_id",item.id).eq("expense_month",$("month").value+"-01");if(error){notice("לא ניתן לבטל התאמה: "+error.message);undo.disabled=false;return}await reload()});
+  bar.append(lbl,undo);
+ } else {
+  const candidates=data.transactions.filter(t=>t.entry_kind!=="refund"&&!data.coverage.some(c=>c.transaction_id===t.id));
+  if(candidates.length){
+   const select=document.createElement("select");select.setAttribute("aria-label","בחר עסקת אשראי שמתאימה להוצאה "+item.label);select.append(new Option("בחר עסקה שכבר כוללת את ההוצאה…",""));
+   for(const t of candidates){const o=new Option(t.occurred_on+" • "+t.merchant+" • "+money(t.amount_agorot),t.id);select.append(o)}
+   const save=document.createElement("button");save.type="button";save.className="secondary";save.textContent="קשר לעסקה";save.disabled=true;select.addEventListener("change",()=>save.disabled=!select.value);
+   save.addEventListener("click",async()=>{
+    const selected=data.transactions.find(t=>t.id===select.value);if(!selected||selected.entry_kind==="refund")return;
+    if(!confirm("האם "+item.label+" בסך "+money(provision)+" באמת כלול בעסקה "+selected.merchant+" בסך "+money(selected.amount_agorot)+"? סכום שכבר נכלל בעסקה לא יופחת שוב."))return;
+    save.disabled=true;const {error}=await supabase.from("tevuna_fixed_expense_card_coverage").insert({household_id:household,created_by:user.id,fixed_expense_id:item.id,expense_month:$("month").value+"-01",transaction_id:selected.id});
+    if(error){notice("לא ניתן לבצע התאמה: "+error.message);save.disabled=false;return}await reload();
+   });
+   bar.append(select,save);
+  }else bar.append(Object.assign(document.createElement("p"),{className:"note",textContent:"אין בחודש זה עסקאות אשראי זמינות להתאמה. ההתחייבות מנוכה במלואה מהיתרה לתכנון."}));
+ }
+ const wrap=document.createElement("div");wrap.className="fixed-expense-item";wrap.append(base,bar);return wrap;
+}
 function render(){
  updateCategorySuggestions();
  const inc=data.income.filter(x=>x.received).reduce((a,x)=>a+x.amount_agorot,0);
  const incomes=recurringIncomeSummary(data.recurring,data.income,$("month").value);
  const spent=data.transactions.reduce((a,x)=>a+(x.entry_kind==="refund"?-1:1)*x.amount_agorot,0);
- const fixed=monthlyFixed();
+ const ledger=householdBalance({incomes:data.income,transactions:data.transactions,fixed:data.fixed,coverage:data.coverage});
  $("s-income").textContent=money(inc);
  $("s-income-meta").textContent=incomes.pending>0?"בנוסף צפויות "+money(incomes.pending)+" שטרם אושרו":"הכנסות שהתקבלו בפועל";
- $("s-spent").textContent=money(spent);$("s-fixed").textContent=money(fixed);$("s-balance").textContent=money(inc-spent);$("s-balance").className=(inc-spent<0?"negative":"positive");
+ $("s-spent").textContent=money(spent);
+ $("s-fixed").textContent=money(ledger.unmatched);
+ $("s-fixed-meta").textContent="מתוך "+money(ledger.planned)+" התחייבויות; "+money(ledger.matched)+" כבר נכללים בעסקאות";
+ $("s-balance").textContent=money(ledger.availableAfterProvisions);
+ $("s-balance").className="value "+(ledger.availableAfterProvisions<0?"negative":"positive");
+ $("ledger-equation").textContent=money(ledger.confirmedIncome)+" הכנסות − "+money(ledger.recordedSpending)+" עסקאות − "+money(ledger.unmatched)+" התחייבויות שטרם נכללו = "+money(ledger.availableAfterProvisions);
+ $("ledger-note").textContent="זהו סכום לתכנון, לא יתרת הבנק. התחייבויות שלא קושרו לעסקאות מנוכות, גם אם שולמו מחוץ לאשראי. בחודשים בלי עסקאות, לא משחררים התחייבויות אוטומטית.";
  const cat=categorySpend();
 
  const insights=[];
@@ -150,7 +190,7 @@ function render(){
  $("insight-lines").replaceChildren(...insights.map(t=>{const d=document.createElement("div");d.className="insight";d.textContent=t;return d}));
 
  fillLines("income-list",data.income.map(x=>line(x.label,x.received?"התקבל בפועל":"טרם התקבל",x.amount_agorot,x.id,"tevuna_incomes")));
- fillLines("fixed-list",data.fixed.map(x=>line(x.label,x.category+" • "+({monthly:"כל חודש",bimonthly:"כל חודשיים",quarterly:"כל רבעון",yearly:"פעם בשנה"})[x.cadence]+(x.active?"":" • לא פעיל"),x.amount_agorot,x.id,"tevuna_fixed_expenses")));
+ fillLines("fixed-list",data.fixed.map(x=>fixedRow(x)));
  const bars=data.budgets.map(b=>{const spent=cat.find(x=>x[0]===b.category)?.[1]||0,ratio=b.amount_agorot?Math.max(0,spent/b.amount_agorot*100):spent?100:0;
   const wrap=document.createElement("div"),r=line(b.category,"נוצלו "+money(spent)+" מתוך "+money(b.amount_agorot),b.amount_agorot,b.id,"tevuna_budgets");
   const bar=document.createElement("div");bar.className="bar";const inner=document.createElement("div");inner.className="bar-fill"+(spent>b.amount_agorot?" over":"");inner.style.width=Math.min(100,ratio)+"%";bar.append(inner);wrap.append(r,bar);return wrap});
