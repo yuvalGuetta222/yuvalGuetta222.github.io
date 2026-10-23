@@ -45,7 +45,7 @@ async function loadHistory(){
   if(coverageResponse.error)throw coverageResponse.error;
   let tx=txSource;
   if(billing){
-   const manual=await fetchPaged("tevuna_transactions","id,occurred_on,billing_month,category,merchant,entry_kind,amount_agorot",from,to,"occurred_on");
+   const manual=await fetchPaged("tevuna_transactions","id,occurred_on,billing_month,category,merchant,entry_kind,amount_agorot,source",from,to,"occurred_on");
    const byId=new Map();
    for(const t of txSource.filter(t=>t.source!=="manual"))
     byId.set(t.id,{...t,occurred_on:t.billing_month||t.occurred_on});
