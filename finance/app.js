@@ -1,3 +1,4 @@
+import {setupHistory} from "./history.js";
 import {setupImporter} from "./importer.js";
 import {CATEGORIES} from "./credit-core.mjs";
 import {setupAnalysis} from "./analysis.js";
@@ -56,7 +57,7 @@ async function showFor(nextUser){
 }
 $("pending-refresh").addEventListener("click",async()=>{notice("בודק הרשאות…","pending-message");const {data:{user:u},error}=await supabase.auth.getUser();if(error){notice("בדיקת האימות נכשלה. נסה להתחבר מחדש.","pending-message");return}await showFor(u)});
 document.querySelectorAll(".logout").forEach(btn=>btn.addEventListener("click",async()=>{const {error}=await supabase.auth.signOut();if(error){notice(authError(error));return}user=null;household=null;data={income:[],transactions:[],fixed:[],budgets:[]};$("password").value="";view("auth-view")}));
-function switchScreen(name){for(const screen of document.querySelectorAll(".screen"))screen.classList.toggle("hidden",screen.id!==name);document.querySelectorAll("[data-screen]").forEach(btn=>btn.classList.toggle("active",btn.dataset.screen===name))}
+function switchScreen(name){for(const screen of document.querySelectorAll(".screen"))screen.classList.toggle("hidden",screen.id!==name);document.querySelectorAll("[data-screen]").forEach(btn=>btn.classList.toggle("active",btn.dataset.screen===name));document.dispatchEvent(new CustomEvent("tevuna:screen-changed",{detail:{screen:name}}))}
 document.querySelectorAll("[data-screen]").forEach(btn=>btn.addEventListener("click",()=>switchScreen(btn.dataset.screen)));
 $("month").addEventListener("change",reload);
 const cadenceMonths={monthly:1,bimonthly:2,quarterly:3,yearly:12};
@@ -158,6 +159,7 @@ $("budget-form").addEventListener("submit",async e=>{
 });
 setupImporter({supabase,notice,reload,getContext:()=>({user,household})});
 setupAnalysis({supabase,getContext:()=>({user,household})});
+setupHistory({supabase,getContext:()=>({user,household})});
 defaultDates();
 (async()=>{
  try{const {data:d,error}=await supabase.auth.getSession();if(error)throw error;await showFor(d.session?.user||null);
