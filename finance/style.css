@@ -132,3 +132,16 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .history-table{min-width:1070px}
 .history-block .note{line-height:1.75}
 @media(max-width:700px){.history-expense-stack{width:19px}}
+
+
+/* Three phase production UX: import reconciliation, editing, effective dates and backup */
+.dashboard-extra{margin:14px 0 18px}.dashboard-extra>summary{padding:13px 17px;border-radius:13px;background:#173146;border:1px solid #2f5265;color:#a9e8d2;font-weight:750;cursor:pointer}.dashboard-extra[open]>summary{margin-bottom:14px}
+.import-verify{padding:16px;margin:16px 0;background:#163349;border-color:#416179}.import-verify h3{font-size:16px;margin:0 0 9px}.import-verify .mapping-grid{margin-bottom:11px}.import-verify .feedback{line-height:1.7}
+.editable-transaction{width:100%;background:transparent;border:none;color:inherit;text-align:right;cursor:pointer;padding:13px 5px}
+.editable-transaction:hover,.editable-transaction:focus-visible{background:#1c3f51;outline-offset:0}.editable-transaction:focus-visible{outline:2px solid #76e2c7}
+.editable-transaction .category-tx-info{flex:1}.category-dialog #edit-transaction-form{margin-top:16px}.category-dialog #edit-transaction-form label{min-width:0}
+.fixed-dates{display:flex;gap:11px;align-items:end;flex-wrap:wrap;width:100%;padding-top:9px;border-top:1px solid #325269}
+.fixed-dates label{min-width:140px;flex:1}.fixed-dates input{min-height:39px;padding:9px 10px}.fixed-dates .secondary{min-height:41px}.fixed-dates .note{flex-basis:100%;color:#ffdca9}
+.backup-intro{max-width:980px;margin-inline:auto}.backup-intro h2{font-size:24px}.backup-choice{background:#183447;border:1px solid #37546e;border-radius:14px;padding:19px;margin:10px 0}.backup-choice h3{font-size:16px;margin:0 0 10px}.backup-choice .note{min-height:60px;line-height:1.85}.backup-intro #backup-status{margin-top:18px}
+.heading-actions select{padding:10px 12px;min-height:42px;color:#eefbfa;background:#11263e;border-radius:11px;border:1px solid #385874;max-width:210px}.heading-actions label{min-width:130px}
+@media(max-width:760px){.heading-actions{flex-wrap:wrap;gap:8px}.heading-actions label{flex:1;min-width:135px}.fixed-dates{display:grid;grid-template-columns:1fr 1fr}.fixed-dates .secondary,.fixed-dates .note{grid-column:span 2}}
