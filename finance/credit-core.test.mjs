@@ -75,3 +75,42 @@ test("Budget overspend, savings estimate and monthly comparison insights",()=>{
  assert.ok(result.insights.some(x=>x.kind==="budget"));
  assert.ok(result.insights.some(x=>x.kind==="saving"));
 });
+
+test("Excel source categories take precedence over merchant suggestions",async()=>{
+ const mod=await import("./credit-core.mjs");
+ const rows=[
+ ["תאריך עסקה","שם בית עסק","סכום חיוב","קטגוריה"],
+ ["20/10/2026","Wolt","152.50","אירוח ונופש"],
+ ["21/10/2026","שופרסל","65.20","מזון וסופר"],
+ ["22/10/2026","Netflix","20.00",""]
+ ];
+ const found=mod.findHeaderRow(rows);assert.equal(found.index,0);
+ assert.equal(found.mapping.category,3);
+ const out=mod.convertRows(rows,found.index,found.mapping);
+ assert.equal(out.valid[0].category,"אירוח ונופש");
+ assert.equal(out.valid[0].categoryMethod,"file");
+ assert.equal(out.valid[1].category,"מזון וסופר");
+ assert.equal(out.valid[2].category,"מנויים");
+ assert.equal(out.valid[2].categoryMethod,"suggestion");
+});
+test("Bank exports with branch category headers are recognized",async()=>{
+ const mod=await import("./credit-core.mjs");
+ for(const categoryHeader of ["סיווג עסקה","ענף בית העסק","קטגוריית בית העסק","category"]){
+  const mapping=mod.guessMapping(["תאריך חיוב","בית עסק","סכום לחיוב",categoryHeader]);
+  assert.equal(mapping.category,3,categoryHeader);
+ }
+});
+test("Source category normalization keeps bank taxonomy and ignores blank placeholder",async()=>{
+ const {sourceCategory}=await import("./credit-core.mjs");
+ assert.equal(sourceCategory("  מזון   וקניות "), "מזון וקניות");
+ assert.equal(sourceCategory("לא מסווג"),null);
+ assert.equal(sourceCategory("  "),null);
+ assert.equal(sourceCategory("ח".repeat(70)).length,60);
+});
+test("Bank CSV honors Excel semicolon sep hint even with quoted commas",()=>{
+ const csv="sep=;\nתאריך עסקה;שם בית עסק;סכום;קטגוריה\n23/10/2026;\"מסעדה, העיר\";125,40;מסעדות ובתי קפה\n";
+ const rows=parseCSV(csv);
+ assert.equal(rows.length,2);
+ assert.equal(rows[1][1],"מסעדה, העיר");
+ assert.equal(convertRows(rows,0,guessMapping(rows[0])).valid[0].category,"מסעדות ובתי קפה");
+});
