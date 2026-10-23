@@ -12,7 +12,7 @@ export default [
     crypto: "readonly",CustomEvent: "readonly",Option: "readonly",
     FormData: "readonly",TextEncoder: "readonly",TextDecoder: "readonly",
     Blob: "readonly",URL: "readonly",URLSearchParams: "readonly",
-    setTimeout: "readonly",clearTimeout: "readonly",confirm: "readonly",
+    setTimeout: "readonly",clearTimeout: "readonly",setImmediate: "readonly",confirm: "readonly",
     alert: "readonly",performance: "readonly",localStorage: "readonly",
     requestAnimationFrame: "readonly",FileReader: "readonly",Event: "readonly",
     process: "readonly",Buffer: "readonly"
