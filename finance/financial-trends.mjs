@@ -49,15 +49,23 @@ export function makeTimeline({transactions=[],incomes=[],endMonth,count=6,now=ne
  * effective dates; applying them to older months is a planning scenario, not
  * evidence those commitments existed in those months.
  */
-export function applyFixedToTimeline(timeline,{fixed=[],coverage=[]}={}){
+export function applyFixedToTimeline(timeline,{fixed=[],coverage=[],now=new Date()}={}){
+ const currentMonth=[now.getFullYear(),String(now.getMonth()+1).padStart(2,"0")].join("-");
  return timeline.map(m=>{
+  const unknown= m.key<currentMonth && fixed.some(x=>x.active&&!x.start_month);
+  const applicable=fixed.filter(x=>{
+   if(!x.start_month && m.key<currentMonth)return false;
+   if(x.start_month && x.start_month.slice(0,7)>m.key)return false;
+   if(x.end_month && x.end_month.slice(0,7)<m.key)return false;
+   return true;
+  });
   const monthCoverage=coverage.filter(x=>String(x.expense_month||"").slice(0,7)===m.key);
-  const ledger=householdBalance({incomes:m.incomes,transactions:m.transactions,fixed,coverage:monthCoverage});
+  const ledger=householdBalance({incomes:m.incomes,transactions:m.transactions,fixed:applicable,coverage:monthCoverage,month:m.key});
   return {...m,monthlyFixedPlan:ledger.planned,linkedFixed:ledger.matched,
-   unlinkedFixed:ledger.unmatched,
-   spendingWithFixed:m.hasExpenseData?ledger.recordedSpending+ledger.unmatched:null,
-   plannedBalance:m.hasIncomeData&&m.hasExpenseData?ledger.availableAfterProvisions:null,
-   fullBalanceCoverage:m.hasIncomeData&&m.hasExpenseData};
+   unlinkedFixed:ledger.unmatched,fixedHistoryUnknown:unknown,
+   spendingWithFixed:m.hasExpenseData&&!unknown?ledger.recordedSpending+ledger.unmatched:null,
+   plannedBalance:m.hasIncomeData&&m.hasExpenseData&&!unknown?ledger.availableAfterProvisions:null,
+   fullBalanceCoverage:m.hasIncomeData&&m.hasExpenseData&&!unknown};
  });
 }
 export function compareMonthly({timeline,month,now=new Date()}){
