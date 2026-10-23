@@ -26,7 +26,8 @@
 <p id="pending-email" class="mono"></p><button type="button" class="secondary" id="pending-refresh">בדיקת אישור מחדש</button>
 <button type="button" class="link logout">התנתקות</button><p class="feedback" id="pending-message" role="status"></p></div></section>
 <section id="app-view" class="hidden">
- <div class="heading"><div><span class="eyebrow">הנתונים שלכם • עדכון מהענן</span><h1 id="app-screen-title">התמונה הכלכלית שלנו</h1><p class="subtitle" id="app-screen-description">כל הסכומים בשקלים • המערכת מחשבת מנתונים שנשמרו בפועל</p></div><div class="heading-actions"><label class="month-label">בחירת חודש<input type="month" id="month" aria-label="בחירת חודש"></label><button class="secondary logout">התנתקות</button></div></div>
+ <div class="heading"><div><span class="eyebrow">הנתונים שלכם • עדכון מהענן</span><h1 id="app-screen-title">התמונה הכלכלית שלנו</h1><p class="subtitle" id="app-screen-description">כל הסכומים בשקלים • המערכת מחשבת מנתונים שנשמרו בפועל</p></div><div class="heading-actions"><label class="month-label">בחירת חודש<input type="month" id="month" aria-label="בחירת חודש"></label>
+<label class="month-label">הצגת הוצאות<select id="date-basis" aria-label="תאריך העסקה או חודש חיוב"><option value="transaction">לפי תאריך עסקה</option><option value="billing">לפי חודש חיוב</option></select></label><button class="secondary logout">התנתקות</button></div></div>
  <nav class="navigation top-navigation" aria-label="ניווט ראשי">
 <button data-screen="dashboard" class="active">סקירה</button>
 <button data-screen="history">השוואת חודשים</button>
@@ -56,7 +57,7 @@
    <div class="category-bars" id="category-bars"><p class="empty">ממתין לנתונים.</p></div>
    <p class="note" id="category-footnote">הסכומים הם נטו לאחר זיכויים. קטגוריה מקורית מהאשראי נשמרת לפי שם הקובץ.</p>
   </section>
-  <section class="box forecast-main">
+  <details class="dashboard-extra"><summary>תחזית לסוף החודש והמלצות לחיסכון</summary><section class="box forecast-main">
    <div class="section-heading"><div><span class="eyebrow">MONTH-END OUTLOOK</span><h2>תחזית לסוף החודש</h2><p class="subtitle">הוצאות שכבר הופיעו באשראי בנפרד מהערכה להמשך החודש. תחזית אינה חיוב בפועל.</p></div>
     <span id="forecast-confidence" class="financial-confidence">עדיין אין תחזית</span></div>
    <div class="forecast-grid">
@@ -73,6 +74,7 @@
    <section class="box savings-focus"><div class="section-intro"><span class="eyebrow">SMART SAVING PRIORITIES</span><h2>שלוש הזדמנויות שכדאי לבדוק</h2><p class="subtitle">הצעות מדורגות לפי חריגה או גמישות ההוצאה. סכום אפשרי לחיסכון אינו הבטחה.</p></div><p id="coach-status" class="feedback" role="status" aria-live="polite"></p><div id="coach-priorities"></div></section>
    <section class="box recurring-focus"><div class="section-intro"><span class="eyebrow">RECURRING & INSTALLMENTS</span><h2>חיובים חוזרים ותשלומים</h2><p class="subtitle">זיהוי זהיר על בסיס היסטוריה או עמודות תשלומים מקובץ האשראי.</p></div><div id="coach-installments"></div><div id="coach-recurring"></div></section>
   </div>
+</details>
   <div class="two overview-support">
    <section class="box"><h2>מבט מהיר</h2><div id="quick-summary" class="quick-summary"></div></section>
    <section class="box"><h2>מה כדאי לבדוק החודש?</h2><div id="insight-lines"></div></section>
@@ -114,7 +116,10 @@
     <p class="subtitle"><b>פרטיות:</b> אין להזין מספרי כרטיס מלאים, קוד סודי או סיסמאות. לא קוראים ישירות את חשבון הבנק. רק רשומות שתאשרו יישמרו.</p>
     <p id="import-source" class="muted"></p>
     <label>חודש הפירוט / מועד החיוב (אופציונלי)<input id="import-statement-month" type="month" aria-label="חודש פירוט האשראי"></label><p class="help">זהו רק שם תקופת הדוח, למשל אוקטובר 2026. העסקאות יישארו בתאריכים שמופיעים בקובץ, גם אם התאריכים שייכים לחודש אחר.</p>
-    <label>בחירת גיליון<select id="sheet-select" aria-label="בחירת גיליון"></select></label>
+    <section class="box import-verify"><h3>בדיקת התאמה לדוח המקורי</h3><p class="subtitle">אם בדוח מופיעים סך העסקאות וסכום חיוב כולל, הזינו אותם. אחרת הייבוא יסומן "לא אומת".</p>
+<div class="mapping-grid"><label>מספר עסקאות בדוח<input id="import-expected-count" type="number" min="0" step="1" placeholder="למשל 128"></label>
+<label>סכום נטו בדוח (₪)<input id="import-expected-total" inputmode="decimal" placeholder="לדוגמה 12450.35"></label></div><p id="import-validation" class="feedback">טרם הוזנו סכומי ביקורת</p></section>
+<label>בחירת גיליון<select id="sheet-select" aria-label="בחירת גיליון"></select></label>
     <label>שורת כותרות<select id="header-row" aria-label="שורת כותרות"></select></label>
     <div id="column-mapping" class="mapping-grid"></div>
    </div>
@@ -197,7 +202,7 @@
  <label>שם ההוצאה<input name="label" maxlength="120" placeholder="למשל שכירות" required></label>
  <label>קטגוריה<input name="category" maxlength="60" placeholder="דיור" required></label>
  <label>סכום לכל חיוב<input name="amount" type="number" min="0.01" max="100000000" step="0.01" required></label>
- <label>תדירות<select name="cadence"><option value="monthly">חודשי</option><option value="bimonthly">דו-חודשי</option><option value="quarterly">רבעוני</option><option value="yearly">שנתי</option></select></label><button type="submit" class="primary">שמירת הוצאה קבועה</button></form></div>
+ <label>החל מחודש<input name="start_month" type="month" required></label><label>עד חודש (אופציונלי)<input name="end_month" type="month"></label><label>תדירות<select name="cadence"><option value="monthly">חודשי</option><option value="bimonthly">דו-חודשי</option><option value="quarterly">רבעוני</option><option value="yearly">שנתי</option></select></label><button type="submit" class="primary">שמירת הוצאה קבועה</button></form></div>
  <div class="box"><h2>התאמת התחייבויות לעסקאות האשראי</h2><p class="subtitle">ברירת המחדל: כל התחייבות קבועה נשמרת בחישוב היתרה. אם כבר יש בדוח האשראי חיוב מתאים, בחרו את העסקה המדויקת כדי שלא נספור את ההתחייבות שוב.</p><p class="note">ההתאמה נשמרת לחודש הנבחר בלבד. כאשר קובץ אשראי נמחק, ההתאמות לעסקאות שנמחקו מוסרות אוטומטית.</p><div id="fixed-list"></div></div></div></section>
  <section id="budgets" class="screen hidden"><div class="two"><div class="box"><h2>הגדרת תקציב חודשי</h2><form id="budget-form">
  <label>קטגוריה<input name="category" list="finance-category-options" placeholder="בחרו או הקלידו קטגוריה" maxlength="60" required></label>
@@ -208,8 +213,21 @@
 <div class="category-dialog-inside">
  <div class="category-dialog-top"><div><span class="eyebrow">CATEGORY TRANSACTIONS</span><h2 id="category-detail-title">עסקאות בקטגוריה</h2><p id="category-detail-meta" class="subtitle"></p></div>
  <button class="secondary" id="category-detail-close" type="button">סגירה ✕</button></div>
- <div id="category-detail-list" class="category-detail-list"></div>
+ <div id="category-detail-list" class="category-detail-list"></div><p class="note">בחרו עסקה כדי לערוך אותה. פרטי המקור מהקובץ יישמרו להשוואה.</p>
  <p class="note">הסכומים הם לפי תאריך העסקה או החיוב בקובץ. זיכויים מופיעים בערך שלילי ומקטינים את ההוצאה.</p>
+</div></dialog><dialog id="edit-transaction-dialog" class="category-dialog">
+<div class="category-dialog-inside"><div class="category-dialog-top">
+<h2>עריכת עסקה</h2><button class="secondary" type="button" id="edit-transaction-close">ביטול ✕</button></div>
+<p id="edit-transaction-original" class="note"></p>
+<form id="edit-transaction-form">
+<label>בית העסק<input name="merchant" maxlength="150" required></label>
+<label>תאריך העסקה<input name="occurred_on" type="date" required></label>
+<label>חודש חיוב (אופציונלי)<input name="billing_month" type="month"></label>
+<label>קטגוריה<input name="category" list="finance-category-options" maxlength="60" required></label>
+<label>סכום בשקלים<input name="amount" type="number" min="0.01" max="100000000" step="0.01" required></label>
+<label>סוג<select name="entry_kind"><option value="expense">הוצאה</option><option value="refund">זיכוי</option></select></label>
+<button type="submit" class="primary">שמירת תיקון</button>
+</form><p id="edit-transaction-status" class="feedback" role="status"></p>
 </div></dialog></main><footer>תבונה • ניהול כלכלת משפחה • אין להזין מספרי כרטיסי אשראי או סיסמאות בנק</footer>
 <script type="module" src="./app.js"></script>
 </body></html>
