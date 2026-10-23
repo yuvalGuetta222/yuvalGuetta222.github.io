@@ -110,7 +110,17 @@ function transactionRow(t){
  });
  right.append(select);return row;
 }
+function updateCategorySuggestions(){
+ const dataList=$("finance-category-options");if(!dataList)return;
+ const defaults=["מזון וסופר","מסעדות ומשלוחים","תחבורה","בילויים","בריאות","קניות","חשבונות הבית","שכירות","מנויים","חינוך","ביטוח","נסיעות ונופש","אחר"];
+ const all=new Set([...defaults,...data.transactions.map(t=>t.category),...data.budgets.map(b=>b.category)]);
+ dataList.replaceChildren();
+ for(const name of [...all].filter(v=>typeof v==="string"&&v.trim()&&v.length<=60).sort((a,b)=>a.localeCompare(b,"he"))){
+  const option=document.createElement("option");option.value=name;dataList.append(option);
+ }
+}
 function render(){
+ updateCategorySuggestions();
  const inc=data.income.filter(x=>x.received).reduce((a,x)=>a+x.amount_agorot,0);
  const spent=data.transactions.reduce((a,x)=>a+(x.entry_kind==="refund"?-1:1)*x.amount_agorot,0);
  const fixed=monthlyFixed();
