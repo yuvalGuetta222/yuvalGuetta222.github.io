@@ -57,7 +57,7 @@ async function loadHistory(){
   today=new Date();
   months=applyFixedToTimeline(makeTimeline({transactions:tx,incomes:income,endMonth,count:count+1,now:today}),
    {fixed:fixedResponse.data||[],coverage:coverageResponse.data||[],now:today});
-  $("history-error").textContent="";
+  $("history-error").textContent=billing?"תצוגת חודש חיוב: עסקאות אשראי משויכות לחודש הדוח ועסקאות ידניות לפי תאריך ההזנה. אין השוואה לפי אותו יום בחודש.":"";
   const select=$("history-focus-month");select.replaceChildren();
   for(const m of months.slice(1).reverse()){const opt=element("option",formatMonth(m.key)+(m.partial?" • חודש פתוח":"" ));opt.value=m.key;select.append(opt)}
   focus=endMonth;select.value=focus;
@@ -117,7 +117,7 @@ function render(){
  for(const m of [...display].reverse()){
   const row=document.createElement("tr");
   const prev=months.find(x=>x.key===addMonths(m.key,-1));
-  const compare=compareMonthly({timeline:months,month:m.key,now:today});
+  const compare=compareMonthly({timeline:months,month:m.key,now:today,basis:$("date-basis").value});
   const monthCell=element("td",formatMonth(m.key)+(m.partial?" • חלקי":""));
   const expenses=element("td",m.hasExpenseData?formatILS(m.expenses):"אין דיווח");
   const income=element("td",m.hasIncomeData?formatILS(m.income):"אין דיווח");
@@ -137,7 +137,7 @@ function render(){
  renderDetails();
 }
 function renderDetails(){
- const compare=compareMonthly({timeline:months,month:focus,now:today});
+ const compare=compareMonthly({timeline:months,month:focus,now:today,basis:$("date-basis").value});
  const target=$("history-category-compare");target.replaceChildren();
  if(!compare)return;
  const head=$("history-compare-description");
