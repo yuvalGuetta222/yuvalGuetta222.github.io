@@ -1,3 +1,4 @@
+import {setupCoach} from "./coach-view.js";
 import {setupIncomeManagement} from "./income-view.js";
 import {setupCategoryDashboard} from "./category-view.js";
 import {recurringIncomeSummary} from "./income-utils.mjs";
@@ -89,7 +90,7 @@ async function loadTransactions(start,next){
  const result=[];
  for(let offset=0;offset<10000;offset+=1000){
   const {data:page,error}=await supabase.from("tevuna_transactions")
-   .select("id,merchant,category,amount_agorot,entry_kind,occurred_on")
+   .select("id,merchant,category,amount_agorot,entry_kind,occurred_on,installment_number,installment_total")
    .eq("household_id",household).gte("occurred_on",start).lt("occurred_on",next)
    .order("occurred_on",{ascending:false}).order("id",{ascending:true}).range(offset,offset+999);
   if(error)return {data:[],error};
@@ -184,6 +185,7 @@ setupImporter({supabase,notice,reload,getContext:()=>({user,household})});
 setupBatches({supabase,notice,reload,getContext:()=>({user,household})});
 setupAnalysis({supabase,getContext:()=>({user,household})});
 setupHistory({supabase,getContext:()=>({user,household})});
+setupCoach({supabase,getContext:()=>({user,household})});
 setupCategoryDashboard();
 setupIncomeManagement({supabase,notice,reload,getContext:()=>({user,household}),getData:()=>data});
 defaultDates();
