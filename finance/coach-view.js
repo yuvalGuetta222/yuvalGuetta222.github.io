@@ -1,17 +1,19 @@
+import {householdBalance} from "./household-ledger.mjs";
 import {ils,shiftMonth,spendingForecast,savingsPriorities,recurringSignals,installmentSignals} from "./coach-engine.mjs";
 const $=id=>document.getElementById(id);
 let runtime=null,seq=0;
 const node=(tag,value,cls)=>{const e=document.createElement(tag);if(value!==null&&value!==undefined)e.textContent=String(value);if(cls)e.className=cls;return e};
 function textOrEmpty(holder,items,empty){holder.replaceChildren(...(items.length?items:[node("p",empty,"empty")]))}
 const typeLabel=x=>x==="medium"?"בינונית":x==="low"?"נמוכה":"לא זמינה";
-function showForecast(result){
+function showForecast(result,ledger){
  $("forecast-actual").textContent=ils(result.actual);
  $("forecast-rest").textContent=result.projectedRemaining===null?"אין נתונים מספיקים":ils(result.projectedRemaining);
  $("forecast-end").textContent=result.projectedTotal===null?"לא ניתן להעריך":ils(result.projectedTotal);
  $("forecast-confidence").textContent="רמת ביטחון: "+typeLabel(result.confidence);
  $("forecast-confidence").className="financial-confidence "+result.confidence;
- $("forecast-planned").textContent=ils(result.plannedMonthlyReference)+" בממוצע חודשי לצורכי תכנון בלבד";
+ $("forecast-planned").textContent=ils(ledger.unmatched)+" מתוך "+ils(ledger.planned)+" מתוכננים (לא כולל "+ils(ledger.matched)+" שכבר קושרו לעסקאות)";
  $("forecast-range").textContent=result.lower!==null?"טווח המחשה: "+ils(result.lower)+" עד "+ils(result.upper)+" • "+result.remainingDays+" ימים נותרו בחודש":"";
+ $("forecast-with-fixed").textContent="כדי להבין מה נשאר לתכנון, היתרה במסך הראשי מפחיתה גם "+ils(ledger.unmatched)+" מהתחייבויות קבועות שאינן כלולות בעסקאות. לא מצרפים סכום זה לתחזית חיובים עתידיים באופן אוטומטי כדי להימנע מספירה כפולה.";
  const explanation=$("forecast-warning");explanation.replaceChildren();
  explanation.append(node("p",result.reason||"אין מספיק נתונים.","coach-disclaimer"));
  if(result.lagDays>3)explanation.append(node("p","העסקה האחרונה בדוח מתוארכת לפני "+result.lagDays+" ימים. ייתכנו הוצאות שטרם יובאו, ולכן אין להתייחס לאומדן כאל יתרה פנויה.","coach-disclaimer"));
@@ -72,8 +74,9 @@ export function setupCoach(context){
   if(!data||!household)return;
   const thisRequest=++seq;
   const now=new Date();
+  const ledger=householdBalance({incomes:data.income,transactions:data.transactions,fixed:data.fixed,coverage:data.coverage});
   const fallback=spendingForecast({month,now,current:data.transactions,fixed:data.fixed,history:[]});
-  showForecast(fallback);showPriorities([]);showRecurring({installments:installmentSignals(data.transactions,month),recurring:[]});
+  showForecast(fallback,ledger);showPriorities([]);showRecurring({installments:installmentSignals(data.transactions,month),recurring:[]});
   $("coach-status").textContent="בודק היסטוריה והשוואות…";
   try{
    const past=await fetchPast(month,household);
@@ -83,7 +86,7 @@ export function setupCoach(context){
    const priorities=savingsPriorities({month,now,current:data.transactions,previous,budgets:data.budgets});
    const recur=recurringSignals([...past,...data.transactions],month);
    const installments=installmentSignals(data.transactions,month);
-   showForecast(forecast);showPriorities(priorities);showRecurring({installments,recurring:recur});
+   showForecast(forecast,ledger);showPriorities(priorities);showRecurring({installments,recurring:recur});
    $("coach-status").textContent="";
   }catch(error){
    if(thisRequest!==seq)return;
