@@ -60,13 +60,25 @@ function switchScreen(name){for(const screen of document.querySelectorAll(".scre
 document.querySelectorAll("[data-screen]").forEach(btn=>btn.addEventListener("click",()=>switchScreen(btn.dataset.screen)));
 $("month").addEventListener("change",reload);
 const cadenceMonths={monthly:1,bimonthly:2,quarterly:3,yearly:12};
+async function loadTransactions(start,next){
+ const result=[];
+ for(let offset=0;offset<10000;offset+=1000){
+  const {data:page,error}=await supabase.from("tevuna_transactions")
+   .select("id,merchant,category,amount_agorot,entry_kind,occurred_on")
+   .eq("household_id",household).gte("occurred_on",start).lt("occurred_on",next)
+   .order("occurred_on",{ascending:false}).order("id",{ascending:true}).range(offset,offset+999);
+  if(error)return {data:[],error};
+  result.push(...(page||[]));if(!page||page.length<1000)return {data:result,error:null};
+ }
+ return {data:[],error:new Error("נתונים רבים מדי לטעינה מלאה")};
+}
 async function reload(){
- if(!household)return;const m=$("month").value||currentMonth();const start=m+"-01",end=new Date(Number(m.slice(0,4)),Number(m.slice(5,7)),1).toLocaleDateString("en-CA"); // replace below with deterministic ISO
+ if(!household)return;const m=$("month").value||currentMonth();const start=m+"-01";
  const yr=Number(m.slice(0,4)),mo=Number(m.slice(5,7));const next=(mo===12?yr+1:yr)+"-"+String(mo===12?1:mo+1).padStart(2,"0")+"-01";
  notice("טוען נתונים…");
  const [i,t,f,b]=await Promise.all([
  supabase.from("tevuna_incomes").select("id,label,amount_agorot,income_month,received").eq("household_id",household).eq("income_month",start).order("created_at",{ascending:false}),
- supabase.from("tevuna_transactions").select("id,merchant,category,amount_agorot,entry_kind,occurred_on").eq("household_id",household).gte("occurred_on",start).lt("occurred_on",next).order("occurred_on",{ascending:false}),
+ loadTransactions(start,next),
  supabase.from("tevuna_fixed_expenses").select("id,label,category,amount_agorot,cadence,active").eq("household_id",household).order("created_at",{ascending:false}),
  supabase.from("tevuna_budgets").select("id,category,amount_agorot,budget_month").eq("household_id",household).eq("budget_month",start).order("category")]);
  const err=[i.error,t.error,f.error,b.error].find(Boolean);
