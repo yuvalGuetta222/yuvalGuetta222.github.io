@@ -87,19 +87,28 @@ function switchScreen(name){
 document.querySelectorAll("[data-screen]").forEach(btn=>btn.addEventListener("click",()=>switchScreen(btn.dataset.screen)));
 $("ledger-fixed-link").addEventListener("click",()=>switchScreen("fixed"));
 $("month").addEventListener("change",()=>{if($("recurring-income-form"))$("recurring-income-form").elements.start_month.value=$("month").value;reload()});
+$("date-basis").addEventListener("change",reload);
 const cadenceMonths={monthly:1,bimonthly:2,quarterly:3,yearly:12};
 async function loadTransactions(start,next){
- const result=[];
- for(let offset=0;offset<10000;offset+=1000){
-  const {data:page,error}=await supabase.from("tevuna_transactions")
-   .select("id,merchant,category,amount_agorot,entry_kind,occurred_on,installment_number,installment_total")
-   .eq("household_id",household).gte("occurred_on",start).lt("occurred_on",next)
-   .order("occurred_on",{ascending:false}).order("id",{ascending:true}).range(offset,offset+999);
-  if(error)return {data:[],error};
-  result.push(...(page||[]));if(!page||page.length<1000)return {data:result,error:null};
- }
- return {data:[],error:new Error("נתונים רבים מדי לטעינה מלאה")};
+ const fields="id,merchant,category,amount_agorot,entry_kind,occurred_on,billing_month,installment_number,installment_total,source_snapshot,source";
+ const basis=$("date-basis").value==="billing"?"billing_month":"occurred_on";
+ const fetch=async(field,manual=false)=>{
+  const result=[];
+  for(let offset=0;offset<10000;offset+=1000){
+   let query=supabase.from("tevuna_transactions").select(fields).eq("household_id",household)
+    .gte(field,start).lt(field,next).order(field,{ascending:false}).order("id").range(offset,offset+999);
+   if(manual)query=query.eq("source","manual");else if(basis==="billing_month")query=query.neq("source","manual");
+   const {data:page,error}=await query;if(error)return {data:[],error};
+   result.push(...(page||[]));if(!page||page.length<1000)return {data:result,error:null};
+  }
+  return {data:[],error:new Error("נתונים רבים מדי לטעינה מלאה")};
+ };
+ if(basis==="occurred_on")return fetch(basis);
+ const [cards,manual]=await Promise.all([fetch("billing_month"),fetch("occurred_on",true)]);
+ if(cards.error)return cards;if(manual.error)return manual;
+ return {data:[...cards.data,...manual.data],error:null};
 }
+
 async function reload(){
  if(!household)return;const m=$("month").value||currentMonth();const start=m+"-01";
  const yr=Number(m.slice(0,4)),mo=Number(m.slice(5,7));const next=(mo===12?yr+1:yr)+"-"+String(mo===12?1:mo+1).padStart(2,"0")+"-01";
@@ -107,7 +116,7 @@ async function reload(){
  const [i,t,f,b,r,c]=await Promise.all([
  supabase.from("tevuna_incomes").select("id,label,amount_agorot,income_month,received,recurring_income_id").eq("household_id",household).eq("income_month",start).order("created_at",{ascending:false}),
  loadTransactions(start,next),
- supabase.from("tevuna_fixed_expenses").select("id,label,category,amount_agorot,cadence,active").eq("household_id",household).order("created_at",{ascending:false}),
+ supabase.from("tevuna_fixed_expenses").select("id,label,category,amount_agorot,cadence,active,start_month,end_month").eq("household_id",household).order("created_at",{ascending:false}),
  supabase.from("tevuna_budgets").select("id,category,amount_agorot,budget_month").eq("household_id",household).eq("budget_month",start).order("category"),
  supabase.from("tevuna_recurring_incomes").select("id,label,amount_agorot,start_month,end_month,active").eq("household_id",household).order("created_at",{ascending:false}),
  supabase.from("tevuna_fixed_expense_card_coverage").select("fixed_expense_id,transaction_id,expense_month").eq("household_id",household).eq("expense_month",start)]);
@@ -134,13 +143,13 @@ function updateCategorySuggestions(){
  }
 }
 function fixedRow(item){
- const provision=householdBalance({fixed:[item]}).planned;
+ const provision=householdBalance({fixed:[item],month:$("month").value}).planned;
  const base=line(item.label,item.category+" • "+({monthly:"חודשי",bimonthly:"דו־חודשי",quarterly:"רבעוני",yearly:"שנתי"})[item.cadence]+(item.active?"":" • לא פעיל"),item.amount_agorot,item.id,"tevuna_fixed_expenses");
  if(!item.active)return base;
  const bar=document.createElement("div");bar.className="fixed-reconcile";
  const current=data.coverage.find(c=>c.fixed_expense_id===item.id);
  const trx=current&&data.transactions.find(t=>t.id===current.transaction_id&&t.entry_kind!=="refund");
- const remaining=householdBalance({transactions:data.transactions,fixed:[item],coverage:data.coverage}).unmatched;
+ const remaining=householdBalance({transactions:data.transactions,fixed:[item],coverage:data.coverage,month:$("month").value}).unmatched;
  const helper=document.createElement("p");helper.className="note";helper.textContent="שריון חודשי: "+money(provision)+" • שעדיין נלקח בחשבון: "+money(remaining);bar.append(helper);
  if(trx){
   const lbl=document.createElement("div");lbl.className="fixed-linked";lbl.textContent="נכלל בעסקת אשראי: "+trx.merchant+" • "+money(trx.amount_agorot)+" • "+trx.occurred_on;
@@ -169,7 +178,7 @@ function render(){
  const inc=data.income.filter(x=>x.received).reduce((a,x)=>a+x.amount_agorot,0);
  const incomes=recurringIncomeSummary(data.recurring,data.income,$("month").value);
  const spent=data.transactions.reduce((a,x)=>a+(x.entry_kind==="refund"?-1:1)*x.amount_agorot,0);
- const ledger=householdBalance({incomes:data.income,transactions:data.transactions,fixed:data.fixed,coverage:data.coverage});
+ const ledger=householdBalance({incomes:data.income,transactions:data.transactions,fixed:data.fixed,coverage:data.coverage,month:$("month").value});
  $("s-income").textContent=money(inc);
  $("s-income-meta").textContent=incomes.pending>0?"בנוסף צפויות "+money(incomes.pending)+" שטרם אושרו":"הכנסות שהתקבלו בפועל";
  $("s-spent").textContent=money(spent);
@@ -207,11 +216,13 @@ async function save(table,values,form){
  form.reset();await reload()
 }
 function bindForm(id,table,prepare){const f=$(id);f.addEventListener("submit",async e=>{e.preventDefault();const button=f.querySelector('button[type="submit"]');button.disabled=true;notice("שומר נתונים…");
- try{const v=prepare(new FormData(f));await save(table,v,f);if(id==="tx-form")f.querySelector('[name="occurred_on"]').value=today();if(id==="income-form")f.querySelector('[name="income_month"]').value=$("month").value;notice("נשמר בהצלחה.");}
+ try{const v=prepare(new FormData(f));await save(table,v,f);if(id==="tx-form")f.querySelector('[name="occurred_on"]').value=today();if(id==="income-form")f.querySelector('[name="income_month"]').value=$("month").value;if(id==="fixed-form")f.elements.start_month.value=$("month").value;notice("נשמר בהצלחה.");}
  catch(err){notice(authError(err))}finally{button.disabled=false}})}
 bindForm("tx-form","tevuna_transactions",f=>({occurred_on:f.get("occurred_on"),merchant:String(f.get("merchant")).trim(),category:String(f.get("category")).trim(),amount_agorot:toAgorot(f.get("amount")),entry_kind:f.get("entry_kind")}));
 bindForm("income-form","tevuna_incomes",f=>({label:String(f.get("label")).trim(),income_month:f.get("income_month")+"-01",amount_agorot:toAgorot(f.get("amount")),received:f.get("received")==="on"}));
-bindForm("fixed-form","tevuna_fixed_expenses",f=>({label:String(f.get("label")).trim(),category:String(f.get("category")).trim(),amount_agorot:toAgorot(f.get("amount")),cadence:f.get("cadence")}));
+bindForm("fixed-form","tevuna_fixed_expenses",f=>({label:String(f.get("label")).trim(),category:String(f.get("category")).trim(),
+ amount_agorot:toAgorot(f.get("amount")),cadence:f.get("cadence"),
+ start_month:String(f.get("start_month"))+"-01",end_month:f.get("end_month")?String(f.get("end_month"))+"-01":null}));
 $("budget-form").addEventListener("submit",async e=>{
  e.preventDefault();if(!household)return;const f=e.currentTarget,button=f.querySelector('button[type="submit"]');button.disabled=true;
  try{const v=new FormData(f);const category=v.get("category"),amount_agorot=toAgorot(v.get("amount"),true),budget_month=$("month").value+"-01";
@@ -226,10 +237,11 @@ setupBatches({supabase,notice,reload,getContext:()=>({user,household})});
 setupAnalysis({supabase,getContext:()=>({user,household})});
 setupHistory({supabase,getContext:()=>({user,household})});
 setupCoach({supabase,getContext:()=>({user,household})});
-setupCategoryDashboard();
+setupCategoryDashboard({supabase,reload,getContext:()=>({user,household})});
 setupIncomeManagement({supabase,notice,reload,getContext:()=>({user,household}),getData:()=>data});
 defaultDates();
 $("recurring-income-form").elements.start_month.value=$("month").value;
+$("fixed-form").elements.start_month.value=$("month").value;
 (async()=>{
  try{const {data:d,error}=await supabase.auth.getSession();if(error)throw error;await showFor(d.session?.user||null);
   supabase.auth.onAuthStateChange((event,session)=>{
