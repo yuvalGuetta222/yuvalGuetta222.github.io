@@ -68,12 +68,12 @@ export function applyFixedToTimeline(timeline,{fixed=[],coverage=[],now=new Date
    fullBalanceCoverage:m.hasIncomeData&&m.hasExpenseData&&!unknown};
  });
 }
-export function compareMonthly({timeline,month,now=new Date()}){
+export function compareMonthly({timeline,month,now=new Date(),basis="transaction"}){
  const current=timeline.find(m=>m.key===month);
  const prevKey=addMonths(month,-1);
  const prev=timeline.find(m=>m.key===prevKey);
  if(!current)return null;
- const sameDay=(month===[now.getFullYear(),String(now.getMonth()+1).padStart(2,"0")].join("-"));
+ const sameDay=basis==="transaction" && (month===[now.getFullYear(),String(now.getMonth()+1).padStart(2,"0")].join("-"));
  const comparisonRows=sameDay&&prev?prev.transactions.filter(t=>Number(String(t.occurred_on).slice(-2))<=now.getDate()):prev?.transactions||[];
  const prevCategories=new Map();
  let previousExpenses=0;
