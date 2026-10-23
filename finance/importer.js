@@ -1,7 +1,7 @@
 import { CATEGORIES,parseCSV,findHeaderRow,guessMapping,convertRows,fileIsSupported } from "./credit-core.mjs";
 const $=id=>document.getElementById(id);
 let workbook=[],rows=[],mapping={},headerRow=-1,candidates=[],fileType="csv",fileSize=0,rawFileName="";
-const FIELDS=[["date","תאריך עסקה / חיוב *"],["merchant","בית עסק / תיאור *"],["amount","סכום חיוב בשקלים *"],["kind","חיוב או זיכוי (אופציונלי)"],["reference","אסמכתא (אופציונלי)"],["card","זיהוי כרטיס (אופציונלי)"]];
+const FIELDS=[["date","תאריך עסקה / חיוב *"],["merchant","בית עסק / תיאור *"],["amount","סכום חיוב בשקלים *"],["category","קטגוריה מתוך הדוח (אופציונלי)"],["kind","חיוב או זיכוי (אופציונלי)"],["reference","אסמכתא (אופציונלי)"],["card","זיהוי כרטיס (אופציונלי)"]];
 let runtime=null;
 function say(message){$("import-status").textContent=message;$("import-status").hidden=!message}
 function reset(){candidates=[];rows=[];mapping={};$("import-review").classList.add("hidden");$("import-save").disabled=true;$("import-preview").replaceChildren()}
@@ -45,6 +45,7 @@ function preview(){
  if(candidates.length>max){candidates=candidates.slice(0,max);say("הקובץ מכיל יותר מ-4,000 עסקאות. יוצגו רק 4,000 הראשונות. מומלץ לפצל לפי חודשים.");}
  else say(out.skipped.length?"דילגנו על "+out.skipped.length+" שורות שאינן עסקאות תקינות או שורות סיכום. בדקו את המיפוי לפני שמירה.":"");
  const target=$("import-preview");target.replaceChildren();
+ const available=[...new Set([...CATEGORIES,...candidates.map(t=>t.category)])].filter(Boolean).sort((a,b)=>a.localeCompare(b,"he"));
  for(let i=0;i<Math.min(candidates.length,100);i++){
   const t=candidates[i];
   const row=document.createElement("tr");
@@ -52,16 +53,16 @@ function preview(){
   checkbox.setAttribute("aria-label","ייבא עסקה בשורה "+t.line);
   checkbox.addEventListener("change",()=>{t.selected=checkbox.checked;updateSummary()});
   const category=document.createElement("select");category.setAttribute("aria-label","סיווג לעסקה "+t.merchant);
-  CATEGORIES.forEach(c=>category.append(option(c,c)));
+  available.forEach(c=>category.append(option(c,c)));
   category.value=t.category;
   category.addEventListener("change",()=>{t.category=category.value;updateSummary()});
   function cell(content){const td=document.createElement("td");if(typeof content==="string")td.textContent=content;else td.append(content);row.append(td)}
-  cell(checkbox);cell(t.occurred_on);cell(t.merchant);cell(t.entry_kind==="refund"?"זיכוי":"חיוב");cell(category);cell(money(t.amount_agorot));
+  cell(checkbox);cell(t.occurred_on);cell(t.merchant);cell(t.entry_kind==="refund"?"זיכוי":"חיוב");cell(category);cell(t.categoryMethod==="file"?"מקובץ האשראי":t.categoryMethod==="suggestion"?"זיהוי אוטומטי":"לא זוהה");cell(money(t.amount_agorot));
   target.append(row);
  }
  if(candidates.length>100) {
-  const e=document.createElement("tr"),td=document.createElement("td");td.colSpan=6;
-  td.textContent="בתצוגה נראות 100 העסקאות הראשונות בלבד. יתר העסקאות ייובאו בסיווג האוטומטי, אלא אם תבחרו לייבא רק את 100 המוצגות.";
+  const e=document.createElement("tr"),td=document.createElement("td");td.colSpan=7;
+  td.textContent="בתצוגה נראות 100 העסקאות הראשונות בלבד. יתר העסקאות יישמרו לפי קטגוריות המקור מהקובץ, אם קיימות, או לפי הסיווג המשוער. אפשר לייבא רק את 100 המוצגות.";
   e.append(td);target.append(e);
  }
  $("import-review").classList.remove("hidden");
@@ -70,7 +71,9 @@ function preview(){
 }
 function updateSummary(){
  const selected=candidates.filter(x=>x.selected);
- $("import-summary").textContent="זוהו "+candidates.length+" עסקאות; נבחרו "+selected.length+" לייבוא; סכום נטו "+money(selected.reduce((s,x)=>s+(x.entry_kind==="refund"?-1:1)*x.amount_agorot,0))+". הקובץ לא יישלח לשרת; רק העסקאות שתאשרו.";
+ const fileCount=selected.filter(t=>t.categoryMethod==="file").length;
+ const inferredCount=selected.filter(t=>t.categoryMethod==="suggestion").length;
+ $("import-summary").textContent="זוהו "+candidates.length+" עסקאות; נבחרו "+selected.length+" לייבוא; "+fileCount+" קטגוריות נקראו ישירות מהקובץ, "+inferredCount+" סווגו אוטומטית; סכום נטו "+money(selected.reduce((s,x)=>s+(x.entry_kind==="refund"?-1:1)*x.amount_agorot,0))+". הקובץ המקורי לא יישלח לשרת.";
  $("import-save").disabled=!selected.length;
 }
 function onlyVisible(){for(let i=100;i<candidates.length;i++)candidates[i].selected=false;updateSummary();say("רק 100 העסקאות המוצגות ייובאו.")}
