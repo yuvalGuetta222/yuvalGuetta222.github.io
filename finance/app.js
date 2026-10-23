@@ -61,7 +61,27 @@ async function showFor(nextUser){
 }
 $("pending-refresh").addEventListener("click",async()=>{notice("בודק הרשאות…","pending-message");const {data:{user:u},error}=await supabase.auth.getUser();if(error){notice("בדיקת האימות נכשלה. נסה להתחבר מחדש.","pending-message");return}await showFor(u)});
 document.querySelectorAll(".logout").forEach(btn=>btn.addEventListener("click",async()=>{const {error}=await supabase.auth.signOut();if(error){notice(authError(error));return}user=null;household=null;data={income:[],transactions:[],fixed:[],budgets:[],recurring:[]};$("password").value="";view("auth-view")}));
-function switchScreen(name){for(const screen of document.querySelectorAll(".screen"))screen.classList.toggle("hidden",screen.id!==name);document.querySelectorAll("[data-screen]").forEach(btn=>btn.classList.toggle("active",btn.dataset.screen===name));document.dispatchEvent(new CustomEvent("tevuna:screen-changed",{detail:{screen:name}}));const menu=$("nav-more");if(menu&&menu.open)menu.open=false}
+const screenTitles={
+ dashboard:["התמונה הכלכלית שלנו","הוצאות, הכנסות ותובנות שמבוססות על מה שנשמר בפועל"],
+ history:["השוואת חודשים","איך ההוצאות וההכנסות השתנו לאורך זמן"],
+ import:["ייבוא פירוט אשראי","בוחרים קובץ, בודקים עסקאות ושומרים רק את מה שאושר"],
+ statements:["פירוטי אשראי שיובאו","ניהול ומחיקה של קובצי עסקאות שלמים"],
+ incomes:["ניהול הכנסות","הכנסות קבועות, חד־פעמיות ומה התקבל בפועל"],
+ budgets:["ניהול תקציב","מסגרת חודשית לכל קטגוריה לפי שמות הקטגוריות של חברת האשראי"],
+ fixed:["הוצאות קבועות","התחייבויות חוזרות לתכנון משפחתי"]
+};
+function switchScreen(name){
+ for(const screen of document.querySelectorAll(".screen"))screen.classList.toggle("hidden",screen.id!==name);
+ document.querySelectorAll("[data-screen]").forEach(btn=>btn.classList.toggle("active",btn.dataset.screen===name));
+ const [title,description]=screenTitles[name]||screenTitles.dashboard;
+ $("app-screen-title").textContent=title;$("app-screen-description").textContent=description;
+ const menu=$("nav-more");if(menu){
+  const summary=menu.querySelector("summary");
+  summary.firstChild.textContent=(name==="dashboard"||name==="history"?"ניהול נתונים":title)+" ";
+  menu.classList.toggle("current",name!=="dashboard"&&name!=="history");menu.open=false;
+ }
+ document.dispatchEvent(new CustomEvent("tevuna:screen-changed",{detail:{screen:name}}));
+}
 document.querySelectorAll("[data-screen]").forEach(btn=>btn.addEventListener("click",()=>switchScreen(btn.dataset.screen)));
 $("month").addEventListener("change",()=>{if($("recurring-income-form"))$("recurring-income-form").elements.start_month.value=$("month").value;reload()});
 const cadenceMonths={monthly:1,bimonthly:2,quarterly:3,yearly:12};
