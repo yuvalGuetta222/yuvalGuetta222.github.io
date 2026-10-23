@@ -51,6 +51,23 @@
    <div class="category-bars" id="category-bars"><p class="empty">ממתין לנתונים.</p></div>
    <p class="note" id="category-footnote">הסכומים הם נטו לאחר זיכויים. קטגוריה מקורית מהאשראי נשמרת לפי שם הקובץ.</p>
   </section>
+  <section class="box forecast-main">
+   <div class="section-heading"><div><span class="eyebrow">MONTH-END OUTLOOK</span><h2>תחזית לסוף החודש</h2><p class="subtitle">הוצאות שכבר הופיעו באשראי בנפרד מהערכה להמשך החודש. תחזית אינה חיוב בפועל.</p></div>
+    <span id="forecast-confidence" class="financial-confidence">עדיין אין תחזית</span></div>
+   <div class="forecast-grid">
+    <div><small>כבר נרשם בפועל</small><strong id="forecast-actual">—</strong></div>
+    <div><small>הוצאות נוספות משוערות</small><strong id="forecast-rest">—</strong></div>
+    <div class="forecast-total"><small>סה״כ אפשרי בסוף החודש</small><strong id="forecast-end">—</strong></div>
+   </div>
+   <p class="forecast-range" id="forecast-range"></p>
+   <div class="forecast-notes" id="forecast-warning"></div>
+   <div class="forecast-fixed"><b>הוצאות קבועות מתוכננות (מידע נפרד)</b><span id="forecast-planned">—</span></div>
+   <p class="note">ההוצאות הקבועות עשויות כבר להופיע בעסקאות האשראי, ולכן אינן מתווספות שוב לתחזית. חודשי פירוט חסרים, שינוי בתאריכי חיוב והוצאות חד־פעמיות משפיעים על האומדן.</p>
+  </section>
+  <div class="two coach-panels">
+   <section class="box savings-focus"><div class="section-intro"><span class="eyebrow">SMART SAVING PRIORITIES</span><h2>שלוש הזדמנויות שכדאי לבדוק</h2><p class="subtitle">הצעות מדורגות לפי חריגה או גמישות ההוצאה. סכום אפשרי לחיסכון אינו הבטחה.</p></div><div id="coach-priorities"></div></section>
+   <section class="box recurring-focus"><div class="section-intro"><span class="eyebrow">RECURRING & INSTALLMENTS</span><h2>חיובים חוזרים ותשלומים</h2><p class="subtitle">זיהוי זהיר על בסיס היסטוריה או עמודות תשלומים מקובץ האשראי.</p></div><div id="coach-installments"></div><div id="coach-recurring"></div></section>
+  </div>
   <div class="two overview-support">
    <section class="box"><h2>מבט מהיר</h2><div id="quick-summary" class="quick-summary"></div></section>
    <section class="box"><h2>מה כדאי לבדוק החודש?</h2><div id="insight-lines"></div></section>
@@ -109,7 +126,7 @@
     <div class="section-intro"><h2>סקירת העסקאות לפני שמירה</h2><p class="subtitle">קטגוריה מהדוח מקבלת עדיפות על זיהוי אוטומטי. בדקו תאריך, חיוב מול זיכוי וסכום. תוכלו לשנות קטגוריה ולהסיר עסקה מהייבוא. אם הסכומים אינם תואמים לדוח, תקנו את מיפוי העמודות.</p></div>
     <p class="feedback" id="import-summary"></p>
     <div class="import-actions"><button type="button" class="secondary" id="only-visible">בחר רק את 100 הראשונות</button><button type="button" class="secondary" id="select-all-import">בחר את כולן</button></div>
-    <div class="table-wrap"><table><thead><tr><th>ייבוא</th><th>תאריך</th><th>בית העסק</th><th>סוג</th><th>קטגוריה</th><th>מקור קטגוריה</th><th>סכום</th></tr></thead><tbody id="import-preview"></tbody></table></div>
+    <div class="table-wrap"><table><thead><tr><th>ייבוא</th><th>תאריך</th><th>בית העסק</th><th>סוג</th><th>קטגוריה</th><th>מקור קטגוריה</th><th>תשלומים</th><th>סכום</th></tr></thead><tbody id="import-preview"></tbody></table></div>
     <div class="import-actions"><button type="button" class="primary" id="import-save" disabled>אישור ושמירת העסקאות</button></div>
   </div>
   <details class="manual-transaction-entry box"><summary>הוספת עסקה ידנית (אופציונלי)</summary><p class="subtitle">למקרה של תשלום במזומן או הוצאה שלא מופיעה בקובץ האשראי.</p><form id="tx-form">
