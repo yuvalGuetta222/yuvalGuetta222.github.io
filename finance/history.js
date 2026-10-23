@@ -75,8 +75,9 @@ function render(){
  const expMonths=display.filter(x=>x.hasExpenseData).length;
  const incomeMonths=display.filter(x=>x.hasIncomeData).length;
  const expTotal=display.reduce((a,m)=>a+m.expenses,0),incomeTotal=display.reduce((a,m)=>a+m.income,0);
+ const unknownMonths=display.filter(m=>m.fixedHistoryUnknown).length;
+ $("history-coverage").textContent="קיימים דיווחי עסקאות ב-"+expMonths+" מתוך "+display.length+" חודשים והכנסות ב-"+incomeMonths+" חודשים. חישוב היתרה אפשרי רק ב-"+display.filter(x=>x.fullBalanceCoverage).length+" חודשים שבהם יש את שניהם. התחייבויות עם תאריכי תוקף משויכות רק לחודשים המתאימים. חודש בלי פירוט אינו חודש עם אפס הוצאות.";
  if(unknownMonths>0)$("history-coverage").textContent+=" • ב-"+unknownMonths+" חודשים חסר תאריך תחילה של התחייבות קיימת, ולכן היתרה לתכנון אינה מוצגת בהם עד לעדכון ההתחייבויות.";
- $("history-coverage").textContent="קיימים דיווחי עסקאות ב-"+expMonths+" מתוך "+display.length+" חודשים והכנסות ב-"+incomeMonths+" חודשים. חישוב היתרה אפשרי רק ב-"+display.filter(x=>x.fullBalanceCoverage).length+" חודשים שבהם יש את שניהם. ההתחייבויות קבועות עם תאריכי תוקף משויכות רק לחודשים המתאימים. חודש בלי פירוט אינו חודש עם אפס הוצאות.";
  const covered=display.filter(m=>m.fullBalanceCoverage);
  const totalReserved=covered.reduce((sum,m)=>sum+m.unlinkedFixed,0);
  $("history-cards").replaceChildren(
