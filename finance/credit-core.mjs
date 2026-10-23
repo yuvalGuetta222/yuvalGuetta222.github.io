@@ -10,6 +10,7 @@ const headers = {
   card: ["4 ספרות אחרונות","ארבע ספרות אחרונות","מספר כרטיס","כרטיס אשראי","כרטיס","card number","card"]
 };
 const key = v => String(v??"").normalize("NFKC").toLowerCase()
+ .replace(/[\u05F3\u05F4]/g," ")
  .replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069"“”'’.,:;()\-\/\\_\u20aa]/g," ")
  .replace(/\s+/g," ").trim();
 export function guessMapping(row) {
