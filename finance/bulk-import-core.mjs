@@ -1,5 +1,5 @@
 import {findHeaderRow,convertRows} from "./credit-core.mjs";
-import {sheetCardSummary} from "./card-import.mjs";
+import {sheetCardSummary,cardFingerprintInput} from "./card-import.mjs";
 
 const hebrewMonths={
  ינואר:1,פברואר:2,מרץ:3,אפריל:4,מאי:5,יוני:6,יולי:7,אוגוסט:8,ספטמבר:9,אוקטובר:10,נובמבר:11,דצמבר:12
@@ -84,4 +84,26 @@ export function parseExpectedAgorot(text){
  if(!/^-?\d{1,9}(?:\.\d{1,2})?$/.test(s))throw Error("סכום הביקורת לא תקין");
  const neg=s.startsWith("-"),[a,b=""]=(neg?s.slice(1):s).split(".");
  return (neg?-1:1)*(Number(a)*100+Number(b.padEnd(2,"0")));
+}
+
+/** Construct the ledger rows without changing source purchase dates or grouping two cards together. */
+export async function buildBulkTransactions({rows,household,userId,statementMonth,source,cardIds,hash}){
+ if(!/^(xlsx|csv)$/.test(source))throw Error("Invalid import file source");
+ if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(statementMonth))throw Error("Invalid statement month");
+ const output=[];
+ for(const row of rows){
+  const id=cardIds.get(row.rowCardLast4||"manual");
+  if(!id)throw Error("Unidentified payment card at row "+row.line);
+  const canonical=cardFingerprintInput(id,row);
+  output.push({
+   household_id:household,created_by:userId,occurred_on:row.occurred_on,
+   merchant:row.merchant,category:row.category,amount_agorot:row.amount_agorot,
+   card_id:id,entry_kind:row.entry_kind,source,
+   source_fingerprint:await hash(canonical),
+   billing_month:row.billingMonth||statementMonth+"-01",
+   installment_number:row.installment_number,
+   installment_total:row.installment_total
+  });
+ }
+ return output;
 }
