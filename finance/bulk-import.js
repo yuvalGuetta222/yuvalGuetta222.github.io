@@ -1,5 +1,6 @@
 import {CATEGORIES,parseCSV,fileIsSupported,convertRows,findHeaderRow} from "./credit-core.mjs";
 import {sheetCardSummary,potentialLegacyOverlap} from "./card-import.mjs";
+import {resolveBillingAwareDuplicates} from "./credit-dedupe.mjs";
 import {analyzeWorkbook,statementMonthEvidence,validatePreparedReport,parseExpectedAgorot,buildBulkTransactions} from "./bulk-import-core.mjs";
 
 const $=id=>document.getElementById(id);
@@ -296,6 +297,7 @@ async function persist(context,item){
   statementMonth:item.month,source:/\.xlsx$/i.test(item.filename)?"xlsx":"csv",
   cardIds:ids,hash:digest
  });
+ await resolveBillingAwareDuplicates({supabase:ctx.supabase,household:context.household,rows:mapped,hash:digest});
  let batchId=null,stored=0,duplicates=0;
  try{
   const first=selected[0];
