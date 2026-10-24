@@ -1,3 +1,4 @@
+import {reconcileSources} from "./reconciliation-core.mjs";
 import {setupBackup} from "./export-view.js";
 import {cardSpendingReport} from "./card-import.mjs";
 import {householdBalance} from "./household-ledger.mjs";
@@ -28,7 +29,7 @@ function toAgorot(input,allowZero=false){
   if(!Number.isSafeInteger(n)||n>100000000000||(!allowZero&&n<=0))throw Error("הסכום אינו בטווח המותר");
   return n;
 }
-let household=null, user=null, signup=false, data={income:[],transactions:[],fixed:[],budgets:[],recurring:[],coverage:[],cards:[]},busy=false;
+let household=null, user=null, signup=false, data={income:[],transactions:[],fixed:[],budgets:[],recurring:[],coverage:[],cards:[],audit:[]},busy=false;
 let reloadSequence=0;
 const view=id=>{for(const n of ["auth-view","pending-view","app-view"])$(n).classList.toggle("hidden",n!==id)};
 function notice(msg,target="app-error"){const el=$(target);el.textContent=msg??"";if(msg){el.scrollIntoView({block:"nearest",behavior:"smooth"})}}
@@ -129,18 +130,20 @@ async function reload(){
  try {const m=$("month").value||currentMonth();const start=m+"-01";
  const yr=Number(m.slice(0,4)),mo=Number(m.slice(5,7));const next=(mo===12?yr+1:yr)+"-"+String(mo===12?1:mo+1).padStart(2,"0")+"-01";
  notice("טוען נתונים…");
- const [i,t,f,b,r,c,profiles]=await Promise.all([
+ const [i,t,f,b,r,c,profiles,audit]=await Promise.all([
  supabase.from("tevuna_incomes").select("id,label,amount_agorot,income_month,received,recurring_income_id").eq("household_id",household).eq("income_month",start).order("created_at",{ascending:false}),
  loadTransactions(start,next),
  supabase.from("tevuna_fixed_expenses").select("id,label,category,amount_agorot,cadence,active,start_month,end_month").eq("household_id",household).order("created_at",{ascending:false}),
  supabase.from("tevuna_budgets").select("id,category,amount_agorot,budget_month").eq("household_id",household).eq("budget_month",start).order("category"),
  supabase.from("tevuna_recurring_incomes").select("id,label,amount_agorot,start_month,end_month,active").eq("household_id",household).order("created_at",{ascending:false}),
  supabase.from("tevuna_fixed_expense_card_coverage").select("fixed_expense_id,transaction_id,expense_month").eq("household_id",household).eq("expense_month",start),
- supabase.from("tevuna_cards").select("id,nickname,last4").eq("household_id",household)]);
+ supabase.from("tevuna_cards").select("id,nickname,last4").eq("household_id",household),
+ supabase.from("tevuna_import_batch_summary").select("id,filename,statement_month,transaction_count,net_amount_agorot,expected_count,expected_net_agorot,source_header_total_agorot")
+  .eq("household_id",household).eq("statement_month",start)]);
  if(request!==reloadSequence||household!==requestedHousehold||$("month").value!==m)return;
- const err=[i.error,t.error,f.error,b.error,r.error,c.error,profiles.error].find(Boolean);
+ const err=[i.error,t.error,f.error,b.error,r.error,c.error,profiles.error,audit.error].find(Boolean);
  if(err){notice("שגיאה בטעינת הנתונים. בדוק את החיבור ונסה שוב.");return}
- data={income:i.data||[],transactions:t.data||[],fixed:f.data||[],budgets:b.data||[],recurring:r.data||[],coverage:c.data||[],cards:profiles.data||[]};
+ data={income:i.data||[],transactions:t.data||[],fixed:f.data||[],budgets:b.data||[],recurring:r.data||[],coverage:c.data||[],cards:profiles.data||[],audit:audit.data||[]};
  render();
  notice("");
  document.dispatchEvent(new CustomEvent("tevuna:loaded",{detail:{data,month:m,household}}));
@@ -233,6 +236,34 @@ function render(){
  $("s-balance").className="value "+(ledger.availableAfterProvisions<0?"negative":"positive");
  $("ledger-equation").textContent=money(ledger.confirmedIncome)+" הכנסות − "+money(ledger.recordedSpending)+" עסקאות − "+money(ledger.unmatched)+" התחייבויות שטרם נכללו = "+money(ledger.availableAfterProvisions);
  $("ledger-note").textContent="זהו סכום לתכנון, לא יתרת הבנק. התחייבויות שלא קושרו לעסקאות מנוכות, גם אם שולמו מחוץ לאשראי. בחודשים בלי עסקאות, לא משחררים התחייבויות אוטומטית.";
+ const auditItems=reconcileSources(data.audit);
+ const auditContainer=$("source-audit-rows");auditContainer.replaceChildren();
+ if(!auditItems.length){
+  $("source-audit-overview").textContent="לא נקלטו פירוטי אשראי לחודש הזה. אין לפרש חוסר מידע כאפס הוצאות.";
+ }else{
+  const unresolved=auditItems.filter(x=>x.status!=="source_matched");
+  $("source-audit-overview").textContent=unresolved.length
+   ?"ל-"+unresolved.length+" מקורות יש הפרש או מידע בקרה חסר. מוצגות עסקאות שהופיעו בקבצים, לא הוצאות מומצאות."
+   :"המקורות תואמים לגיליונות הבקרה שבקבצים; לא נערכה בדיקה ישירה של דוח ה-PDF המקורי.";
+  for(const x of auditItems){
+   const row=document.createElement("div");row.className="source-audit-row"+(x.status==="source_matched"?" matched":" unresolved");
+   const title=document.createElement("strong");
+   title.textContent=x.label+" • "+(x.status==="source_matched"?"תואם לבקרה בקובץ":x.status==="unverified"?"אין סכום בקרה":"פער שדורש בדיקה");
+   row.append(title);
+   const detail=document.createElement("p");detail.className="note";
+   detail.textContent="דוח מפורט מקיף ביותר: "+money(x.bestDetailedAgorot)+
+    (x.headerClaimAgorot===null?" • אין סכום כותרת מאומת":" • סכום כותרת שנרשם: "+money(x.headerClaimAgorot));
+   row.append(detail);
+   if(x.gapAgorot!==null&&x.gapAgorot!==0){
+    const diff=document.createElement("p");diff.className="source-audit-difference";
+    diff.textContent="הפרש להסבר: "+money(Math.abs(x.gapAgorot))+
+      (x.differentHeaderClaims?" • סכומי כותרת שונים בשתי גרסאות":"")+
+      ". ההפרש אינו הוכחה לביצוע עסקאות נוספות.";
+    row.append(diff);
+   }
+   auditContainer.append(row);
+  }
+ }
  const cardPanel=$("card-spending-list");
  cardPanel.replaceChildren();
  const cardReport=cardSpendingReport(data.transactions,data.cards);
