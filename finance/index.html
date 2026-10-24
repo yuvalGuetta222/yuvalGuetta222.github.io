@@ -128,14 +128,18 @@
     <p class="subtitle"><b>פרטיות:</b> אין להזין מספרי כרטיס מלאים, קוד סודי או סיסמאות. לא קוראים ישירות את חשבון הבנק. רק רשומות שתאשרו יישמרו.</p>
     <p id="import-source" class="muted"></p>
 <section class="box import-card-identity">
-  <h3>לאיזה כרטיס שייך הפירוט?</h3>
-  <p class="subtitle">יש לבחור כרטיס לכל קובץ. שני כרטיסים באותו חודש ייספרו יחד בסיכום, אבל העסקאות יזוהו בנפרד כדי למנוע מחיקת חיובים בטעות.</p>
-  <label>בחירת כרטיס אשראי<select id="import-card-select" required><option value="new">+ הוספת כרטיס חדש</option></select></label>
-  <div id="import-card-new" class="import-card-new">
-   <label>שם לזיהוי הכרטיס<input id="import-card-name" maxlength="50" placeholder="למשל ויזה שלי, כרטיס משפחתי"></label>
-   <label>4 ספרות אחרונות בלבד<input id="import-card-last4" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" placeholder="לדוגמה 7888"></label>
+  <h3>זיהוי כרטיסי אשראי אוטומטי</h3>
+  <p class="subtitle">תבונה קוראת את ארבע הספרות האחרונות בכל שורת עסקה, גם כשיש כמה כרטיסים באותו קובץ. כרטיסים חדשים נרשמים אוטומטית על בסיס ארבע ספרות בלבד.</p>
+  <div id="import-auto-card-summary" class="import-auto-card-summary" role="status" aria-live="polite">לא נטען עדיין קובץ.</div>
+  <div id="import-card-manual" class="import-card-manual hidden">
+   <p class="note">רק בקובץ שאין בו כלל עמודת זיהוי כרטיס, אפשר לבחור ידנית כרטיס יחיד לכל העסקאות.</p>
+   <label>בחירת כרטיס אשראי<select id="import-card-select"><option value="new">+ הוספת כרטיס חדש</option></select></label>
+   <div id="import-card-new" class="import-card-new">
+    <label>שם לזיהוי הכרטיס<input id="import-card-name" maxlength="50" placeholder="למשל ויזה שלי, כרטיס משפחתי"></label>
+    <label>4 ספרות אחרונות בלבד<input id="import-card-last4" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" placeholder="לדוגמה 7888"></label>
+   </div>
   </div>
-  <p id="import-card-check" class="note" role="status">אין צורך במספר הכרטיס המלא. לא שומרים מספר כרטיס מלא.</p>
+  <p id="import-card-check" class="note" role="status">ארבע הספרות נקראות מתוך הקובץ; לא שומרים מספר כרטיס מלא.</p>
  </section>
     <label>חודש הפירוט / מועד החיוב (אופציונלי)<input id="import-statement-month" type="month" aria-label="חודש פירוט האשראי"></label><p class="help">זהו רק שם תקופת הדוח, למשל אוקטובר 2026. העסקאות יישארו בתאריכים שמופיעים בקובץ, גם אם התאריכים שייכים לחודש אחר.</p>
     <section class="box import-verify"><h3>בדיקת התאמה לדוח המקורי</h3><p class="subtitle">אם בדוח מופיעים סך העסקאות וסכום חיוב כולל, הזינו אותם. אחרת הייבוא יסומן "לא אומת".</p>
@@ -158,7 +162,7 @@
     <div class="section-intro"><h2>סקירת העסקאות לפני שמירה</h2><p class="subtitle">קטגוריה מהדוח מקבלת עדיפות על זיהוי אוטומטי. בדקו תאריך, חיוב מול זיכוי וסכום. תוכלו לשנות קטגוריה ולהסיר עסקה מהייבוא. אם הסכומים אינם תואמים לדוח, תקנו את מיפוי העמודות.</p></div>
     <p class="feedback" id="import-summary"></p>
     <div class="import-actions"><button type="button" class="secondary" id="only-visible">בחר רק את 100 הראשונות</button><button type="button" class="secondary" id="select-all-import">בחר את כולן</button></div>
-    <div class="table-wrap"><table><thead><tr><th>ייבוא</th><th>תאריך</th><th>בית העסק</th><th>סוג</th><th>קטגוריה</th><th>מקור קטגוריה</th><th>תשלומים</th><th>סכום</th></tr></thead><tbody id="import-preview"></tbody></table></div>
+    <div class="table-wrap"><table><thead><tr><th>ייבוא</th><th>תאריך</th><th>בית העסק</th><th>כרטיס</th><th>סוג</th><th>קטגוריה</th><th>מקור קטגוריה</th><th>תשלומים</th><th>סכום</th></tr></thead><tbody id="import-preview"></tbody></table></div>
     <div class="import-actions"><button type="button" class="primary" id="import-save" disabled>אישור ושמירת העסקאות</button></div>
   </div>
   <details class="manual-transaction-entry box"><summary>הוספת עסקה ידנית (אופציונלי)</summary><p class="subtitle">למקרה של תשלום במזומן או הוצאה שלא מופיעה בקובץ האשראי.</p><form id="tx-form">
