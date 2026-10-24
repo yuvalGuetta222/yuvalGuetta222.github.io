@@ -58,11 +58,16 @@
    <div class="category-bars" id="category-bars"><p class="empty">ממתין לנתונים.</p></div>
    <p class="note" id="category-footnote">הסכומים הם נטו לאחר זיכויים. קטגוריה מקורית מהאשראי נשמרת לפי שם הקובץ.</p>
   </section>
-  <details class="card-spending-detail box">
-   <summary>פירוט הוצאות האשראי לפי כרטיס</summary>
-   <p class="subtitle">כל הכרטיסים נספרים יחד בסיכום החודשי, ואפשר לראות כאן את התרומה של כל כרטיס בנפרד. זיכויים מקטינים את ההוצאה.</p>
-   <div id="card-spending-list"></div>
-  </details>
+  <section class="card-spending-detail box" aria-labelledby="card-spending-title">
+   <div class="section-heading"><div>
+    <span class="eyebrow">SPENDING BY CARD</span>
+    <h2 id="card-spending-title">באיזה כרטיס אנחנו מוציאים יותר?</h2>
+    <p class="subtitle">השוואת הוצאות נטו לפי כרטיס בחודש הנבחר, כולל זיכויים. הכרטיסים יחד נכללים בסיכום המשפחתי.</p>
+   </div></div>
+   <p id="card-spending-insight" class="card-spending-insight"></p>
+   <div id="card-spending-list" class="card-spending-ranked"></div>
+   <p id="card-unassigned-note" class="note"></p>
+  </section>
   <details class="dashboard-extra"><summary>תחזית לסוף החודש והמלצות לחיסכון</summary><section class="box forecast-main">
    <div class="section-heading"><div><span class="eyebrow">MONTH-END OUTLOOK</span><h2>תחזית לסוף החודש</h2><p class="subtitle">הוצאות שכבר הופיעו באשראי בנפרד מהערכה להמשך החודש. תחזית אינה חיוב בפועל.</p></div>
     <span id="forecast-confidence" class="financial-confidence">עדיין אין תחזית</span></div>
@@ -263,6 +268,17 @@
 <label>קטגוריה<input name="category" list="finance-category-options" maxlength="60" required></label>
 <label>סכום בשקלים<input name="amount" type="number" min="0.01" max="100000000" step="0.01" required></label>
 <label>סוג<select name="entry_kind"><option value="expense">הוצאה</option><option value="refund">זיכוי</option></select></label>
+<fieldset id="edit-transaction-card-section" class="edit-card-section">
+ <legend>שיוך ההוצאה לכרטיס אשראי</legend>
+ <label>איזה כרטיס חויב?<select id="edit-transaction-card" name="card_choice">
+  <option value="keep">טרם שויך לכרטיס</option>
+ </select></label>
+ <div id="edit-card-new-fields" class="edit-card-new-fields" hidden>
+  <label>שם הכרטיס<input name="new_card_name" maxlength="50" placeholder="למשל ויזה משפחתי"></label>
+  <label>ארבע ספרות אחרונות<input name="new_card_last4" maxlength="4" inputmode="numeric" placeholder="לדוגמה 7888"></label>
+ </div>
+ <p id="edit-card-help" class="note">לגבי דוחות ישנים, אפשר לשייך ידנית רק כשאתם יודעים מאיזה כרטיס בוצע החיוב. לא נשמר מספר כרטיס מלא.</p>
+</fieldset>
 <button type="submit" class="primary">שמירת תיקון</button>
 </form><p id="edit-transaction-status" class="feedback" role="status"></p>
 </div></dialog></main><footer>תבונה • ניהול כלכלת משפחה • אין להזין מספרי כרטיסי אשראי או סיסמאות בנק</footer>
