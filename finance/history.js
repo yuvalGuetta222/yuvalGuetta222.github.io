@@ -30,9 +30,13 @@ async function loadHistory(){
  const from=addMonths(endMonth,-count)+"-01",to=addMonths(endMonth,1)+"-01";
  try{
   const {household}=runtime.getContext();
-  const billing=$("date-basis").value==="billing";
-  const cardSource=billing?fetchPaged("tevuna_transactions","id,occurred_on,billing_month,category,merchant,entry_kind,amount_agorot,source",from,to,"billing_month"):
-   fetchPaged("tevuna_transactions","id,occurred_on,billing_month,category,merchant,entry_kind,amount_agorot",from,to,"occurred_on");
+  const basis=$("date-basis").value;
+  const grouped=basis==="billing"||basis==="statement";
+  const cardSource=basis==="billing"
+   ?fetchPaged("tevuna_transactions","id,occurred_on,billing_month,category,merchant,entry_kind,amount_agorot,source",from,to,"billing_month")
+   :basis==="statement"
+   ?fetchPaged("tevuna_statement_transactions","id,occurred_on,billing_month,statement_month,category,merchant,entry_kind,amount_agorot,source",from,to,"statement_month")
+   :fetchPaged("tevuna_transactions","id,occurred_on,billing_month,category,merchant,entry_kind,amount_agorot,source",from,to,"occurred_on");
   const [txSource,income,fixedResponse,coverageResponse]=await Promise.all([
    cardSource,
    fetchPaged("tevuna_incomes","id,income_month,label,received,amount_agorot",from,to,"income_month"),
@@ -44,11 +48,11 @@ async function loadHistory(){
   if(fixedResponse.error)throw fixedResponse.error;
   if(coverageResponse.error)throw coverageResponse.error;
   let tx=txSource;
-  if(billing){
+  if(grouped){
    const manual=await fetchPaged("tevuna_transactions","id,occurred_on,billing_month,category,merchant,entry_kind,amount_agorot,source",from,to,"occurred_on");
    const byId=new Map();
    for(const t of txSource.filter(t=>t.source!=="manual"))
-    byId.set(t.id,{...t,occurred_on:t.billing_month||t.occurred_on});
+    byId.set(t.id,{...t,occurred_on:(basis==="statement"?t.statement_month:t.billing_month)||t.occurred_on});
    for(const t of manual.filter(t=>t.source==="manual"))
     byId.set(t.id,t);
    tx=[...byId.values()];
@@ -57,7 +61,7 @@ async function loadHistory(){
   today=new Date();
   months=applyFixedToTimeline(makeTimeline({transactions:tx,incomes:income,endMonth,count:count+1,now:today}),
    {fixed:fixedResponse.data||[],coverage:coverageResponse.data||[],now:today});
-  $("history-error").textContent=billing?"תצוגת חודש חיוב: עסקאות אשראי משויכות לחודש הדוח ועסקאות ידניות לפי תאריך ההזנה. אין השוואה לפי אותו יום בחודש.":"";
+  $("history-error").textContent= basis==="statement"?"מוצג חודש הדוח הרשמי של כל קובץ, גם כאשר הרכישה או תאריך החיוב היו בחודש קודם. עסקאות חופפות בין דוחות נספרות פעם אחת.":basis==="billing"?"מוצג חודש החיוב מתוך שורת העסקה, שעשוי להיות שונה מחודש הדוח.":"";
   const select=$("history-focus-month");select.replaceChildren();
   for(const m of months.slice(1).reverse()){const opt=element("option",formatMonth(m.key)+(m.partial?" • חודש פתוח":"" ));opt.value=m.key;select.append(opt)}
   focus=endMonth;select.value=focus;
