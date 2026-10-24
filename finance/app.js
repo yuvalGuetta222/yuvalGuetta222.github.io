@@ -26,7 +26,7 @@ function toAgorot(input,allowZero=false){
   if(!Number.isSafeInteger(n)||n>100000000000||(!allowZero&&n<=0))throw Error("הסכום אינו בטווח המותר");
   return n;
 }
-let household=null, user=null, signup=false, data={income:[],transactions:[],fixed:[],budgets:[],recurring:[],coverage:[]},busy=false;
+let household=null, user=null, signup=false, data={income:[],transactions:[],fixed:[],budgets:[],recurring:[],coverage:[],cards:[]},busy=false;
 let reloadSequence=0;
 const view=id=>{for(const n of ["auth-view","pending-view","app-view"])$(n).classList.toggle("hidden",n!==id)};
 function notice(msg,target="app-error"){const el=$(target);el.textContent=msg??"";if(msg){el.scrollIntoView({block:"nearest",behavior:"smooth"})}}
@@ -93,7 +93,7 @@ $("month").addEventListener("change",()=>{if($("recurring-income-form"))$("recur
 $("date-basis").addEventListener("change",reload);
 const cadenceMonths={monthly:1,bimonthly:2,quarterly:3,yearly:12};
 async function loadTransactions(start,next){
- const fields="id,merchant,category,amount_agorot,entry_kind,occurred_on,billing_month,installment_number,installment_total,source_snapshot,source";
+ const fields="id,merchant,category,amount_agorot,entry_kind,occurred_on,billing_month,installment_number,installment_total,source_snapshot,source,card_id";
  const basis=$("date-basis").value==="billing"?"billing_month":"occurred_on";
  const fetch=async(field,manual=false)=>{
   const result=[];
@@ -118,17 +118,18 @@ async function reload(){
  try {const m=$("month").value||currentMonth();const start=m+"-01";
  const yr=Number(m.slice(0,4)),mo=Number(m.slice(5,7));const next=(mo===12?yr+1:yr)+"-"+String(mo===12?1:mo+1).padStart(2,"0")+"-01";
  notice("טוען נתונים…");
- const [i,t,f,b,r,c]=await Promise.all([
+ const [i,t,f,b,r,c,profiles]=await Promise.all([
  supabase.from("tevuna_incomes").select("id,label,amount_agorot,income_month,received,recurring_income_id").eq("household_id",household).eq("income_month",start).order("created_at",{ascending:false}),
  loadTransactions(start,next),
  supabase.from("tevuna_fixed_expenses").select("id,label,category,amount_agorot,cadence,active,start_month,end_month").eq("household_id",household).order("created_at",{ascending:false}),
  supabase.from("tevuna_budgets").select("id,category,amount_agorot,budget_month").eq("household_id",household).eq("budget_month",start).order("category"),
  supabase.from("tevuna_recurring_incomes").select("id,label,amount_agorot,start_month,end_month,active").eq("household_id",household).order("created_at",{ascending:false}),
- supabase.from("tevuna_fixed_expense_card_coverage").select("fixed_expense_id,transaction_id,expense_month").eq("household_id",household).eq("expense_month",start)]);
+ supabase.from("tevuna_fixed_expense_card_coverage").select("fixed_expense_id,transaction_id,expense_month").eq("household_id",household).eq("expense_month",start),
+ supabase.from("tevuna_cards").select("id,nickname,last4").eq("household_id",household)]);
  if(request!==reloadSequence||household!==requestedHousehold||$("month").value!==m)return;
- const err=[i.error,t.error,f.error,b.error,r.error,c.error].find(Boolean);
+ const err=[i.error,t.error,f.error,b.error,r.error,c.error,profiles.error].find(Boolean);
  if(err){notice("שגיאה בטעינת הנתונים. בדוק את החיבור ונסה שוב.");return}
- data={income:i.data||[],transactions:t.data||[],fixed:f.data||[],budgets:b.data||[],recurring:r.data||[],coverage:c.data||[]};
+ data={income:i.data||[],transactions:t.data||[],fixed:f.data||[],budgets:b.data||[],recurring:r.data||[],coverage:c.data||[],cards:profiles.data||[]};
  render();
  notice("");
  document.dispatchEvent(new CustomEvent("tevuna:loaded",{detail:{data,month:m,household}}));
