@@ -40,3 +40,14 @@ export function potentialLegacyOverlap(incoming,legacy){
  }
  return possible;
 }
+
+export function spendingByCard(transactions,cards=[]){
+ const profiles=new Map(cards.map(c=>[c.id,c.nickname+" •••• "+c.last4]));
+ const sums=new Map();
+ for(const t of transactions||[]){
+  const key=t.source==="manual"?"manual":t.card_id||"legacy";
+  if(!sums.has(key))sums.set(key,{key,label:key==="manual"?"הוצאות ידניות":key==="legacy"?"ייבואים קודמים ללא זיהוי כרטיס":profiles.get(key)||"כרטיס לא מזוהה",total:0,count:0});
+  const item=sums.get(key);item.total+=(t.entry_kind==="refund"?-1:1)*Number(t.amount_agorot||0);item.count++;
+ }
+ return [...sums.values()].sort((a,b)=>b.total-a.total||a.label.localeCompare(b.label,"he"));
+}
