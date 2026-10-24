@@ -202,3 +202,41 @@ button:disabled{opacity:.55;cursor:not-allowed}
  .edit-card-section{padding:11px}
 }
 @media(prefers-reduced-motion:reduce){.card-spending-fill{transition:none}}
+
+
+/* Multi-file credit statement uploader */
+.bulk-import-panel{margin-bottom:20px;padding:clamp(16px,3vw,25px)}
+.bulk-import-panel h2{font-size:clamp(20px,2.3vw,27px)}
+.bulk-upload{margin:14px 0;display:flex;flex-direction:column;gap:8px;align-items:center;text-align:center}
+.bulk-upload input[type=file]{display:block;width:100%;max-width:400px;margin:auto}
+.bulk-import-list{display:grid;gap:12px;margin-top:18px}
+.bulk-item{border:1px solid #355873;background:#122c41;border-radius:16px;padding:16px}
+.bulk-item.completed{border-color:#3b977d}
+.bulk-item-head{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.bulk-item-head strong{font-size:15px;overflow-wrap:anywhere;line-height:1.6}
+.bulk-item-head .subtitle{margin:4px 0 0}
+.bulk-item-head button{flex-shrink:0}
+.bulk-body{padding-top:13px;display:grid;gap:10px}
+.bulk-body label{display:flex;flex-direction:column;gap:7px;font-weight:650;font-size:13px}
+.bulk-body input,.bulk-body select{width:100%;min-width:0;min-height:40px}
+.bulk-meta-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.bulk-cards{font-weight:700;color:#8becd0;font-size:13px;line-height:1.8}
+.bulk-pagination{display:flex;align-items:center;gap:13px;justify-content:center;padding-top:12px}
+.bulk-transaction-details>summary{cursor:pointer;color:#afeedb;border:1px solid #36586b;border-radius:10px;padding:11px;font-weight:650}
+.bulk-transaction-details[open]>summary{margin-bottom:10px}
+.bulk-row-actions,.bulk-import-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}
+.bulk-table{min-width:760px}
+.bulk-table td,.bulk-table th{padding:8px 9px;font-size:12px;text-align:right}
+.bulk-table td select{min-width:135px;max-width:215px;padding:8px}
+.bulk-table td input[type=checkbox]{min-height:18px;width:18px}
+.single-import-legacy{margin:18px 0}
+.single-import-legacy>summary{cursor:pointer;padding:15px;border:1px solid #385970;border-radius:12px;color:#9fe9d6;font-weight:700}
+.single-import-legacy[open]>summary{margin-bottom:15px}
+#bulk-import-count,#bulk-status{line-height:1.8}
+@media(max-width:680px){
+ .bulk-meta-fields{grid-template-columns:1fr}
+ .bulk-item-head{align-items:flex-start}
+ .bulk-import-panel{padding:14px}
+ .bulk-item{padding:12px}
+ .bulk-import-actions button{width:100%}
+}
