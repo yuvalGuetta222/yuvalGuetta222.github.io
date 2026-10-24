@@ -3,7 +3,9 @@ const $=id=>document.getElementById(id);
 const ils=agorot=>new Intl.NumberFormat("he-IL",{style:"currency",currency:"ILS",minimumFractionDigits:0,maximumFractionDigits:2}).format((Number(agorot)||0)/100);
 function element(tag,value,cls){const e=document.createElement(tag);if(value!==null)e.textContent=String(value);if(cls)e.className=cls;return e}
 let selected=null,runtime=null,editing=null;
-export function renderCategoryDashboard(transactions){
+let cardLabels=new Map();
+export function renderCategoryDashboard(transactions,cards=[]){
+ cardLabels=new Map(cards.map(c=>[c.id,c.nickname+" •••• "+c.last4]));
  const result=categoryBreakdown(transactions);
  const holder=$("category-bars");if(!holder)return;
  holder.replaceChildren();
@@ -46,7 +48,7 @@ function showCategory(group){
  for(const tx of items){
   const line=element("button",null,"category-transaction editable-transaction");line.type="button";line.title="עריכת העסקה";line.addEventListener("click",()=>openEditor(tx));
   const info=element("div",null,"category-tx-info");
-  info.append(element("b",tx.merchant||"בית עסק לא ידוע"),element("small",tx.occurred_on+(tx.entry_kind==="refund"?" • זיכוי":"")));
+  info.append(element("b",tx.merchant||"בית עסק לא ידוע"),element("small",tx.occurred_on+(tx.entry_kind==="refund"?" • זיכוי":"")+(tx.card_id?" • "+(cardLabels.get(tx.card_id)||"כרטיס לא מזוהה"):"")));
   const amount=(tx.entry_kind==="refund"?-1:1)*Number(tx.amount_agorot||0);
   line.append(info,element("strong",ils(amount),"category-tx-value"+(amount<0?" credit":"")));
   container.append(line);
@@ -95,6 +97,6 @@ export function setupCategoryDashboard(context){
  document.addEventListener("tevuna:loaded",e=>{
    // Close outdated detail when the selected month is changed or data reloads.
    if($("category-detail-dialog").open)$("category-detail-dialog").close();
-   renderCategoryDashboard(e.detail?.data?.transactions||[]);
+   renderCategoryDashboard(e.detail?.data?.transactions||[],e.detail?.data?.cards||[]);
  });
 }
