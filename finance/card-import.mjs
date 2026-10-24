@@ -51,3 +51,34 @@ export function spendingByCard(transactions,cards=[]){
  }
  return [...sums.values()].sort((a,b)=>b.total-a.total||a.label.localeCompare(b.label,"he"));
 }
+
+/**
+ * Returns reconciliation-safe net card spending and the most expensive
+ * categories on each card. All values remain integer agorot.
+ * Unidentified legacy imports stay visible, not assigned by guesswork.
+ */
+export function cardSpendingReport(transactions,cards=[]){
+ const base=spendingByCard(transactions,cards);
+ const credit=base.filter(x=>x.key!=="manual");
+ const positiveBasis=credit.reduce((n,x)=>n+Math.max(0,x.total),0);
+ const complete=base.map(group=>{
+  const byCategory=new Map();
+  for(const tx of transactions||[]){
+   const key=tx.source==="manual"?"manual":tx.card_id||"legacy";
+   if(key!==group.key)continue;
+   const name=String(tx.category||"אחר");
+   byCategory.set(name,(byCategory.get(name)||0)+
+    (tx.entry_kind==="refund"?-1:1)*Number(tx.amount_agorot||0));
+  }
+  const categories=[...byCategory.entries()].map(([name,amount])=>({name,amount}))
+   .sort((a,b)=>b.amount-a.amount||a.name.localeCompare(b.name,"he"));
+  return {...group,percentage:group.key==="manual"||!positiveBasis?null:
+   Math.max(0,group.total)/positiveBasis*100,
+   categories:categories.filter(x=>x.amount>0).slice(0,3)};
+ });
+ return {groups:complete,positiveBasis,
+  creditNetTotal:credit.reduce((n,x)=>n+x.total,0),
+  identifiedNetTotal:credit.filter(x=>x.key!=="legacy").reduce((n,x)=>n+x.total,0),
+  unassignedNetTotal:credit.find(x=>x.key==="legacy")?.total||0,
+  biggestIdentified:complete.filter(x=>x.key!=="manual"&&x.key!=="legacy"&&x.total>0)[0]||null};
+}
