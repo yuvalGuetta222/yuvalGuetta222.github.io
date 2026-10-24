@@ -163,8 +163,9 @@ export function convertRows(rows, headerIndex, mapping) {
     // V3 identity deliberately excludes the card-cell formatting: the selected
     // payment-card profile scopes the fingerprint, even when exports omit card columns.
     const importIdentity=[date,key(merchant),String(amount_agorot),entry_kind,reference].join("|");
-    const importSequence=(importCounts.get(importIdentity)||0)+1;importCounts.set(importIdentity,importSequence);
     const rowCardLast4=cardLast4(cell("card"));
+    const scopedIdentity=(rowCardLast4||"unidentified")+"|"+importIdentity;
+    const importSequence=(importCounts.get(scopedIdentity)||0)+1;importCounts.set(scopedIdentity,importSequence);
     const fromFile=sourceCategory(cell("category"));
     const category=fromFile||categorize(merchant);
     const installments=parseInstallments(cell("installment"),cell("installmentNumber"),cell("installmentTotal"));
