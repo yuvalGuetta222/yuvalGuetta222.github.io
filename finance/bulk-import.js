@@ -1,7 +1,7 @@
 import {CATEGORIES,parseCSV,fileIsSupported,convertRows,findHeaderRow} from "./credit-core.mjs";
 import {sheetCardSummary,potentialLegacyOverlap} from "./card-import.mjs";
 import {resolveBillingAwareDuplicates} from "./credit-dedupe.mjs";
-import {analyzeWorkbook,statementMonthEvidence,validatePreparedReport,parseExpectedAgorot,buildBulkTransactions} from "./bulk-import-core.mjs";
+import {analyzeWorkbook,extractControlSheet,statementMonthEvidence,validatePreparedReport,parseExpectedAgorot,buildBulkTransactions} from "./bulk-import-core.mjs";
 
 const $=id=>document.getElementById(id);
 const FILE_LIMIT=20,PER_FILE=8*1024*1024,TOTAL=50*1024*1024,MAX_ROWS=4000,PAGE=40;
@@ -50,8 +50,10 @@ function prepareSheet(item,index){
  item.month=item.evidence.month||"";
  item.autoMonth=item.evidence.status;
  item.page=0;
- item.expectedCount="";
- item.expectedTotal="";
+ const audit=extractControlSheet(item.sheets);
+ item.sourceHeaderAgorot=audit.sourceHeaderAgorot;
+ item.expectedCount=audit.expectedCount===null?"":String(audit.expectedCount);
+ item.expectedTotal=audit.expectedAgorot===null?"":(audit.expectedAgorot/100).toFixed(2);
  item.manualCard="";
  item.manualNewLast4="";
  item.manualNewName="";
@@ -175,6 +177,17 @@ function render(){
   body.append(fields);
   const evidence=el("p",item.evidence.message+" "+(item.month?"חודש שנבחר: "+item.month:"חודש הדוח טרם נקבע"),"note");
   body.append(evidence);
+  if(item.sourceHeaderAgorot!==null&&item.sourceHeaderAgorot!==undefined){
+   const expected=item.expectedTotal?parseExpectedAgorot(item.expectedTotal):null;
+   const gap=expected===null?null:item.sourceHeaderAgorot-expected;
+   body.append(el("p",gap===null?"כותרת מקור: "+fmt(item.sourceHeaderAgorot):
+    gap===0?"סכום גיליון הבקרה תואם לכותרת של הקובץ.":
+    "⚠ בגיליון הבקרה נרשם סכום כותרת של "+fmt(item.sourceHeaderAgorot)+
+    ", לעומת "+fmt(expected)+" בסיכום העסקאות המפורטות. הפרש: "+fmt(Math.abs(gap))+
+    ". ייתכן שהקובץ אינו מכיל את כל העסקאות; ההפרש לא יתווסף כהוצאה.",
+    "note"+(gap!==null&&gap!==0?" negative":"")));
+  }
+
   body.append(el("p","", "bulk-cards"));
   body.lastChild?.setAttribute("data-bulk-cards","");
   const stats=el("p",undefined,"note");stats.setAttribute("data-bulk-stats","");body.append(stats);
@@ -309,7 +322,9 @@ async function persist(context,item){
     card_id:byDigits.size===1?[...byDigits.values()][0].id:null,
     card_mode:summary.cards.length?"automatic":"manual",
     statement_month:item.month+"-01",expected_count:item.expectedCount!==""?Number(item.expectedCount):null,
-    expected_net_agorot:parseExpectedAgorot(item.expectedTotal)})
+    expected_net_agorot:parseExpectedAgorot(item.expectedTotal),
+    source_header_total_agorot:item.sourceHeaderAgorot,
+    source_header_note:item.sourceHeaderAgorot===null?"לא נמצאה כותרת סכום לבקרה בקובץ.":"סכום כותרת נלקח מגיליון הבקרה של הקובץ, ולא אומת מול PDF הבנק."})
    .select("id").single();
   if(batchError)throw batchError;
   batchId=batch.id;
