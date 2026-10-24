@@ -14,6 +14,9 @@ function showSelectedCard(){
 function checkSelectedCard(){
  const chosen=selectedCard(),digits=chosen?.last4||String($("import-card-last4").value||"").trim();
  const result=cardCheck(candidates.filter(x=>x.selected),digits);
+ if(!chosen&&!String($("import-card-name").value||"").trim()){
+  result.ok=false;result.reason="יש לתת שם לכרטיס החדש כדי לזהות אותו בייבואים עתידיים.";
+ }
  const label=chosen?chosen.nickname+" •••• "+chosen.last4:"כרטיס חדש •••• "+(digits||"????");
  $("import-card-check").textContent=result.ok?label+" — "+result.reason:"⚠ "+result.reason;
  $("import-card-check").className="note"+(result.ok?"":" negative");
@@ -290,8 +293,8 @@ export function setupImporter(context){
  $("only-visible").addEventListener("click",onlyVisible);
  $("select-all-import").addEventListener("click",selectAll);
  $("import-card-select").addEventListener("change",()=>{showSelectedCard();updateSummary()});
- $("import-card-name").addEventListener("input",checkSelectedCard);
- $("import-card-last4").addEventListener("input",()=>{checkSelectedCard();updateSummary()});
+ $("import-card-name").addEventListener("input",updateSummary);
+ $("import-card-last4").addEventListener("input",updateSummary);
  document.addEventListener("tevuna:screen-changed",e=>{if(e.detail?.screen==="import")refreshCards()});
  document.addEventListener("tevuna:loaded",()=>{if(!$("import").classList.contains("hidden"))refreshCards()});
  showSelectedCard();
