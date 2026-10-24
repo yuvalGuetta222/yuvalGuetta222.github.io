@@ -1,4 +1,5 @@
 import {setupBackup} from "./export-view.js";
+import {spendingByCard} from "./card-import.mjs";
 import {householdBalance} from "./household-ledger.mjs";
 import {setupCoach} from "./coach-view.js";
 import {setupIncomeManagement} from "./income-view.js";
@@ -222,6 +223,19 @@ function render(){
  $("s-balance").className="value "+(ledger.availableAfterProvisions<0?"negative":"positive");
  $("ledger-equation").textContent=money(ledger.confirmedIncome)+" הכנסות − "+money(ledger.recordedSpending)+" עסקאות − "+money(ledger.unmatched)+" התחייבויות שטרם נכללו = "+money(ledger.availableAfterProvisions);
  $("ledger-note").textContent="זהו סכום לתכנון, לא יתרת הבנק. התחייבויות שלא קושרו לעסקאות מנוכות, גם אם שולמו מחוץ לאשראי. בחודשים בלי עסקאות, לא משחררים התחייבויות אוטומטית.";
+ const cardPanel=$("card-spending-list");
+ cardPanel.replaceChildren();
+ const cardTotals=spendingByCard(data.transactions,data.cards);
+ for(const card of cardTotals){
+  const line=document.createElement("div");line.className="card-spending-row";
+  const name=document.createElement("span");name.textContent=card.label+" • "+card.count+" עסקאות";
+  const value=document.createElement("strong");value.textContent=money(card.total);
+  line.append(name,value);cardPanel.append(line);
+ }
+ if(!cardTotals.length){
+  const empty=document.createElement("p");empty.className="empty";
+  empty.textContent="אין עסקאות בחודש זה";cardPanel.append(empty);
+ }
  const cat=categorySpend();
 
  const insights=[];
