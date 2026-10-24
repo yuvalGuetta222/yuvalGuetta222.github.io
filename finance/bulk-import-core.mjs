@@ -136,3 +136,31 @@ export async function buildBulkTransactions({rows,household,userId,statementMont
  }
  return output;
 }
+
+/**
+ * Safety gate for the household's recurring 16-column XLSX export.
+ * A familiar filename is not evidence that all underlying rows were parsed.
+ */
+export function auditRecurringStatement({sheet,headerIndex,mapping,parsed,control}){
+ const issues=[];
+ const headers=sheet?.data?.[headerIndex]||[];
+ const compact=v=>String(v??"").normalize("NFKC").replace(/[\u200e\u200f]/g,"").replace(/\s+/g," ").trim();
+ const label=field=>mapping?.[field]>=0?compact(headers[mapping[field]]):"";
+ const fixedFormat=/(?:4 ספרות אחרונות של כרטיס האשראי)/.test(label("card"))
+  &&/תאריך עסקה/.test(label("date"))&&/סכום חיוב/.test(label("amount"));
+ if(fixedFormat){
+  if(mapping.billingDate<0||mapping.billingDate===mapping.date||
+    !/תאריך חיוב/.test(label("billingDate")))
+   issues.push("עמודת תאריך החיוב של הפורמט הקבוע לא זוהתה.");
+  if(mapping.category<0)issues.push("עמודת הקטגוריות המקורית אינה נמצאת.");
+  const unresolved=parsed.valid.filter(r=>!r.rowCardLast4||!r.billingMonth);
+  if(unresolved.length)issues.push("ל-"+unresolved.length+" עסקאות אין זיהוי כרטיס או תאריך חיוב ברור.");
+  const invalid=(parsed.skipped||[]).filter(r=>r.reason!=="שורת סיכום");
+  if(invalid.length)issues.push("לא נקראו "+invalid.length+" שורות פעילות. שורות: "+invalid.slice(0,10).map(r=>r.line).join(", ")+".");
+  if(control?.sourceHeaderAgorot!==null && control?.sourceHeaderAgorot!==undefined &&
+     control?.expectedAgorot!==null && control?.expectedAgorot!==undefined &&
+     control.sourceHeaderAgorot!==control.expectedAgorot)
+   issues.push("סכום כותרת הדוח שונה מסכום העסקאות המפורטות. ייתכן שהדוח חלקי. יש לתקן את קובץ המקור.");
+ }
+ return {fixedFormat,issues};
+}
