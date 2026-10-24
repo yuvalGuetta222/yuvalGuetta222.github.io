@@ -256,3 +256,36 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .source-audit-difference{color:#f4d4a2;line-height:1.8;font-weight:650;font-size:13px}
 .statement-source-audit{margin:10px 0 4px;line-height:1.8}
 .statement-source-audit.warning{color:#f6d5a0}
+
+
+/* Tevuna AI: an explicit on-demand interpretation layer, never hidden automatic data sharing. */
+.ai-dashboard-teaser,.ai-history-teaser{display:flex;gap:18px;align-items:center;justify-content:space-between}
+.ai-dashboard-teaser h2{font-size:19px}
+.ai-dashboard-teaser .subtitle,.ai-history-teaser .subtitle{margin:6px 0 0}
+.ai-dashboard-teaser button,.ai-history-teaser button{white-space:nowrap}
+.ai-layout{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(280px,.85fr);gap:18px;align-items:start}
+.ai-layout .ai-main,.ai-layout .ai-side{min-width:0}
+.ai-main h2{font-size:clamp(22px,2.8vw,30px)}
+.ai-quick-actions{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}
+.ai-quick-actions button{flex:1;min-width:150px}
+.ai-question-form{display:grid;gap:9px;margin:18px 0}
+.ai-question-form textarea{display:block;width:100%;min-height:93px;resize:vertical;background:#102239;color:#f1fafc;border:1px solid #43647b;border-radius:12px;padding:13px;line-height:1.7;font:inherit}
+.ai-question-form textarea:focus-visible{outline:3px solid #58dab9;outline-offset:2px}
+.ai-question-form button{justify-self:start;min-width:180px}
+.ai-conversation{display:grid;gap:13px;max-height:600px;overflow-y:auto;margin-top:18px;padding:7px 2px}
+.ai-message{border:1px solid #385974;background:#182f45;border-radius:17px;padding:17px 18px;overflow-wrap:anywhere;line-height:1.9}
+.ai-message.from-ai{background:#163b43;border-color:#36897e}
+.ai-message.from-user{max-width:90%;justify-self:end}
+.ai-message strong{color:#9af1cd}
+.ai-message p{white-space:pre-wrap;margin:9px 0 0;font-size:14px}
+.ai-side .note{font-size:13px;line-height:1.9}
+.ai-side #ai-key-setup{margin:12px 0}
+.ai-side #ai-key-setup[hidden]{display:none}
+.ai-side input{min-height:44px;width:100%;direction:ltr;text-align:left;background:#102239;border:1px solid #456074;color:#fff;border-radius:9px;padding:10px}
+.ai-key-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:10px}
+#ai-connection-status{font-weight:700;color:#8fe9cf}
+#ai-feedback{min-height:20px;line-height:1.8}
+@media(max-width:860px){.ai-layout{grid-template-columns:1fr}.ai-side{order:-1}}
+@media(max-width:650px){.ai-dashboard-teaser,.ai-history-teaser{flex-direction:column;align-items:stretch}
+.ai-dashboard-teaser button,.ai-history-teaser button{width:100%}.ai-message.from-user{max-width:100%}
+.ai-quick-actions button{width:100%}.ai-question-form button{width:100%}}
