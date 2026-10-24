@@ -1,5 +1,5 @@
 import { CATEGORIES,parseCSV,findHeaderRow,guessMapping,convertRows,fileIsSupported } from "./credit-core.mjs";
-import {cardCheck,cardFingerprintInput} from "./card-import.mjs";
+import {cardCheck,cardFingerprintInput,potentialLegacyOverlap} from "./card-import.mjs";
 const $=id=>document.getElementById(id);
 let workbook=[],rows=[],mapping={},headerRow=-1,candidates=[],fileType="csv",fileSize=0,rawFileName="";
 const FIELDS=[["date","תאריך עסקה / חיוב *"],["merchant","בית עסק / תיאור *"],["amount","סכום חיוב בשקלים *"],["category","קטגוריה מתוך הדוח (אופציונלי)"],["kind","חיוב או זיכוי (אופציונלי)"],["installment","תשלומים בקובץ"],["installmentNumber","תשלום נוכחי"],["installmentTotal","סך תשלומים"],["reference","אסמכתא (אופציונלי)"],["card","זיהוי כרטיס (אופציונלי)"]];
@@ -179,6 +179,22 @@ async function digest(text) {
  const hash=new Uint8Array(await crypto.subtle.digest("SHA-256",buf));
  return [...hash].map(x=>x.toString(16).padStart(2,"0")).join("");
 }
+async function legacyOverlap(context,items){
+ if(!items.length)return 0;
+ const dates=items.map(x=>x.occurred_on).sort();
+ const earliest=dates[0],latest=dates.at(-1),legacy=[];
+ for(let offset=0;offset<10000;offset+=1000){
+  const {data,error}=await runtime.supabase.from("tevuna_transactions")
+   .select("id,occurred_on,merchant,amount_agorot,entry_kind")
+   .eq("household_id",context.household).is("card_id",null)
+   .neq("source","manual").gte("occurred_on",earliest).lte("occurred_on",latest)
+   .order("occurred_on").order("id").range(offset,offset+999);
+  if(error)throw error;
+  legacy.push(...(data||[]));
+  if(!data||data.length<1000)return potentialLegacyOverlap(items,legacy);
+ }
+ throw Error("יש יותר מדי עסקאות היסטוריות ללא מזהה כרטיס לבדיקת כפילויות. הייבוא הופסק כדי להגן על הנתונים.");
+}
 async function save(){
  const context=runtime?.getContext();
  if(!context?.user||!context?.household){say("צריך להתחבר לחשבון המאושר לפני ייבוא.");return}
@@ -194,6 +210,10 @@ async function save(){
   const card=await resolveCard(context);
   const result=cardCheck(items,card.last4);
   if(!result.ok)throw Error(result.reason);
+  const possibleLegacy=await legacyOverlap(context,items);
+  if(possibleLegacy>0 && !confirm("⚠ זוהו "+possibleLegacy+" עסקאות דומות בדוחות ישנים ללא מזהה כרטיס. ייתכן שהן כבר כלולות בסיכום המשפחתי.\nהמערכת לא יכולה להכריע אוטומטית אם הן מאותו כרטיס או מכרטיס אחר.\nביטול יאפשר לבדוק את קובצי העבר. להמשיך ולשמור למרות החשש לכפל הוצאות?")){
+   btn.disabled=false;say("הייבוא בוטל כדי למנוע כפילות אפשרית מול קבצים ישנים. שום עסקה חדשה לא נשמרה.");return;
+  }
   const mapped=[];
   for(const row of items){
    // Identical rows in repeated exports receive the same fingerprint.
