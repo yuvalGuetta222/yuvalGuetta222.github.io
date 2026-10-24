@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {monthsInLabel,statementMonthEvidence,analyzeWorkbook,validatePreparedReport,parseExpectedAgorot,buildBulkTransactions} from "./bulk-import-core.mjs";
+import {monthsInLabel,statementMonthEvidence,analyzeWorkbook,validatePreparedReport,parseExpectedAgorot,buildBulkTransactions,extractControlSheet} from "./bulk-import-core.mjs";
 const headers=["תאריך עסקה","שם בית העסק","קטגוריה","4 ספרות אחרונות של כרטיס האשראי","סוג עסקה","סכום חיוב","תאריך חיוב"];
 const rows=[["אוקטובר 2026 | כל העסקאות"],["3 עסקאות"],headers,
  ["2026-09-30","WOLT","מסעדות","7888","רגילה",45.1,"2026-10-10"],
@@ -65,3 +65,30 @@ test("Bulk mapper refuses to guess an unavailable card",async()=>{
   statementMonth:"2026-10",source:"xlsx",cardIds:new Map(),hash:async x=>x}),/Unidentified payment card/);
 });
 function convertRow(){return analyzeWorkbook({filename:"אוקטובר_2026.xlsx",sheets:[{name:"עסקאות",data:rows}]}).analysis.valid[0]}
+
+test("Credit workbook with a partial September statement records the headline gap without inventing transactions",()=>{
+ const parsed=extractControlSheet([{name:"בקרת סכומים",data:[
+  ["מדד","סכום בשח","הסבר"],
+  ["סך הכל בשורת הכותרת בדוח",11006.79,"כותרת"],
+  ["סך עסקאות שזוהו בפירוט",7560.02,"חישוב"],
+  ["סך הכל",60,7560.02]
+ ]}]);
+ assert.equal(parsed.expectedCount,60);
+ assert.equal(parsed.expectedAgorot,756002);
+ assert.equal(parsed.sourceHeaderAgorot,1100679);
+});
+test("Full October workbook recognizes grand total and count in control tab",()=>{
+ const parsed=extractControlSheet([{name:"בקרת התאמה",data:[
+  ["רכיב בדוח MAX","סכום PDF","סכום גיליון","פער","מספר עסקאות"],
+  ["סה״כ כל העסקאות",22062.19,22062.19,0,77]
+ ]}]);
+ assert.deepEqual(parsed,{expectedCount:77,expectedAgorot:2206219,sourceHeaderAgorot:2206219});
+});
+test("Visa report totals and counts can be inferred from control tab independently",()=>{
+ const parsed=extractControlSheet([{name:"בקרת סכומים",data:[
+  ["סך חיובים בדוח המקורי",2997.07],
+  ["סך עסקאות בקובץ המאוחד",2997.07],
+  ["מספר עסקאות",22]
+ ]}]);
+ assert.deepEqual(parsed,{expectedCount:22,expectedAgorot:299707,sourceHeaderAgorot:299707});
+});
