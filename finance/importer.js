@@ -277,6 +277,7 @@ async function save(){
    household_id:context.household,created_by:context.user.id,filename,
    card_id:summary.cards.length===1?byLast4.get(summary.cards[0].last4)?.id:
     automatic?null:byLast4.values().next().value?.id,
+   card_mode:automatic?"automatic":"manual",
    sheet_name:selectedSheet?String(selectedSheet).slice(0,120):null,file_kind:fileType,
    statement_month:$("import-statement-month").value?$("import-statement-month").value+"-01":null,
    expected_count:validation.expectedCount,expected_net_agorot:validation.expectedNet
