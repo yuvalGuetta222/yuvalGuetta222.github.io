@@ -42,6 +42,34 @@ export function statementMonthEvidence({filename="",sheetName="",topRows=[],tran
  if(billing.length===1)return {month:billing[0],status:"inferred",message:"חודש הדוח הוסק מתאריכי החיוב בכל העסקאות, ולא מכותרת דוח מפורשת. בדקו אותו.",filenameMatches,captionsMatches,billing};
  return {month:null,status:"unknown",message:"אין חודש דוח חד-משמעי. יש לבחור חודש ידנית לפני הייבוא.",filenameMatches,captionsMatches,billing};
 }
+/** Separate the independently printed credit-statement headline from the
+ * transaction detail's own reconciliation row. Never use the headline as
+ * an invented transaction to balance missing entries. */
+export function extractControlSheet(sheets=[]){
+ const matches=sheets.filter(x=>/בקרת|התאמה|summary|reconcil|audit/i.test(String(x.name||"")));
+ const normalize=s=>String(s??"").normalize("NFKC").replace(/[\u200e\u200f]/g,"").replace(/["״׳']/g,"").replace(/\s+/g," ").trim();
+ const amount=v=>{const n=Number(String(v??"").replace(/[,₪\s]/g,""));return Number.isFinite(n)?Math.round(n*100):null};
+ let expectedCount=null,expectedAgorot=null,sourceHeaderAgorot=null;
+ for(const sheet of matches)for(const row of sheet.data||[]){
+  const label=normalize(row?.[0]),b=row?.[1],c=row?.[2];
+  if(/סך עסקאות שזוהו בפירוט|סך עסקאות בקובץ המאוחד/.test(label))
+   expectedAgorot=amount(b);
+  if(/^מספר עסקאות$/.test(label)&&Number.isInteger(Number(b)))expectedCount=Number(b);
+  if(/סך הכל בשורת הכותרת בדוח|סך חיובים בדוח המקורי/.test(label))
+   sourceHeaderAgorot=amount(b);
+  if(/סך הכל כל העסקאות|סך העסקאות כולן/.test(label)){
+   if(amount(c)!==null)expectedAgorot=amount(c);
+   else if(expectedAgorot===null)expectedAgorot=amount(b);
+   if(sourceHeaderAgorot===null)sourceHeaderAgorot=amount(b);
+   if(Number.isInteger(Number(row?.[4]))&&Number(row[4])>0)expectedCount=Number(row[4]);
+  }
+  if(/^סך הכל$/.test(label)&&Number.isInteger(Number(b))&&amount(c)!==null){
+   expectedCount=Number(b);
+   if(expectedAgorot===null)expectedAgorot=amount(c);
+  }
+ }
+ return {expectedCount,expectedAgorot,sourceHeaderAgorot};
+}
 export function analyzeWorkbook({filename,sheets}){
  if(!Array.isArray(sheets)||!sheets.length)throw Error("אין גיליונות נתונים");
  const possibilities=sheets.map((sheet,index)=>{
@@ -58,7 +86,7 @@ export function analyzeWorkbook({filename,sheets}){
   topRows:selectedSheet.data.slice(0,selected.headerIndex),transactions:selected.valid});
  return {options:possibilities.filter(x=>x.count>0).map(x=>({index:x.index,name:x.sheetName,count:x.count})),
   selectedIndex:selected.index,analysis:selected,evidence,
-  summary:sheetCardSummary(selected.valid)};
+  summary:sheetCardSummary(selected.valid),control:extractControlSheet(sheets)};
 }
 export function validatePreparedReport(report){
  const rows=report.rows.filter(x=>x.selected!==false);
