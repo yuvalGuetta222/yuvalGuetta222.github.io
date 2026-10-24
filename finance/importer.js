@@ -1,24 +1,38 @@
 import { CATEGORIES,parseCSV,findHeaderRow,guessMapping,convertRows,fileIsSupported } from "./credit-core.mjs";
-import {cardCheck,cardFingerprintInput,potentialLegacyOverlap} from "./card-import.mjs";
+import {cardCheck,cardFingerprintInput,potentialLegacyOverlap,sheetCardSummary} from "./card-import.mjs";
 const $=id=>document.getElementById(id);
 let workbook=[],rows=[],mapping={},headerRow=-1,candidates=[],fileType="csv",fileSize=0,rawFileName="";
 const FIELDS=[["date","תאריך עסקה / חיוב *"],["merchant","בית עסק / תיאור *"],["amount","סכום חיוב בשקלים *"],["category","קטגוריה מתוך הדוח (אופציונלי)"],["kind","חיוב או זיכוי (אופציונלי)"],["installment","תשלומים בקובץ"],["installmentNumber","תשלום נוכחי"],["installmentTotal","סך תשלומים"],["reference","אסמכתא (אופציונלי)"],["card","זיהוי כרטיס (אופציונלי)"]];
 let runtime=null,cards=[];
 const selectedCard=()=>cards.find(c=>c.id===$("import-card-select").value)||null;
 function option(v,label){const e=document.createElement("option");e.value=v;e.textContent=label;return e}
-function showSelectedCard(){
- const isNew=$("import-card-select").value==="new";
- $("import-card-new").classList.toggle("hidden",!isNew);
- checkSelectedCard();
-}
+function showSelectedCard(){checkSelectedCard()}
 function checkSelectedCard(){
+ const summary=sheetCardSummary(candidates.filter(r=>r.selected));
+ const auto=summary.cards.length>0;
+ $("import-card-manual").classList.toggle("hidden",auto||!candidates.length);
+ $("import-card-new").classList.toggle("hidden",$("import-card-select").value!=="new");
+ if(auto){
+  const labels=summary.cards.map(c=>"•••• "+c.last4+" • "+c.count+" עסקאות");
+  $("import-auto-card-summary").textContent="זוהו אוטומטית "+summary.cards.length+" כרטיסים: "+labels.join(" | ");
+  if(summary.unknownCount){
+   $("import-card-check").textContent="⚠ ב-"+summary.unknownCount+" עסקאות לא נמצאו ארבע ספרות אחרונות (שורות "+summary.unknownLines.join(", ")+"). תקנו את מיפוי עמודת הכרטיס או בטלו בחירה בשורות האלה. לא נשייך אותן לכרטיס אחר בניחוש.";
+   $("import-card-check").className="note negative";
+   return false;
+  }
+  $("import-card-check").textContent="כל העסקאות שנבחרו זוהו לפי עמודת הכרטיס שבקובץ. חשבונות לכל הכרטיסים יירשמו אוטומטית, ללא הזנה ידנית.";
+  $("import-card-check").className="note";
+  return true;
+ }
+ $("import-auto-card-summary").textContent=candidates.length?
+  "לא נמצאו בקובץ ארבע ספרות אחרונות של כרטיס. אפשר לבחור ידנית כרטיס אחד רק אם כל השורות שייכות אליו.":
+  "לא נטען עדיין קובץ.";
  const chosen=selectedCard(),digits=chosen?.last4||String($("import-card-last4").value||"").trim();
  const result=cardCheck(candidates.filter(x=>x.selected),digits);
  if(!chosen&&!String($("import-card-name").value||"").trim()){
   result.ok=false;result.reason="יש לתת שם לכרטיס החדש כדי לזהות אותו בייבואים עתידיים.";
  }
- const label=chosen?chosen.nickname+" •••• "+chosen.last4:"כרטיס חדש •••• "+(digits||"????");
- $("import-card-check").textContent=result.ok?label+" — "+result.reason:"⚠ "+result.reason;
+ $("import-card-check").textContent=result.ok?"כרטיס •••• "+digits+" — הזיהוי ידני, משום שאין בקובץ עמודת כרטיס.":"⚠ "+result.reason;
  $("import-card-check").className="note"+(result.ok?"":" negative");
  return result.ok;
 }
@@ -51,6 +65,28 @@ async function resolveCard(context){
  return created;
 }
 
+async function resolveAutoCards(context,digitsList){
+ const known=new Map(cards.map(c=>[c.last4,c]));
+ for(const last4 of digitsList){
+  if(known.has(last4))continue;
+  const {data:existing,error:lookupError}=await runtime.supabase.from("tevuna_cards")
+   .select("id,nickname,last4").eq("household_id",context.household).eq("last4",last4).maybeSingle();
+  if(lookupError)throw lookupError;
+  if(existing){known.set(last4,existing);continue}
+  const {data:created,error}=await runtime.supabase.from("tevuna_cards").insert({
+    household_id:context.household,created_by:context.user.id,nickname:"כרטיס "+last4,last4
+   }).select("id,nickname,last4").single();
+  if(error){
+   // Another approved family member might have created the profile concurrently.
+   if(error.code!=="23505")throw error;
+   const {data:concurrent,error:retryError}=await runtime.supabase.from("tevuna_cards")
+    .select("id,nickname,last4").eq("household_id",context.household).eq("last4",last4).single();
+   if(retryError)throw retryError;
+   known.set(last4,concurrent);
+  }else known.set(last4,created);
+ }
+ return known;
+}
 function parseExpectedMoney(value){
  const raw=String(value??"").trim().replace(/,/g,"");
  if(!raw)return null;
@@ -124,11 +160,11 @@ function preview(){
   category.value=t.category;
   category.addEventListener("change",()=>{t.category=category.value;t.categoryMethod="manual";const badge=row.querySelector("[data-category-method]");if(badge)badge.textContent="תיקון ידני";updateSummary()});
   function cell(content){const td=document.createElement("td");if(typeof content==="string")td.textContent=content;else td.append(content);row.append(td)}
-  cell(checkbox);cell(t.occurred_on);cell(t.merchant);cell(t.entry_kind==="refund"?"זיכוי":"חיוב");cell(category);const tag=document.createElement("span");tag.dataset.categoryMethod="true";tag.textContent=t.categoryMethod==="file"?"מקובץ האשראי":t.categoryMethod==="suggestion"?"זיהוי אוטומטי":t.categoryMethod==="manual"?"תיקון ידני":"לא זוהה";cell(tag);cell(t.installment_total?"תשלום "+t.installment_number+"/"+t.installment_total:"לא צוין");cell(money(t.amount_agorot));
+  cell(checkbox);cell(t.occurred_on);cell(t.merchant);cell(t.rowCardLast4?"•••• "+t.rowCardLast4:"לא זוהה");cell(t.entry_kind==="refund"?"זיכוי":"חיוב");cell(category);const tag=document.createElement("span");tag.dataset.categoryMethod="true";tag.textContent=t.categoryMethod==="file"?"מקובץ האשראי":t.categoryMethod==="suggestion"?"זיהוי אוטומטי":t.categoryMethod==="manual"?"תיקון ידני":"לא זוהה";cell(tag);cell(t.installment_total?"תשלום "+t.installment_number+"/"+t.installment_total:"לא צוין");cell(money(t.amount_agorot));
   target.append(row);
  }
  if(candidates.length>100) {
-  const e=document.createElement("tr"),td=document.createElement("td");td.colSpan=8;
+  const e=document.createElement("tr"),td=document.createElement("td");td.colSpan=9;
   td.textContent="בתצוגה נראות 100 העסקאות הראשונות בלבד. יתר העסקאות יישמרו לפי קטגוריות המקור מהקובץ, אם קיימות, או לפי הסיווג המשוער. אפשר לייבא רק את 100 המוצגות.";
   e.append(td);target.append(e);
  }
