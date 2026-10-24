@@ -145,3 +145,19 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .backup-intro{max-width:980px;margin-inline:auto}.backup-intro h2{font-size:24px}.backup-choice{background:#183447;border:1px solid #37546e;border-radius:14px;padding:19px;margin:10px 0}.backup-choice h3{font-size:16px;margin:0 0 10px}.backup-choice .note{min-height:60px;line-height:1.85}.backup-intro #backup-status{margin-top:18px}
 .heading-actions select{padding:10px 12px;min-height:42px;color:#eefbfa;background:#11263e;border-radius:11px;border:1px solid #385874;max-width:210px}.heading-actions label{min-width:130px}
 @media(max-width:760px){.heading-actions{flex-wrap:wrap;gap:8px}.heading-actions label{flex:1;min-width:135px}.fixed-dates{display:grid;grid-template-columns:1fr 1fr}.fixed-dates .secondary,.fixed-dates .note{grid-column:span 2}}
+
+
+/* Card-aware statement imports and verification */
+.import-card-identity{margin:14px 0;padding:17px;border:1px solid #3d6e75;background:#17354b}
+.import-card-identity h3{margin:0 0 9px;font-size:17px}
+.import-card-new{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin:12px 0}
+.import-card-identity select{min-height:43px}
+.import-card-identity .note{line-height:1.75;margin:12px 0 0}
+.card-spending-detail{padding:17px 20px;margin:15px 0;background:#173448}
+.card-spending-detail>summary{cursor:pointer;color:#a9f0da;font-weight:750}
+.card-spending-detail[open]>summary{margin-bottom:14px}
+.card-spending-detail .subtitle{font-size:13px;line-height:1.7}
+.card-spending-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #31546a;font-size:13px}
+.card-spending-row:last-child{border:0}
+.card-spending-row strong{direction:ltr;white-space:nowrap;font-variant-numeric:tabular-nums}
+@media(max-width:600px){.import-card-new{grid-template-columns:1fr}.card-spending-detail{padding:16px}}
