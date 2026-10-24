@@ -45,7 +45,7 @@ function prepareSheet(item,index){
  item.rows=parsed.valid;
  item.skipped=parsed.skipped.length;
  item.evidence=statementMonthEvidence({filename:item.filename,sheetName:sheet.name,
-  topRows:sheet.data.slice(0,4),transactions:item.rows});
+  topRows:sheet.data.slice(0,header.index),transactions:item.rows});
  item.month=item.evidence.month||"";
  item.autoMonth=item.evidence.status;
  item.page=0;
