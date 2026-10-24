@@ -1,5 +1,4 @@
-// The user's provider token lives only in JS memory, never localStorage,
-// cookies, telemetry, query parameters, or database tables.
+// Provider token is held in page memory and cleared when the page unloads.
 let temporaryKey="";
 let authenticated=false;
 let inFlight=false;
