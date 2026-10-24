@@ -142,7 +142,7 @@ function updateSummary(){
   const check=validationState();
   $("import-validation").textContent=check.problems.length?"⚠ "+check.problems.join(" • "):check.verified?"✓ מספר העסקאות והסכום תואמים לערכים שמילאתם.":"לא אומתה התאמה מלאה לדוח המקורי. הזינו מספר עסקאות וסכום סופי מדוח האשראי אם מופיעים בו.";
  }catch(error){$("import-validation").textContent=error.message}
- $("import-save").disabled=!selected.length;
+ $("import-save").disabled=!selected.length||!checkSelectedCard();
 }
 function onlyVisible(){for(let i=100;i<candidates.length;i++)candidates[i].selected=false;updateSummary();say("רק 100 העסקאות המוצגות ייובאו.")}
 function selectAll(){for(const t of candidates)t.selected=true;for(const box of $("import-preview").querySelectorAll('input[type="checkbox"]'))box.checked=true;updateSummary()}
@@ -185,22 +185,29 @@ async function save(){
  let validation;try{validation=validationState()}catch(err){say(err.message);return}
  const items=validation.selected;
  if(!items.length)return;
+ if(!checkSelectedCard()){say("בחרו כרטיס אשראי שמתאים לקובץ לפני השמירה.");return}
  const warning=validation.problems.length?"\n⚠ יש פער בבדיקה: "+validation.problems.join("; "):"";
- if(!confirm("לשמור "+items.length+" עסקאות?"+warning+"\nהקובץ המקורי לא נשמר באתר."))return;
+ const chosen=selectedCard(),digits=chosen?.last4||$("import-card-last4").value.trim();
+ if(!confirm("לשמור "+items.length+" עסקאות מכרטיס שמסתיים ב-"+digits+"?"+warning+"\nעסקאות מכרטיסים אחרים נספרות בנפרד. הקובץ המקורי לא נשמר באתר."))return;
  const btn=$("import-save");btn.disabled=true;let stored=0,duplicates=0,batchId=null;
  try{
+  const card=await resolveCard(context);
+  const result=cardCheck(items,card.last4);
+  if(!result.ok)throw Error(result.reason);
   const mapped=[];
   for(const row of items){
    // Identical rows in repeated exports receive the same fingerprint.
-   const fp=await digest("tevuna-credit-v2|"+row.identity+"|"+row.sequence);
+   const fp=await digest(cardFingerprintInput(card.id,row));
    mapped.push({household_id:context.household,created_by:context.user.id,occurred_on:row.occurred_on,
     merchant:row.merchant,category:row.category,amount_agorot:row.amount_agorot,
+    card_id:card.id,
     entry_kind:row.entry_kind,source:fileType,source_fingerprint:fp,billing_month:$("import-statement-month").value?$("import-statement-month").value+"-01":null,installment_number:row.installment_number,installment_total:row.installment_total});
   }
   const filename=String(rawFileName||"פירוט אשראי").slice(0,180);
   const selectedSheet=workbook[Number($("sheet-select").value)]?.name||null;
   const {data:batch,error:batchError}=await runtime.supabase.from("tevuna_import_batches").insert({
    household_id:context.household,created_by:context.user.id,filename,
+   card_id:card.id,
    sheet_name:selectedSheet?String(selectedSheet).slice(0,120):null,file_kind:fileType,
    statement_month:$("import-statement-month").value?$("import-statement-month").value+"-01":null,
    expected_count:validation.expectedCount,expected_net_agorot:validation.expectedNet
@@ -239,6 +246,7 @@ async function save(){
 
   say("✓ הייבוא הסתיים. נשמרו "+stored+" עסקאות חדשות; "+duplicates+" עסקאות חוזרות לא נשמרו שוב. כל פירוט נשמר ב'פירוטים שיובאו', משם אפשר למחוק אותו בשלמותו.");
   $("import-file").value="";$("import-expected-count").value="";$("import-expected-total").value="";reset();
+  await refreshCards(card.id);
   if(stored>0){const months=new Map();for(const x of items){const month=x.occurred_on.slice(0,7);months.set(month,(months.get(month)||0)+1)}const mostCommon=[...months].sort((a,b)=>b[1]-a[1])[0]?.[0];if(mostCommon)$("month").value=mostCommon;}
   await runtime.reload();
   document.dispatchEvent(new CustomEvent("tevuna:imported"));
