@@ -77,7 +77,7 @@ export function setupAICoach(runtime){
  }
  function open(type){
   document.querySelector('button[data-screen="ai"]')?.click();
-  if(type)ask(type);
+  if(type)return ask(type);
  }
  $("ai-dashboard-open").addEventListener("click",()=>open("summary"));
  $("ai-history-open").addEventListener("click",()=>open("saving"));
