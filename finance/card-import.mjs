@@ -17,7 +17,7 @@ export function cardFingerprintInput(cardId,row){
 }
 // V4 is used only when an old V3 identity collides with an actual charge in another billing month.
 export function cardChargeFingerprintInput(cardId,row,billingMonth){
- if(!/^\\d{4}-(0[1-9]|1[0-2])-01$/.test(String(billingMonth)))throw Error("Invalid billing month for repeat charge");
+ if(!/^\d{4}-(0[1-9]|1[0-2])-01$/.test(String(billingMonth)))throw Error("Invalid billing month for repeat charge");
  if(!row.importIdentity||!Number.isInteger(row.importSequence)||row.importSequence<1)throw Error("Invalid charge identity");
  return "tevuna-credit-card-v4|"+cardId+"|"+row.importIdentity+"|"+row.importSequence+"|"+billingMonth;
 }
