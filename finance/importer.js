@@ -240,22 +240,31 @@ async function save(){
  let validation;try{validation=validationState()}catch(err){say(err.message);return}
  const items=validation.selected;
  if(!items.length)return;
- if(!checkSelectedCard()){say("בחרו כרטיס אשראי שמתאים לקובץ לפני השמירה.");return}
+ if(!checkSelectedCard()){say("חלק מהעסקאות לא זוהו לפי כרטיס. תקנו את המיפוי או את בחירת השורות לפני השמירה.");return}
+ const summary=sheetCardSummary(items),automatic=summary.cards.length>0;
  const warning=validation.problems.length?"\n⚠ יש פער בבדיקה: "+validation.problems.join("; "):"";
- const chosen=selectedCard(),digits=chosen?.last4||$("import-card-last4").value.trim();
- if(!confirm("לשמור "+items.length+" עסקאות מכרטיס שמסתיים ב-"+digits+"?"+warning+"\nעסקאות מכרטיסים אחרים נספרות בנפרד. הקובץ המקורי לא נשמר באתר."))return;
+ const modeText=automatic
+  ?summary.cards.map(x=>"•••• "+x.last4+" ("+x.count+")").join(", ")
+  :"•••• "+(selectedCard()?.last4||$("import-card-last4").value.trim())+" (שיוך ידני)";
+ if(!confirm("ייבוא "+items.length+" עסקאות. כרטיסים שזוהו: "+modeText+"."+warning+
+   "\nזיהוי כפילויות יבוצע לכל כרטיס בנפרד. האם לשמור?"))return;
  const btn=$("import-save");btn.disabled=true;let stored=0,duplicates=0,batchId=null;
  try{
-  const card=await resolveCard(context);
-  const result=cardCheck(items,card.last4);
-  if(!result.ok)throw Error(result.reason);
   const possibleLegacy=await legacyOverlap(context,items);
   if(possibleLegacy>0 && !confirm("⚠ זוהו "+possibleLegacy+" עסקאות דומות בדוחות ישנים ללא מזהה כרטיס. ייתכן שהן כבר כלולות בסיכום המשפחתי.\nהמערכת לא יכולה להכריע אוטומטית אם הן מאותו כרטיס או מכרטיס אחר.\nביטול יאפשר לבדוק את קובצי העבר. להמשיך ולשמור למרות החשש לכפל הוצאות?")){
    btn.disabled=false;say("הייבוא בוטל כדי למנוע כפילות אפשרית מול קבצים ישנים. שום עסקה חדשה לא נשמרה.");return;
   }
+  // Create/reuse a separate card profile for each unique last-four found in the file.
+  const byLast4=automatic
+   ?await resolveAutoCards(context,summary.cards.map(x=>x.last4))
+   :new Map([[selectedCard()?.last4||$("import-card-last4").value.trim(),await resolveCard(context)]]);
   const mapped=[];
   for(const row of items){
-   // Identical rows in repeated exports receive the same fingerprint.
+   const digits=automatic?row.rowCardLast4:[...byLast4.keys()][0];
+   const card=byLast4.get(digits);
+   if(!card?.id)throw Error("לא ניתן לזהות את הכרטיס של שורה "+row.line);
+   // Fingerprint depends on card and purchase identity, never on filename.
+   // For multi-card sources the identical-row ordinal is scoped per card.
    const fp=await digest(cardFingerprintInput(card.id,row));
    mapped.push({household_id:context.household,created_by:context.user.id,occurred_on:row.occurred_on,
     merchant:row.merchant,category:row.category,amount_agorot:row.amount_agorot,
@@ -266,7 +275,8 @@ async function save(){
   const selectedSheet=workbook[Number($("sheet-select").value)]?.name||null;
   const {data:batch,error:batchError}=await runtime.supabase.from("tevuna_import_batches").insert({
    household_id:context.household,created_by:context.user.id,filename,
-   card_id:card.id,
+   card_id:summary.cards.length===1?byLast4.get(summary.cards[0].last4)?.id:
+    automatic?null:byLast4.values().next().value?.id,
    sheet_name:selectedSheet?String(selectedSheet).slice(0,120):null,file_kind:fileType,
    statement_month:$("import-statement-month").value?$("import-statement-month").value+"-01":null,
    expected_count:validation.expectedCount,expected_net_agorot:validation.expectedNet
@@ -303,9 +313,9 @@ async function save(){
    say("מייבא… "+stored+" עסקאות חדשות; "+duplicates+" עסקאות שכבר קיימות קושרו גם לדוח זה.");
   }
 
-  say("✓ הייבוא הסתיים. נשמרו "+stored+" עסקאות חדשות; "+duplicates+" עסקאות חוזרות לא נשמרו שוב. כל פירוט נשמר ב'פירוטים שיובאו', משם אפשר למחוק אותו בשלמותו.");
+  say("✓ הייבוא הסתיים. זוהו "+byLast4.size+" כרטיסים. נשמרו "+stored+" עסקאות חדשות; "+duplicates+" עסקאות חוזרות לא נשמרו שוב. כל פירוט נשמר ב'פירוטים שיובאו', משם אפשר למחוק אותו בשלמותו.");
   $("import-file").value="";$("import-expected-count").value="";$("import-expected-total").value="";reset();
-  await refreshCards(card.id);
+  await refreshCards();
   if(stored>0){const months=new Map();for(const x of items){const month=x.occurred_on.slice(0,7);months.set(month,(months.get(month)||0)+1)}const mostCommon=[...months].sort((a,b)=>b[1]-a[1])[0]?.[0];if(mostCommon)$("month").value=mostCommon;}
   await runtime.reload();
   document.dispatchEvent(new CustomEvent("tevuna:imported"));
