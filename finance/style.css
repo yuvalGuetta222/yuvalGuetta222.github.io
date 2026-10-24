@@ -161,3 +161,44 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .card-spending-row:last-child{border:0}
 .card-spending-row strong{direction:ltr;white-space:nowrap;font-variant-numeric:tabular-nums}
 @media(max-width:600px){.import-card-new{grid-template-columns:1fr}.card-spending-detail{padding:16px}}
+
+
+/* Card attribution below transaction dates */
+.category-tx-meta{display:flex;flex-direction:column;gap:5px;align-items:flex-start}
+.category-tx-meta small{line-height:1.5}
+.category-card-label{font-weight:600;color:#83e8cf!important}
+.category-card-label.unknown{color:#f7d9a7!important}
+.edit-card-section{margin:14px 0;padding:16px;border:1px solid #3c5d73;border-radius:13px}
+.edit-card-section legend{font-weight:750;color:#c9f8e9;padding:0 6px}
+.edit-card-section[hidden],.edit-card-new-fields[hidden]{display:none!important}
+.edit-card-new-fields{display:grid;grid-template-columns:1.7fr 1fr;gap:12px;margin-top:12px}
+.edit-card-section .note{font-size:12px;line-height:1.7;padding-top:8px}
+
+/* Per-card net spending comparison */
+.card-spending-detail{padding:23px;margin:17px 0 20px}
+.card-spending-detail .section-heading{margin-bottom:16px}
+.card-spending-detail h2{font-size:clamp(19px,2.3vw,25px);margin:7px 0 10px}
+.card-spending-insight{font-weight:750;color:#a6f1d9;font-size:14px;line-height:1.8;margin:14px 0}
+.card-spending-ranked{display:grid;gap:10px}
+.card-spending-comparison{border:1px solid #35586d;background:#152e43;border-radius:14px;padding:15px 18px}
+.card-spending-comparison.unassigned{border-style:dashed}
+.card-spending-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.card-spending-name{display:grid;gap:5px}
+.card-spending-name strong{font-size:14px;overflow-wrap:anywhere}
+.card-spending-name small{font-size:12px;color:#adbdc9;line-height:1.65}
+.card-spending-amount{font-size:16px;direction:ltr;white-space:nowrap;font-variant-numeric:tabular-nums}
+.card-spending-track{background:#263f53;height:13px;overflow:hidden;border-radius:999px;margin-top:12px}
+.card-spending-fill{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#53acb8,#63e7b9);transition:width .2s}
+.card-spending-fill.unknown{background:repeating-linear-gradient(135deg,#718ba1 0,#718ba1 7px,#546c80 7px,#546c80 13px)}
+.card-spending-categories{font-size:12px;color:#b6cbd5;line-height:1.8;margin:10px 0 0}
+#card-unassigned-note{margin:15px 0 0;line-height:1.8}
+@media(max-width:570px){
+ .card-spending-detail{padding:17px}
+ .card-spending-head{gap:9px}
+ .card-spending-name strong{font-size:13px}
+ .card-spending-name small{font-size:11px}
+ .card-spending-amount{font-size:14px}
+ .edit-card-new-fields{grid-template-columns:1fr}
+ .edit-card-section{padding:11px}
+}
+@media(prefers-reduced-motion:reduce){.card-spending-fill{transition:none}}
