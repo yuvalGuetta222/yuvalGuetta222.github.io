@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {monthsInLabel,statementMonthEvidence,analyzeWorkbook,validatePreparedReport,parseExpectedAgorot} from "./bulk-import-core.mjs";
+import {monthsInLabel,statementMonthEvidence,analyzeWorkbook,validatePreparedReport,parseExpectedAgorot,buildBulkTransactions} from "./bulk-import-core.mjs";
 const headers=["תאריך עסקה","שם בית העסק","קטגוריה","4 ספרות אחרונות של כרטיס האשראי","סוג עסקה","סכום חיוב","תאריך חיוב"];
 const rows=[["אוקטובר 2026 | כל העסקאות"],["3 עסקאות"],headers,
  ["2026-09-30","WOLT","מסעדות","7888","רגילה",45.1,"2026-10-10"],
@@ -40,3 +40,28 @@ test("Missing card or mismatched totals block import",()=>{
  assert.deepEqual(validatePreparedReport({...obj,rows:[{...obj.rows[0],rowCardLast4:null}],manualLast4:"9591"}),[]);
  assert.equal(parseExpectedAgorot("123.45"),12345);
 });
+
+test("Several statements retain separate reporting month, purchase date and card, with idempotent fingerprints",async()=>{
+ const analyze=analyzeWorkbook({filename:"אוקטובר_2026_אשראי_מאוחד.xlsx",sheets:[{name:"כל העסקאות",data:rows}]});
+ const purchase=analyze.analysis.valid;
+ const cardIds=new Map([["7888","00000000-0000-4000-8000-000000000001"],
+ ["9591","00000000-0000-4000-8000-000000000002"],["0628","00000000-0000-4000-8000-000000000003"]]);
+ const make=async(month)=>buildBulkTransactions({rows:purchase,household:"household",userId:"user",
+  statementMonth:month,source:"xlsx",cardIds,hash:async value=>"hash:"+value});
+ const october=await make("2026-10");
+ assert.equal(october[0].occurred_on,"2026-09-30");
+ assert.equal(october[0].billing_month,"2026-10-01");
+ assert.equal(october[0].card_id,cardIds.get("7888"));
+ assert.equal(october[1].card_id,cardIds.get("9591"));
+ assert.equal(october[2].card_id,cardIds.get("0628"));
+ assert.equal(new Set(october.map(x=>x.source_fingerprint)).size,3);
+ assert.deepEqual((await make("2026-10")).map(x=>x.source_fingerprint),october.map(x=>x.source_fingerprint));
+ const september=await make("2026-09");
+ assert.deepEqual(september.map(x=>x.source_fingerprint),october.map(x=>x.source_fingerprint));
+ assert.equal(september[0].billing_month,"2026-10-01"); // authoritative date in row, even when statement label changes
+});
+test("Bulk mapper refuses to guess an unavailable card",async()=>{
+ await assert.rejects(()=>buildBulkTransactions({rows:[{...convertRow(),rowCardLast4:"7293"}],household:"h",userId:"u",
+  statementMonth:"2026-10",source:"xlsx",cardIds:new Map(),hash:async x=>x}),/Unidentified payment card/);
+});
+function convertRow(){return analyzeWorkbook({filename:"אוקטובר_2026.xlsx",sheets:[{name:"עסקאות",data:rows}]}).analysis.valid[0]}
