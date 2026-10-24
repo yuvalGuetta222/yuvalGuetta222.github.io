@@ -2,6 +2,7 @@
 export function cardLast4(value){
  const s=String(value??"").normalize("NFKC").trim().replace(/[\u200e\u200f\u202a-\u202e]/g,"");
  if(!s)return null;
+ if(typeof value==="number"&&Number.isInteger(value)&&value>=0&&value<=9999)return String(value).padStart(4,"0");
  if(/^\d{4}$/.test(s))return s;
  // Full numeric card values are not saved: only derive the last four.
  const digits=s.replace(/[\s-]/g,"");
@@ -81,4 +82,17 @@ export function cardSpendingReport(transactions,cards=[]){
   identifiedNetTotal:credit.filter(x=>x.key!=="legacy").reduce((n,x)=>n+x.total,0),
   unassignedNetTotal:credit.find(x=>x.key==="legacy")?.total||0,
   biggestIdentified:complete.filter(x=>x.key!=="manual"&&x.key!=="legacy"&&x.total>0)[0]||null};
+}
+
+/** Identity summary for one sheet. One workbook can contain several cards. */
+export function sheetCardSummary(rows){
+ const counts=new Map(),unknown=[];
+ for(const r of rows||[]){
+  const digits=cardLast4(r.rowCardLast4);
+  if(digits)counts.set(digits,(counts.get(digits)||0)+1);
+  else unknown.push(r.line);
+ }
+ return {cards:[...counts].map(([last4,count])=>({last4,count})).sort((a,b)=>b.count-a.count),
+  unknownCount:unknown.length,unknownLines:unknown.slice(0,15),
+  allIdentified:unknown.length===0 && counts.size>0};
 }
