@@ -117,6 +117,27 @@
  <div class="box disclaimer"><b>איך להבין השוואות?</b><p>ההתחייבויות הקבועות במגמה מבוססות על ההגדרות הנוכחיות, גם לחודשים קודמים. חודשים שבהם לא הוגדר תאריך תחילה לא יוצגו כאילו הם מאומתים. ניתן להגדיר תוקף בהוצאות קבועות. רק עסקאות שקושרו ידנית להתחייבויות בחודש המתאים מקטינות את השריון הקבוע. חיוב כרטיס במועד שונה, קובץ חסר, עסקה בתשלומים או הכנסה שטרם התקבלה יכולים להשפיע על המסקנות. לפני שינוי כלכלי משמעותי מומלץ להשלים נתונים ולוודא סכומים מול הדוחות המקוריים.</p></div>
  </section>
  <section id="import" class="screen hidden">
+  <section class="box bulk-import-panel" aria-labelledby="bulk-import-title">
+   <div class="section-intro">
+    <span class="eyebrow">MULTI-STATEMENT IMPORT</span>
+    <h2 id="bulk-import-title">ייבוא כמה דוחות אשראי ביחד</h2>
+    <p class="subtitle">בחרו כמה קבצי Excel או CSV בפעולה אחת. לכל דוח נזהה חודש דוח, לכל עסקה נשמור תאריך עסקה, חודש חיוב וארבע ספרות אחרונות של הכרטיס. דוחות של חודשים וכרטיסים שונים נשמרים בנפרד.</p>
+   </div>
+   <label class="upload-area bulk-upload">⬆ בחירת כמה קבצים ביחד
+    <input type="file" id="bulk-import-files" multiple accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+    <small>עד 20 קבצים, 8MB לקובץ ו־50MB במצטבר • קריאת הקבצים בדפדפן בלבד</small>
+   </label>
+   <p id="bulk-import-count" class="note">בחרו כמה קבצים ביחד כדי לבדוק אותם לפני השמירה.</p>
+   <div id="bulk-import-list" class="bulk-import-list" aria-live="polite"></div>
+   <div class="bulk-import-actions">
+    <button type="button" id="bulk-import-start" class="primary" disabled>אישור וייבוא כל הדוחות שנבדקו</button>
+    <button type="button" id="bulk-import-clear" class="secondary">נקה דוחות שטרם נשמרו</button>
+   </div>
+   <p id="bulk-status" class="feedback" role="status" aria-live="polite"></p>
+   <p class="note">דוח שאין לו חודש ברור או עסקה שחסר בה זיהוי כרטיס לא יישמרו אוטומטית. ניתן לתקן את הנתונים בסקירה. קבצים שכבר נשמרו אפשר למחוק בנפרד ב״פירוטים שיובאו״.</p>
+  </section>
+  <details class="single-import-legacy">
+   <summary>ייבוא קובץ אחד עם מיפוי עמודות ידני (למקרים מיוחדים)</summary>
   <div class="two">
    <div class="box">
     <span class="eyebrow">SMART CREDIT IMPORT</span><h2>מייבאים פירוט אשראי</h2>
@@ -165,6 +186,7 @@
     <div class="table-wrap"><table><thead><tr><th>ייבוא</th><th>תאריך</th><th>בית העסק</th><th>כרטיס</th><th>סוג</th><th>קטגוריה</th><th>מקור קטגוריה</th><th>תשלומים</th><th>סכום</th></tr></thead><tbody id="import-preview"></tbody></table></div>
     <div class="import-actions"><button type="button" class="primary" id="import-save" disabled>אישור ושמירת העסקאות</button></div>
   </div>
+  </details>
   <details class="manual-transaction-entry box"><summary>הוספת עסקה ידנית (אופציונלי)</summary><p class="subtitle">למקרה של תשלום במזומן או הוצאה שלא מופיעה בקובץ האשראי.</p><form id="tx-form">
  <label>תאריך<input name="occurred_on" type="date" required></label>
  <label>בית עסק / פירוט<input name="merchant" maxlength="150" required placeholder="למשל סופרמרקט"></label>
