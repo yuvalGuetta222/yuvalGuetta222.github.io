@@ -1,6 +1,6 @@
 import {CATEGORIES,parseCSV,fileIsSupported,convertRows,findHeaderRow} from "./credit-core.mjs";
-import {sheetCardSummary,cardFingerprintInput,potentialLegacyOverlap} from "./card-import.mjs";
-import {analyzeWorkbook,statementMonthEvidence,validatePreparedReport,parseExpectedAgorot} from "./bulk-import-core.mjs";
+import {sheetCardSummary,potentialLegacyOverlap} from "./card-import.mjs";
+import {analyzeWorkbook,statementMonthEvidence,validatePreparedReport,parseExpectedAgorot,buildBulkTransactions} from "./bulk-import-core.mjs";
 
 const $=id=>document.getElementById(id);
 const FILE_LIMIT=20,PER_FILE=8*1024*1024,TOTAL=50*1024*1024,MAX_ROWS=4000,PAGE=40;
@@ -116,15 +116,16 @@ function renderRows(item,container){
  const choices=[...new Set([...CATEGORIES,...rows.map(x=>x.category)].filter(Boolean))];
  for(const row of rows.slice(from,to)){
   const tr=el("tr"),check=el("input");check.type="checkbox";check.checked=row.selected;
+  check.disabled=busy||item.done;
   check.setAttribute("aria-label","כלול עסקה בשורה "+row.line);
-  check.addEventListener("change",()=>{row.selected=check.checked;render()});
+  check.addEventListener("change",()=>{row.selected=check.checked;item.detailsOpen=true;render()});
   const checkboxCell=el("td");checkboxCell.append(check);
   tr.append(checkboxCell);
   for(const value of [row.occurred_on,row.billingMonth?.slice(0,7)||"לפי חודש הדוח",row.rowCardLast4?"•••• "+row.rowCardLast4:"לא זוהה",row.merchant])
    tr.append(el("td",value));
   const td=el("td"),sel=el("select");sel.setAttribute("aria-label","קטגוריה "+row.merchant);
   for(const choice of choices)sel.append(option(choice,choice));
-  sel.value=row.category;
+  sel.value=row.category;sel.disabled=busy||item.done;
   sel.addEventListener("change",()=>{row.category=sel.value;row.categoryMethod="manual"});
   td.append(sel);tr.append(td);
   tr.append(el("td",(row.entry_kind==="refund"?"−":"")+fmt(row.amount_agorot)));
@@ -134,8 +135,8 @@ function renderRows(item,container){
  const nav=el("div",undefined,"bulk-pagination");
  const previous=el("button","הקודם","secondary");previous.type="button";previous.disabled=item.page===0;
  const next=el("button","הבא","secondary");next.type="button";next.disabled=to>=rows.length;
- previous.addEventListener("click",()=>{item.page--;render()});
- next.addEventListener("click",()=>{item.page++;render()});
+ previous.addEventListener("click",()=>{item.page--;item.detailsOpen=true;render()});
+ next.addEventListener("click",()=>{item.page++;item.detailsOpen=true;render()});
  nav.append(previous,el("span",(from+1)+"–"+to+" מתוך "+rows.length),next);container.append(nav);
 }
 function render(){
@@ -146,7 +147,7 @@ function render(){
   const title=el("div");title.append(el("strong",item.filename),el("p",item.done?"✓ יובא בהצלחה":item.error?"⚠ נדרש תיקון":"טרם נשמר • בדיקת הנתונים לפני ייבוא","subtitle"));
   head.append(title);
   if(!item.done){
-   const remove=el("button","הסר מהרשימה","secondary");remove.type="button";
+   const remove=el("button","הסר מהרשימה","secondary");remove.type="button";remove.disabled=busy;
    remove.addEventListener("click",()=>{prepared=prepared.filter(x=>x!==item);render()});
    head.append(remove);
   }else head.append(el("span",item.newCount+" עסקאות חדשות • "+item.duplicateCount+" חוזרות","note"));
@@ -158,14 +159,14 @@ function render(){
   for(const [index,sheet] of item.sheets.entries()){
    if(findHeaderRow(sheet.data||[]))sheets.append(option(String(index),sheet.name));
   }
-  sheets.value=String(item.sheetIndex);sheets.disabled=item.done;
+  sheets.value=String(item.sheetIndex);sheets.disabled=item.done||busy;
   sheets.addEventListener("change",()=>{
    try{prepareSheet(item,Number(sheets.value));item.error=null;render()}
    catch(e){notify("גיליון זה אינו מתאים: "+String(e.message));sheets.value=String(item.sheetIndex)}
   });
   sheetLabel.append(sheets);
   const monthLabel=el("label","חודש הדוח");
-  const monthInput=el("input");monthInput.type="month";monthInput.value=item.month;monthInput.disabled=item.done;
+  const monthInput=el("input");monthInput.type="month";monthInput.value=item.month;monthInput.disabled=item.done||busy;
   monthInput.setAttribute("aria-label","חודש הדוח עבור "+item.filename);
   monthInput.addEventListener("change",()=>{item.month=monthInput.value;item.autoMonth="manually-confirmed";updateItemSummary(item,body)});
   monthLabel.append(monthInput);
@@ -183,7 +184,7 @@ function render(){
    for(const card of cards)sel.append(option(card.last4,card.nickname+" •••• "+card.last4));
    sel.append(option("new","כרטיס חדש"));
    sel.value=item.manualCard;
-   sel.disabled=item.done;
+   sel.disabled=item.done||busy;
    sel.addEventListener("change",()=>{item.manualCard=sel.value;render()});manual.append(sel);body.append(manual);
    if(item.manualCard==="new"){
     const grid=el("div",undefined,"bulk-meta-fields");
@@ -199,22 +200,24 @@ function render(){
   }else if(summary.unknownCount)body.append(el("p","חסרות ארבע ספרות ב-"+summary.unknownCount+" שורות; יש לבחור כותרת כרטיס נכונה או להסיר שורות לא מזוהות מהייבוא.","negative"));
   const checks=el("div",undefined,"bulk-meta-fields");
   const countLabel=el("label","מספר עסקאות לביקורת (אופציונלי)"),count=el("input");
-  count.type="number";count.min="0";count.step="1";count.value=item.expectedCount;count.disabled=item.done;
+  count.type="number";count.min="0";count.step="1";count.value=item.expectedCount;count.disabled=item.done||busy;
   count.addEventListener("input",()=>{item.expectedCount=count.value;updateItemSummary(item,body)});
   countLabel.append(count);
   const totalLabel=el("label","סכום נטו לביקורת ₪ (אופציונלי)"),total=el("input");
-  total.inputMode="decimal";total.placeholder="למשל 22062.19";total.value=item.expectedTotal;total.disabled=item.done;
+  total.inputMode="decimal";total.placeholder="למשל 22062.19";total.value=item.expectedTotal;total.disabled=item.done||busy;
   total.addEventListener("input",()=>{item.expectedTotal=total.value;try{updateItemSummary(item,body)}catch(e){body.querySelector("[data-bulk-validation]").textContent=e.message;updateStartState()}});
   totalLabel.append(total);checks.append(countLabel,totalLabel);body.append(checks);
   const validate=el("p",undefined,"note");validate.setAttribute("data-bulk-validation","");body.append(validate);
   const details=el("details",undefined,"bulk-transaction-details");
+  details.open=!!item.detailsOpen;
+  details.addEventListener("toggle",()=>{item.detailsOpen=details.open});
   const sum=el("summary","בדיקת עסקאות ושינוי קטגוריות לפני שמירה");
   details.append(sum);
   const actions=el("div",undefined,"bulk-row-actions");
   const selectAll=el("button","בחרו את כל העסקאות","secondary"),selectNone=el("button","בטלו בחירת עסקאות","secondary");
-  selectAll.type="button";selectNone.type="button";selectAll.disabled=item.done;selectNone.disabled=item.done;
-  selectAll.addEventListener("click",()=>{item.rows.forEach(x=>x.selected=true);render()});
-  selectNone.addEventListener("click",()=>{item.rows.forEach(x=>x.selected=false);render()});
+  selectAll.type="button";selectNone.type="button";selectAll.disabled=item.done||busy;selectNone.disabled=item.done||busy;
+  selectAll.addEventListener("click",()=>{item.rows.forEach(x=>x.selected=true);item.detailsOpen=true;render()});
+  selectNone.addEventListener("click",()=>{item.rows.forEach(x=>x.selected=false);item.detailsOpen=true;render()});
   actions.append(selectAll,selectNone);details.append(actions);
   const rowsPanel=el("div",undefined,"table-wrap");renderRows(item,rowsPanel);details.append(rowsPanel);
   body.append(details);
@@ -230,6 +233,8 @@ function updateStartState(){
  const valid=remaining.length>0&&remaining.every(r=>!r.error&&!r.problems?.length&&
   (r.manualCard!=="new"||String(r.manualNewName||"").trim()));
  $("bulk-import-start").disabled=busy||!valid;
+ $("bulk-import-files").disabled=busy;
+ $("bulk-import-clear").disabled=busy;
  $("bulk-import-count").textContent=prepared.length?
   prepared.filter(r=>r.done).length+" מתוך "+prepared.length+" דוחות נשמרו • "+remaining.length+" עדיין ממתינים":
   "בחרו כמה קבצים ביחד כדי לבדוק אותם לפני השמירה.";
@@ -284,19 +289,13 @@ async function persist(context,item){
   const four=item.manualCard==="new"?item.manualNewLast4:item.manualCard;
   byDigits.set(four,await cardFor(context,four,item.manualNewName));
  }
- const mapped=[];
- for(const row of selected){
-  const digits=row.rowCardLast4||[...byDigits.keys()][0],card=byDigits.get(digits);
-  if(!card)throw Error("לא זוהה כרטיס בשורה "+row.line);
-  mapped.push({
-   household_id:context.household,created_by:context.user.id,
-   occurred_on:row.occurred_on,merchant:row.merchant,category:row.category,amount_agorot:row.amount_agorot,
-   card_id:card.id,entry_kind:row.entry_kind,source:/\.xlsx$/i.test(item.filename)?"xlsx":"csv",
-   source_fingerprint:await digest(cardFingerprintInput(card.id,row)),
-   billing_month:row.billingMonth||item.month+"-01",
-   installment_number:row.installment_number,installment_total:row.installment_total
-  });
- }
+ const ids=new Map([...byDigits].map(([four,card])=>[four,card.id]));
+ if(!summary.cards.length)ids.set("manual",[...byDigits.values()][0].id);
+ const mapped=await buildBulkTransactions({
+  rows:selected,household:context.household,userId:context.user.id,
+  statementMonth:item.month,source:/\.xlsx$/i.test(item.filename)?"xlsx":"csv",
+  cardIds:ids,hash:digest
+ });
  let batchId=null,stored=0,duplicates=0;
  try{
   const first=selected[0];
