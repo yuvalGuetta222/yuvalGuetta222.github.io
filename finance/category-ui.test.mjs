@@ -35,11 +35,19 @@ test("Category summary opens transactions and the editing form on click",()=>{
   charts[0].click();
   assert.equal(els.get("category-detail-dialog").open,true);
   const txs=els.get("category-detail-list").children;assert.equal(txs.length,1);
+  assert.match(txs[0].children[0].children[1].children[1].textContent,/כרטיס לא משויך/);
   txs[0].click();
   assert.equal(els.get("category-detail-dialog").open,false);
   assert.equal(els.get("edit-transaction-dialog").open,true);
   assert.equal(els.get("edit-transaction-form").elements.merchant.value,"Tennis court");
   assert.equal(els.get("edit-transaction-form").elements.billing_month.value,"2026-11");
   assert.equal(els.get("edit-transaction-form").elements.amount.value,"450.00");
+  assert.equal(els.get("edit-transaction-card-section").hidden,false);
+  const data={transactions:[{...transactions[0],card_id:"card-01"}],cards:[{id:"card-01",last4:"7888",nickname:"ויזה משפחתי"}]};
+  listeners.get("tevuna:loaded")({detail:{data}});
+  els.get("category-bars").children[0].click();
+  const matched=els.get("category-detail-list").children[0];
+  assert.match(matched.children[0].children[1].children[1].textContent,/7888/);
+  assert.match(matched.children[0].children[1].children[1].textContent,/ויזה משפחתי/);
  }finally{globalThis.document=prev}
 });
