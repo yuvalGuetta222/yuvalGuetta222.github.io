@@ -269,6 +269,12 @@ export function setupImporter(context){
  $("import-save").addEventListener("click",save);
  $("only-visible").addEventListener("click",onlyVisible);
  $("select-all-import").addEventListener("click",selectAll);
+ $("import-card-select").addEventListener("change",()=>{showSelectedCard();updateSummary()});
+ $("import-card-name").addEventListener("input",checkSelectedCard);
+ $("import-card-last4").addEventListener("input",()=>{checkSelectedCard();updateSummary()});
+ document.addEventListener("tevuna:screen-changed",e=>{if(e.detail?.screen==="import")refreshCards()});
+ document.addEventListener("tevuna:loaded",()=>{if(!$("import").classList.contains("hidden"))refreshCards()});
+ showSelectedCard();
  $("import-expected-count").addEventListener("input",updateSummary);
  $("import-expected-total").addEventListener("input",updateSummary);
 }
