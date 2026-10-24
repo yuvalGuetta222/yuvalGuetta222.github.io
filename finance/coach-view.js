@@ -76,7 +76,7 @@ export function setupCoach(context){
   const now=new Date();
   const ledger=householdBalance({incomes:data.income,transactions:data.transactions,fixed:data.fixed,coverage:data.coverage});
   const fallback=spendingForecast({month,now,current:data.transactions,fixed:data.fixed,history:[]});
-  if($("date-basis").value==="billing"){
+  if($("date-basis").value!=="transaction"){
    showForecast({...fallback,confidence:"unavailable",projectedRemaining:null,projectedTotal:null,lower:null,upper:null,reason:"התחזית, התשלומים והמנויים מבוססים על תאריך העסקה. עבורם עברו למצב ׳לפי תאריך עסקה׳."},ledger);
    showPriorities([]);showRecurring({installments:[],recurring:[]});
    $("coach-status").textContent="במצב חודש חיוב מוצגים חיובים מתועדים בלבד. ניתוח מגמות התנהגות זמין לפי תאריך עסקה.";
