@@ -1,6 +1,7 @@
+import {findHeaderRow,convertRows} from "./credit-core.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
-import {monthsInLabel,statementMonthEvidence,analyzeWorkbook,validatePreparedReport,parseExpectedAgorot,buildBulkTransactions,extractControlSheet} from "./bulk-import-core.mjs";
+import {monthsInLabel,statementMonthEvidence,analyzeWorkbook,validatePreparedReport,parseExpectedAgorot,buildBulkTransactions,extractControlSheet,auditRecurringStatement} from "./bulk-import-core.mjs";
 const headers=["תאריך עסקה","שם בית העסק","קטגוריה","4 ספרות אחרונות של כרטיס האשראי","סוג עסקה","סכום חיוב","תאריך חיוב"];
 const rows=[["אוקטובר 2026 | כל העסקאות"],["3 עסקאות"],headers,
  ["2026-09-30","WOLT","מסעדות","7888","רגילה",45.1,"2026-10-10"],
@@ -91,4 +92,43 @@ test("Visa report totals and counts can be inferred from control tab independent
   ["מספר עסקאות",22]
  ]}]);
  assert.deepEqual(parsed,{expectedCount:22,expectedAgorot:299707,sourceHeaderAgorot:299707});
+});
+
+test("Recurring 16-column format passes only when dates, card endings and source ledger are consistent",()=>{
+ const header=["תאריך עסקה","שם בית העסק","קטגוריה","4 ספרות אחרונות של כרטיס האשראי",
+ "סוג עסקה","סכום חיוב","מטבע חיוב","סכום עסקה מקורי","מטבע עסקה מקורי","תאריך חיוב",
+ "הערות","תיוגים","מועדון הנחות","מפתח דיסקונט","אופן ביצוע העסקה","שער המרה"];
+ const data=[["אוקטובר 2026"],header,
+ ["13-10-2026","קינן שפי","עירייה וממשלה","9591","רגילה",300,"₪",300,"₪","15-10-2026"],
+ ["12-10-2026","קלמנטינה פירות וירקות","מזון וצריכה",628,"רגילה",12.9,"₪",12.9,"₪","15-10-2026"]];
+ const found=findHeaderRow(data),parsed=convertRows(data,found.index,found.mapping);
+ const control={expectedCount:2,expectedAgorot:31290,sourceHeaderAgorot:31290};
+ const check=auditRecurringStatement({sheet:{name:"כל העסקאות",data},headerIndex:found.index,
+ mapping:found.mapping,parsed,control});
+ assert.equal(check.fixedFormat,true);
+ assert.deepEqual(check.issues,[]);
+ assert.equal(parsed.valid[0].rowCardLast4,"9591");
+ assert.equal(parsed.valid[1].rowCardLast4,"0628");
+ assert.equal(parsed.valid[1].amount_agorot,1290);
+ assert.equal(parsed.valid[1].billingMonth,"2026-10-01");
+});
+test("A rejected transaction or a blank billing date fails validation rather than silently lowering spending",()=>{
+ const header=["תאריך עסקה","שם בית העסק","קטגוריה","4 ספרות אחרונות של כרטיס האשראי","סוג עסקה","סכום חיוב","תאריך חיוב"];
+ const rows=[header,
+ ["2026-10-15","חנות א","קניות","7888","רגילה",100,"2026-10-15"],
+ ["2026-10-15","חנות ב","קניות","7888","רגילה",80,""],
+ ["invalid date","חנות ג","קניות","7888","רגילה",35,"2026-10-15"]];
+ const found=findHeaderRow(rows),parsed=convertRows(rows,found.index,found.mapping);
+ const result=auditRecurringStatement({sheet:{data:rows},headerIndex:found.index,mapping:found.mapping,parsed,control:{}});
+ assert.equal(result.fixedFormat,true);
+ assert.ok(result.issues.some(x=>x.includes("תאריך חיוב")));
+ assert.ok(result.issues.some(x=>x.includes("לא נקראו")));
+});
+test("When bank headline exceeds parsed detail, standard import is blocked until source is corrected",()=>{
+ const header=["תאריך עסקה","שם בית העסק","קטגוריה","4 ספרות אחרונות של כרטיס האשראי","סוג עסקה","סכום חיוב","תאריך חיוב"];
+ const data=[header,["2026-09-15","חנות","קניות","9591","רגילה",75,"2026-09-15"]];
+ const found=findHeaderRow(data),parsed=convertRows(data,found.index,found.mapping);
+ const audit=auditRecurringStatement({sheet:{data},headerIndex:found.index,mapping:found.mapping,parsed,
+ control:{expectedAgorot:7500,sourceHeaderAgorot:1100679}});
+ assert.ok(audit.issues.some(x=>x.includes("סכום כותרת")));
 });
