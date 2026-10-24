@@ -1,5 +1,5 @@
 import {setupBackup} from "./export-view.js";
-import {spendingByCard} from "./card-import.mjs";
+import {cardSpendingReport} from "./card-import.mjs";
 import {householdBalance} from "./household-ledger.mjs";
 import {setupCoach} from "./coach-view.js";
 import {setupIncomeManagement} from "./income-view.js";
@@ -225,17 +225,51 @@ function render(){
  $("ledger-note").textContent="זהו סכום לתכנון, לא יתרת הבנק. התחייבויות שלא קושרו לעסקאות מנוכות, גם אם שולמו מחוץ לאשראי. בחודשים בלי עסקאות, לא משחררים התחייבויות אוטומטית.";
  const cardPanel=$("card-spending-list");
  cardPanel.replaceChildren();
- const cardTotals=spendingByCard(data.transactions,data.cards);
- for(const card of cardTotals){
-  const line=document.createElement("div");line.className="card-spending-row";
-  const name=document.createElement("span");name.textContent=card.label+" • "+card.count+" עסקאות";
-  const value=document.createElement("strong");value.textContent=money(card.total);
-  line.append(name,value);cardPanel.append(line);
+ const cardReport=cardSpendingReport(data.transactions,data.cards);
+ const expenseGroups=cardReport.groups.filter(x=>x.key!=="manual");
+ const maxCard=Math.max(1,...expenseGroups.map(x=>Math.max(0,x.total)));
+ if(cardReport.biggestIdentified){
+  $("card-spending-insight").textContent=
+   "מבין הכרטיסים המזוהים, ההוצאה הגבוהה ביותר היא ב-"+cardReport.biggestIdentified.label+
+   ": "+money(cardReport.biggestIdentified.total)+".";
+ }else if(cardReport.unassignedNetTotal!==0){
+  $("card-spending-insight").textContent="כדי להשוות בין כרטיסים, קודם צריך לשייך את העסקאות הישנות לכרטיס המתאים.";
+ }else{
+  $("card-spending-insight").textContent="ברגע שתייבאו עסקאות עם זיהוי כרטיס, תופיע כאן השוואה בין הכרטיסים.";
  }
- if(!cardTotals.length){
+ for(const card of cardReport.groups){
+  const line=document.createElement("article");line.className="card-spending-comparison"+(card.key==="legacy"?" unassigned":"");
+  const head=document.createElement("div");head.className="card-spending-head";
+  const name=document.createElement("div");name.className="card-spending-name";
+  const title=document.createElement("strong");title.textContent=card.label;
+  const subtitle=document.createElement("small");subtitle.textContent=card.count+" עסקאות"+
+   (card.percentage!==null?" • "+Math.round(card.percentage)+"% מההוצאות נטו החיוביות בכרטיסים":"");
+  name.append(title,subtitle);
+  const amount=document.createElement("b");amount.className="card-spending-amount";amount.textContent=money(card.total);
+  head.append(name,amount);line.append(head);
+  if(card.key!=="manual"){
+   const track=document.createElement("div");track.className="card-spending-track";
+   const fill=document.createElement("span");fill.className="card-spending-fill"+(card.key==="legacy"?" unknown":"");
+   fill.style.width=(Math.max(0,card.total)/maxCard*100).toFixed(2)+"%";
+   track.append(fill);line.append(track);
+  }
+  if(card.categories.length){
+   const categories=document.createElement("p");categories.className="card-spending-categories";
+   categories.textContent="הקטגוריות הגדולות: "+card.categories
+    .map(x=>x.name+" "+money(x.amount)).join(" • ");
+   line.append(categories);
+  }
+  cardPanel.append(line);
+ }
+ if(!cardReport.groups.length){
   const empty=document.createElement("p");empty.className="empty";
-  empty.textContent="אין עסקאות בחודש זה";cardPanel.append(empty);
+  empty.textContent="אין עסקאות בחודש הזה. אחרי ייבוא דוחות אשראי, תופיע כאן החלוקה לפי כרטיסים.";
+  cardPanel.append(empty);
  }
+ const unknownMsg=$("card-unassigned-note");
+ unknownMsg.textContent=cardReport.groups.some(x=>x.key==="legacy")
+  ?"חלק מהעסקאות יובאו בעבר ללא זיהוי כרטיס. הן מוצגות בנפרד ולא משויכות לכרטיס באופן משוער. לשיוך: פתחו קטגוריה, בחרו עסקה והוסיפו כרטיס בחלונית העריכה. הדירוג בין הכרטיסים המזוהים אינו כולל את ההוצאות שעדיין לא שויכו."
+  :"ההשוואה מחושבת לפי החודש שנבחר ולפי הכרטיס שנשמר לכל עסקה. זיכויים מפחיתים את הסכום. הוצאות ידניות מוצגות בנפרד.";
  const cat=categorySpend();
 
  const insights=[];
