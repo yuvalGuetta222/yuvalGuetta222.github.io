@@ -55,7 +55,7 @@ export function analyzeWorkbook({filename,sheets}){
  if(!selected?.count)throw Error("לא נמצאה טבלת עסקאות עם תאריך, בית עסק וסכום");
  const selectedSheet=sheets[selected.index];
  const evidence=statementMonthEvidence({filename,sheetName:selectedSheet.name,
-  topRows:selectedSheet.data.slice(0,4),transactions:selected.valid});
+  topRows:selectedSheet.data.slice(0,selected.headerIndex),transactions:selected.valid});
  return {options:possibilities.filter(x=>x.count>0).map(x=>({index:x.index,name:x.sheetName,count:x.count})),
   selectedIndex:selected.index,analysis:selected,evidence,
   summary:sheetCardSummary(selected.valid)};
