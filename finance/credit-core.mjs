@@ -3,7 +3,8 @@ import {cardLast4} from "./card-import.mjs";
 export const CATEGORIES = ["מזון וסופר","מסעדות ומשלוחים","תחבורה","בילויים","בריאות","קניות","חשבונות הבית","שכירות","מנויים","חינוך","ביטוח","נסיעות ונופש","אחר"];
 
 const headers = {
-  date: ["תאריך חיוב","תאריך זיכוי","תאריך עסקה","תאריך ביצוע","תאריך רכישה","תאריך","date","transaction date","posting date"],
+  date: ["תאריך עסקה","תאריך ביצוע","תאריך רכישה","תאריך חיוב","תאריך זיכוי","transaction date","תאריך","date","posting date"],
+  billingDate: ["תאריך חיוב","מועד חיוב","billing date","posting date"],
   merchant: ["שם בית עסק","שם העסק","בית עסק","שם בית העסק","שם ספק","שם בית עסק / תיאור","תיאור עסקה","תיאור פעולה","תיאור","merchant","description","supplier"],
   amount: ["סכום חיוב בשח","סכום חיוב בשקל","סכום לחיוב","סכום החיוב","סכום חיוב","סכום בשח","סכום בשקל","סכום ₪","סכום העסקה בשח","סכום העסקה","סכום עסקה","סכום","amount","charged amount","billing amount"],
   category: ["קטגוריה","קטגוריית עסקה","קטגורית עסקה","קטגוריית בית העסק","קטגורית בית העסק","קטגוריית הוצאה","קטגורית הוצאה","סיווג קטגוריה","סיווג עסקה","סיווג בית העסק","סיווג","ענף בית העסק","ענף","category","merchant category","spending category","category name"],
@@ -145,6 +146,7 @@ export function convertRows(rows, headerIndex, mapping) {
     const cell=k=>mapping[k]>=0?row[mapping[k]]:null;
     const merchant=String(cell("merchant")??"").replace(/\s+/g," ").trim().slice(0,150);
     const date=parseDate(cell("date"));
+    const billingDate=parseDate(cell("billingDate"));
     const parsed=parseAmount(cell("amount"));
     const kindText=key(cell("kind"));
     if(!merchant&&!date&&parsed===null)continue;
@@ -169,7 +171,7 @@ export function convertRows(rows, headerIndex, mapping) {
     const fromFile=sourceCategory(cell("category"));
     const category=fromFile||categorize(merchant);
     const installments=parseInstallments(cell("installment"),cell("installmentNumber"),cell("installmentTotal"));
-    result.push({line:i+1,occurred_on:date,merchant,amount_agorot,entry_kind,category,sourceCategory:fromFile,categoryMethod:fromFile?"file":category==="אחר"?"unknown":"suggestion",...installments,identity,sequence:seq,importIdentity,importSequence,rowCardLast4,selected:true});
+    result.push({line:i+1,occurred_on:date,billingMonth:billingDate?billingDate.slice(0,7)+"-01":null,merchant,amount_agorot,entry_kind,category,sourceCategory:fromFile,categoryMethod:fromFile?"file":category==="אחר"?"unknown":"suggestion",...installments,identity,sequence:seq,importIdentity,importSequence,rowCardLast4,selected:true});
   }
   return {valid:result,skipped};
 }
