@@ -29,7 +29,8 @@ function render(){
   main.append(el("div",b.statement_month?"פירוט אשראי • "+labelMonth(b.statement_month):"פירוט אשראי • "+period(b),"statement-period"));
   main.append(el("h3",b.filename,"statement-filename"));
   const details=el("p",[
-    "כרטיס: "+(b.card_id?(cardLabels.get(b.card_id)||"לא זוהה"):"ייבוא ישן • כרטיס לא מזוהה"),
+    "כרטיסים: "+(b.card_mode==="automatic"?(b.card_last4s?.length?b.card_last4s.map(x=>"•••• "+x).join(", "):"לא נמצאו שיוכי כרטיס"):
+      b.card_id?(cardLabels.get(b.card_id)||"לא זוהה"):"ייבוא ישן • כרטיס לא מזוהה"),
     "גיליון: "+(b.sheet_name||(b.file_kind==="xlsx"?"לא נשמר":"CSV")),"יובא: "+niceDate(b.imported_at),
     "תאריכי עסקאות: "+period(b),
     Number(b.transaction_count)+" עסקאות שנשמרו","סכום נטו: "+money(b.net_amount_agorot),b.expected_net_agorot===null?"ללא בדיקת סכום מקור":b.net_amount_agorot===b.expected_net_agorot?"סכום תואם לביקורת":"פער מול סיכום מקור"
@@ -80,7 +81,7 @@ async function refresh(){
  const current=++seq;
  if(!$("statements").classList.contains("hidden"))status("טוען פירוטי אשראי…");
  const [summary,profiles]=await Promise.all([runtime.supabase.from("tevuna_import_batch_summary")
-  .select("id,filename,sheet_name,file_kind,imported_at,transaction_count,net_amount_agorot,first_transaction_date,last_transaction_date,statement_month,expected_count,expected_net_agorot,card_id")
+  .select("id,filename,sheet_name,file_kind,imported_at,transaction_count,net_amount_agorot,first_transaction_date,last_transaction_date,statement_month,expected_count,expected_net_agorot,card_id,card_mode,card_last4s")
   .eq("household_id",ctx.household).order("imported_at",{ascending:false}).limit(400),
   runtime.supabase.from("tevuna_cards").select("id,nickname,last4").eq("household_id",ctx.household)]);
  const {data,error}=summary;
