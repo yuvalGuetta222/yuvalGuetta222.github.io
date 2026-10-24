@@ -48,7 +48,7 @@ export function statementMonthEvidence({filename="",sheetName="",topRows=[],tran
 export function extractControlSheet(sheets=[]){
  const matches=sheets.filter(x=>/בקרת|התאמה|summary|reconcil|audit/i.test(String(x.name||"")));
  const normalize=s=>String(s??"").normalize("NFKC").replace(/[\u200e\u200f]/g,"").replace(/["״׳']/g,"").replace(/\s+/g," ").trim();
- const amount=v=>{const n=Number(String(v??"").replace(/[,₪\s]/g,""));return Number.isFinite(n)?Math.round(n*100):null};
+ const amount=v=>{const text=String(v??"").replace(/[,₪\s]/g,"");if(!text)return null;const n=Number(text);return Number.isFinite(n)?Math.round(n*100):null};
  let expectedCount=null,expectedAgorot=null,sourceHeaderAgorot=null;
  for(const sheet of matches)for(const row of sheet.data||[]){
   const label=normalize(row?.[0]),b=row?.[1],c=row?.[2];
@@ -57,7 +57,7 @@ export function extractControlSheet(sheets=[]){
   if(/^מספר עסקאות$/.test(label)&&Number.isInteger(Number(b)))expectedCount=Number(b);
   if(/סך הכל בשורת הכותרת בדוח|סך חיובים בדוח המקורי/.test(label))
    sourceHeaderAgorot=amount(b);
-  if(/סך הכל כל העסקאות|סך העסקאות כולן/.test(label)){
+  if(/(?:סהכ|סך הכל) כל העסקאות|סך העסקאות כולן/.test(label)){
    if(amount(c)!==null)expectedAgorot=amount(c);
    else if(expectedAgorot===null)expectedAgorot=amount(b);
    if(sourceHeaderAgorot===null)sourceHeaderAgorot=amount(b);
