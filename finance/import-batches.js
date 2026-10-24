@@ -1,6 +1,6 @@
 /* Manage entire imported credit statement sheets, never individual manual records. */
 const $=id=>document.getElementById(id);
-let runtime=null,selected=null,loading=false,seq=0,records=[];
+let runtime=null,selected=null,loading=false,seq=0,records=[],cardLabels=new Map();
 const money=n=>new Intl.NumberFormat("he-IL",{style:"currency",currency:"ILS",maximumFractionDigits:0}).format((Number(n)||0)/100);
 const niceDate=d=>d?new Intl.DateTimeFormat("he-IL",{dateStyle:"medium"}).format(new Date(d)):"—";
 const labelMonth=d=>{
@@ -29,6 +29,7 @@ function render(){
   main.append(el("div",b.statement_month?"פירוט אשראי • "+labelMonth(b.statement_month):"פירוט אשראי • "+period(b),"statement-period"));
   main.append(el("h3",b.filename,"statement-filename"));
   const details=el("p",[
+    "כרטיס: "+(b.card_id?(cardLabels.get(b.card_id)||"לא זוהה"):"ייבוא ישן • כרטיס לא מזוהה"),
     "גיליון: "+(b.sheet_name||(b.file_kind==="xlsx"?"לא נשמר":"CSV")),"יובא: "+niceDate(b.imported_at),
     "תאריכי עסקאות: "+period(b),
     Number(b.transaction_count)+" עסקאות שנשמרו","סכום נטו: "+money(b.net_amount_agorot),b.expected_net_agorot===null?"ללא בדיקת סכום מקור":b.net_amount_agorot===b.expected_net_agorot?"סכום תואם לביקורת":"פער מול סיכום מקור"
@@ -78,11 +79,14 @@ async function refresh(){
  if(!ctx?.household)return;
  const current=++seq;
  if(!$("statements").classList.contains("hidden"))status("טוען פירוטי אשראי…");
- const {data,error}=await runtime.supabase.from("tevuna_import_batch_summary")
-  .select("id,filename,sheet_name,file_kind,imported_at,transaction_count,net_amount_agorot,first_transaction_date,last_transaction_date,statement_month,expected_count,expected_net_agorot")
-  .eq("household_id",ctx.household).order("imported_at",{ascending:false}).limit(400);
+ const [summary,profiles]=await Promise.all([runtime.supabase.from("tevuna_import_batch_summary")
+  .select("id,filename,sheet_name,file_kind,imported_at,transaction_count,net_amount_agorot,first_transaction_date,last_transaction_date,statement_month,expected_count,expected_net_agorot,card_id")
+  .eq("household_id",ctx.household).order("imported_at",{ascending:false}).limit(400),
+  runtime.supabase.from("tevuna_cards").select("id,nickname,last4").eq("household_id",ctx.household)]);
+ const {data,error}=summary;
  if(current!==seq)return;
  if(error){status("לא ניתן לטעון את פירוטי האשראי. "+String(error.message).slice(0,150));return}
+ cardLabels=new Map((profiles.data||[]).map(c=>[c.id,c.nickname+" •••• "+c.last4]));
  records=data||[];
  render();
  if(!$("statements").classList.contains("hidden"))status(records.length>=400?"מוצגים 400 הפירוטים האחרונים.":"");
