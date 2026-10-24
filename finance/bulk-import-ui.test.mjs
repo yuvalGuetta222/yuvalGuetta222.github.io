@@ -51,8 +51,9 @@ test("Bulk import screen previews two independently attributed monthly CSV state
    asCsv("ספטמבר_2026_9591.csv","2026-09","9591")
   ]}});
   assert.equal(doc.els.get("bulk-import-list").children.length,2);
+  const dump=(node)=>[node.textContent,...(node.children||[]).flatMap(dump)].filter(Boolean);
   assert.equal(doc.els.get("bulk-import-start").disabled,false,
-   doc.els.get("bulk-status").textContent);
+   doc.els.get("bulk-status").textContent+" | "+dump(doc.els.get("bulk-import-list")).join(" | ").slice(0,850));
   assert.match(doc.els.get("bulk-import-count").textContent,/2 דוחות/);
  }finally{globalThis.document=previous}
 });
