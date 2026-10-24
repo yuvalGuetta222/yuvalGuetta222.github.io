@@ -1,6 +1,7 @@
 /* Local browser-only export. No raw file or user passwords leave the browser. */
 export const BACKUP_VERSION=1;
 export const EXPORT_TABLES={
+ cards:["tevuna_cards","id,household_id,created_by,nickname,last4,created_at"],
  transactions:["tevuna_transactions","id,household_id,created_by,occurred_on,billing_month,merchant,category,amount_agorot,entry_kind,source,source_fingerprint,import_batch_id,installment_number,installment_total,source_snapshot,edited_at,created_at"],
  incomes:["tevuna_incomes","*"],recurring_incomes:["tevuna_recurring_incomes","*"],
  fixed_expenses:["tevuna_fixed_expenses","*"],fixed_card_coverage:["tevuna_fixed_expense_card_coverage","*"],
