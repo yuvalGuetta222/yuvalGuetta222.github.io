@@ -42,7 +42,7 @@ export function setupAnalysis(context){
  document.addEventListener("tevuna:loaded",async e=>{
   const {data,month,household}=e.detail||{};if(!household||!data)return;
   const current=++seq;
-  if($("date-basis").value==="billing"){
+  if($("date-basis").value!=="transaction"){
    $("analysis-error").textContent="המלצות על התנהגות קנייה זמינות לפי תאריך עסקה; השוואת חודשי חיוב זמינה במסך 'השוואת חודשים'.";
    $("analysis-overview").textContent="הצגה לפי חודש חיוב: לא מחשבים כאן מגמות קנייה לפי תאריך אחר.";
    $("advanced-insights").replaceChildren();
