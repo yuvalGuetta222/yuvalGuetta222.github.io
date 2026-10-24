@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {cardLast4,cardCheck,cardFingerprintInput} from "./card-import.mjs";
+import {cardLast4,cardCheck,cardFingerprintInput,potentialLegacyOverlap} from "./card-import.mjs";
 const one="00000000-0000-4000-8000-000000000001",two="00000000-0000-4000-8000-000000000002";
 const row={importIdentity:"2026-10-20|wolt|10000|expense||",importSequence:1,rowCardLast4:null};
 test("Same purchase on two cards must never deduplicate",()=>{
@@ -24,4 +24,14 @@ test("Mixed or mismatched card columns are blocked",()=>{
  assert.equal(cardCheck([{rowCardLast4:"7888"}],"1234").ok,false);
  assert.equal(cardCheck([{rowCardLast4:"7888"}],"7888").ok,true);
  assert.equal(cardCheck([row],"7888").ok,true);
+});
+
+test("Legacy combined statement similarities are warnings, not silently merged",()=>{
+ const incoming=[
+  {occurred_on:"2026-10-20",merchant:"Wolt",amount_agorot:10000,entry_kind:"expense"},
+  {occurred_on:"2026-10-20",merchant:"Wolt",amount_agorot:10000,entry_kind:"expense"}
+ ];
+ const legacy=[{occurred_on:"2026-10-20",merchant:"Wolt",amount_agorot:10000,entry_kind:"expense"}];
+ assert.equal(potentialLegacyOverlap(incoming,legacy),1);
+ assert.equal(potentialLegacyOverlap(incoming,[]),0);
 });
