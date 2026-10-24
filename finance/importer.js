@@ -237,103 +237,59 @@ async function legacyOverlap(context,items){
 }
 async function save(){
  const context=runtime?.getContext();
- if(!context?.user||!context?.household){say("צריך להתחבר לחשבון המאושר לפני ייבוא.");return}
- let validation;try{validation=validationState()}catch(err){say(err.message);return}
+ if(!context?.user||!context?.household){say("יש להתחבר לחשבון המאושר לפני ייבוא.");return}
+ let validation;
+ try{validation=validationState()}catch(error){say(String(error.message));return}
  const items=validation.selected;
- if(!items.length)return;
- if(!checkSelectedCard()){say("חלק מהעסקאות לא זוהו לפי כרטיס. תקנו את המיפוי או את בחירת השורות לפני השמירה.");return}
+ if(!items.length){say("לא נבחרו עסקאות.");return}
+ if(validation.problems.length){say("הייבוא נחסם בגלל פער בבקרה: "+validation.problems.join("; "));return}
+ if(!checkSelectedCard()){say("חסר זיהוי כרטיס. בדקו את מיפוי העמודות.");return}
+ const period=$("import-statement-month").value;
+ if(!/^\\d{4}-(0[1-9]|1[0-2])$/.test(period)){say("יש לבחור חודש דוח לפני שמירה.");return}
  const summary=sheetCardSummary(items),automatic=summary.cards.length>0;
- const warning=validation.problems.length?"\n⚠ יש פער בבדיקה: "+validation.problems.join("; "):"";
- const modeText=automatic
-  ?summary.cards.map(x=>"•••• "+x.last4+" ("+x.count+")").join(", ")
-  :"•••• "+(selectedCard()?.last4||$("import-card-last4").value.trim())+" (שיוך ידני)";
- if(!confirm("ייבוא "+items.length+" עסקאות. כרטיסים שזוהו: "+modeText+"."+warning+
-   "\nזיהוי כפילויות יבוצע לכל כרטיס בנפרד. האם לשמור?"))return;
- const btn=$("import-save");btn.disabled=true;let stored=0,duplicates=0,batchId=null;
+ if(automatic&&summary.unknownCount){say("בחלק מהשורות אין זיהוי כרטיס. הייבוא נחסם.");return}
+ const digits=selectedCard()?.last4||String($("import-card-last4").value||"").trim();
+ const candidatesPayload=items.map(row=>({
+  occurred_on:row.occurred_on,billing_month:row.billingMonth||period+"-01",
+  merchant:row.merchant,category:row.category,amount_agorot:row.amount_agorot,
+  card_last4:row.rowCardLast4||digits,entry_kind:row.entry_kind,
+  import_identity:row.importIdentity,import_sequence:row.importSequence,
+  installment_number:row.installment_number,installment_total:row.installment_total
+ }));
+ const desc=summary.cards.length?summary.cards.map(x=>"•••• "+x.last4).join(", "):"•••• "+digits;
+ if(!confirm("לשמור "+items.length+" עסקאות לחודש "+period+" בכרטיסים "+desc+
+ "\nכל הדוח יישמר כפעולה אחת, ללא עסקאות חלקיות. כפילויות לא ייספרו שוב."))return;
+ const btn=$("import-save");btn.disabled=true;
+ let stored=false;
  try{
-  const possibleLegacy=await legacyOverlap(context,items);
-  if(possibleLegacy>0 && !confirm("⚠ זוהו "+possibleLegacy+" עסקאות דומות בדוחות ישנים ללא מזהה כרטיס. ייתכן שהן כבר כלולות בסיכום המשפחתי.\nהמערכת לא יכולה להכריע אוטומטית אם הן מאותו כרטיס או מכרטיס אחר.\nביטול יאפשר לבדוק את קובצי העבר. להמשיך ולשמור למרות החשש לכפל הוצאות?")){
-   btn.disabled=false;say("הייבוא בוטל כדי למנוע כפילות אפשרית מול קבצים ישנים. שום עסקה חדשה לא נשמרה.");return;
-  }
-  // Create/reuse a separate card profile for each unique last-four found in the file.
-  const byLast4=automatic
-   ?await resolveAutoCards(context,summary.cards.map(x=>x.last4))
-   :new Map([[selectedCard()?.last4||$("import-card-last4").value.trim(),await resolveCard(context)]]);
-  const mapped=[];
-  for(const row of items){
-   const digits=automatic?row.rowCardLast4:[...byLast4.keys()][0];
-   const card=byLast4.get(digits);
-   if(!card?.id)throw Error("לא ניתן לזהות את הכרטיס של שורה "+row.line);
-   // Fingerprint depends on card and purchase identity, never on filename.
-   // For multi-card sources the identical-row ordinal is scoped per card.
-   const fp=await digest(cardFingerprintInput(card.id,row));
-   mapped.push({household_id:context.household,created_by:context.user.id,occurred_on:row.occurred_on,
-    merchant:row.merchant,category:row.category,amount_agorot:row.amount_agorot,
-    card_id:card.id,
-    entry_kind:row.entry_kind,source:fileType,source_fingerprint:fp,billing_month:row.billingMonth||($("import-statement-month").value?$("import-statement-month").value+"-01":null),
-    dedupe_v4_input:cardChargeFingerprintInput(card.id,row,row.billingMonth||($("import-statement-month").value?$("import-statement-month").value+"-01":null)),
-    installment_number:row.installment_number,installment_total:row.installment_total});
-  }
-  await resolveBillingAwareDuplicates({supabase:runtime.supabase,household:context.household,rows:mapped,hash:digest});
-  const filename=String(rawFileName||"פירוט אשראי").slice(0,180);
-  const selectedSheet=workbook[Number($("sheet-select").value)]?.name||null;
-  const {data:batch,error:batchError}=await runtime.supabase.from("tevuna_import_batches").insert({
-   household_id:context.household,created_by:context.user.id,filename,
-   card_id:summary.cards.length===1?byLast4.get(summary.cards[0].last4)?.id:
-    automatic?null:byLast4.values().next().value?.id,
-   card_mode:automatic?"automatic":"manual",
-   sheet_name:selectedSheet?String(selectedSheet).slice(0,120):null,file_kind:fileType,
-   statement_month:$("import-statement-month").value?$("import-statement-month").value+"-01":null,
-   expected_count:validation.expectedCount,expected_net_agorot:validation.expectedNet
-  }).select("id").single();
-  if(batchError)throw batchError;
-  batchId=batch.id;
-  for(const record of mapped)record.import_batch_id=batchId;
-  for(let i=0;i<mapped.length;i+=75){
-   const part=mapped.slice(i,i+75);
-   const {data,error}=await runtime.supabase.from("tevuna_transactions")
-    .upsert(part,{onConflict:"household_id,source_fingerprint",ignoreDuplicates:true})
-    .select("id");
-   if(error)throw error;
-   stored+=data?.length||0;duplicates+=part.length-(data?.length||0);
-   const {data:canonical,error:lookupError}=await runtime.supabase.from("tevuna_transactions")
-    .select("id,source_fingerprint,billing_month").eq("household_id",context.household)
-    .in("source_fingerprint",part.map(x=>x.source_fingerprint));
-   if(lookupError)throw lookupError;
-   if(canonical?.length!==part.length)throw Error("לא נמצאו כל העסקאות אחרי השמירה. יש לנסות לייבא את הקובץ מחדש.");
-   const links=canonical.map(t=>({household_id:context.household,batch_id:batchId,transaction_id:t.id}));
-   const {error:linkError}=await runtime.supabase.from("tevuna_import_batch_transactions")
-    .upsert(links,{onConflict:"batch_id,transaction_id",ignoreDuplicates:true});
-   if(linkError)throw linkError;
-   const monthByFingerprint=new Map(part.map(x=>[x.source_fingerprint,x.billing_month]));
-   if(part.some(x=>x.billing_month)){
-    for(const t of canonical.filter(x=>!x.billing_month&&monthByFingerprint.get(x.source_fingerprint))){
-     const {error:billingError}=await runtime.supabase.from("tevuna_transactions")
-       .update({billing_month:monthByFingerprint.get(t.source_fingerprint)}).eq("id",t.id).eq("household_id",context.household).is("billing_month",null);
-     if(billingError)throw billingError;
-    }
-    if(canonical.some(t=>t.billing_month&&monthByFingerprint.get(t.source_fingerprint)&&t.billing_month!==monthByFingerprint.get(t.source_fingerprint)))
-     say("⚠ עסקאות כפולות עם חודש חיוב אחר לא שונו. בדקו התאמה בין הקבצים.");
-   }
-   say("מייבא… "+stored+" עסקאות חדשות; "+duplicates+" עסקאות שכבר קיימות קושרו גם לדוח זה.");
-  }
-
-  say("✓ הייבוא הסתיים. זוהו "+byLast4.size+" כרטיסים. נשמרו "+stored+" עסקאות חדשות; "+duplicates+" עסקאות חוזרות לא נשמרו שוב. כל פירוט נשמר ב'פירוטים שיובאו', משם אפשר למחוק אותו בשלמותו.");
+  const potential=await legacyOverlap(context,items);
+  if(potential>0&&!confirm("קיימות "+potential+" עסקאות דומות בדוחות ישנים ללא זיהוי כרטיס. לא ניתן לקבוע אם הן כפולות. להמשיך?"))return;
+  const result=await runtime.supabase.rpc("tevuna_import_statement_verified",{
+   p_household:context.household,
+   p_filename:String(rawFileName||"פירוט אשראי").slice(0,180),
+   p_sheet_name:String(workbook[Number($("sheet-select").value)]?.name||"").slice(0,120)||null,
+   p_file_kind:fileType,p_statement_month:period+"-01",
+   p_rows:candidatesPayload,p_expected_count:validation.expectedCount??items.length,
+   p_expected_net_agorot:validation.expectedNet??validation.net,
+   p_source_header_total_agorot:null,p_source_header_note:"יובא במסלול מיפוי עמודות ידני; לא נקרא גיליון בקרה אוטומטי."
+  });
+  if(result.error)throw result.error;
+  const data=result.data;
+  if(!data||Number(data.transaction_count)!==items.length||
+     Number(data.new_count)+Number(data.existing_count)!==items.length||
+     Number(data.net_agorot)!==validation.net)
+   throw Error("השרת החזיר תוצאה לא צפויה. בדקו את רשימת הדוחות לפני ניסיון חוזר.");
+  stored=true;
+  say("✓ הדוח נשמר במלואו. "+data.new_count+" עסקאות חדשות ו-"+data.existing_count+" עסקאות קיימות, ללא כפילות.");
   $("import-file").value="";$("import-expected-count").value="";$("import-expected-total").value="";reset();
   await refreshCards();
-  if(stored>0){const months=new Map();for(const x of items){const month=x.occurred_on.slice(0,7);months.set(month,(months.get(month)||0)+1)}const mostCommon=[...months].sort((a,b)=>b[1]-a[1])[0]?.[0];if(mostCommon)$("month").value=mostCommon;}
+  $("month").value=period;
   await runtime.reload();
   document.dispatchEvent(new CustomEvent("tevuna:imported"));
   document.dispatchEvent(new CustomEvent("tevuna:batches-changed"));
- }catch(err){
-  say("הייבוא לא הושלם. נשמרו "+stored+" עסקאות לפני התקלה; אפשר לייבא את אותו קובץ שוב, ועסקאות זהות אמורות להיות מדולגות. פירוט: "+String(err?.message||err).slice(0,180));
-  btn.disabled=false;
-  if(batchId) {
-   say("הייבוא הופסק לאחר שמירת "+stored+" עסקאות. ייבוא חלקי בשם '"+String(rawFileName).slice(0,60)+"' מופיע ב'פירוטים שיובאו', ותוכלו למחוק אותו בשלמותו או לייבא את הקובץ שוב.");
-   document.dispatchEvent(new CustomEvent("tevuna:batches-changed"));
-   await runtime.reload();
-  }
- }
+ }catch(error){
+  say((stored?"השמירה הצליחה אך הרענון נכשל: ":"הייבוא בוטל ללא שמירת דוח חלקי: ")+String(error?.message||error).slice(0,220));
+ }finally{btn.disabled=false}
 }
 export function setupImporter(context){
  runtime=context;
