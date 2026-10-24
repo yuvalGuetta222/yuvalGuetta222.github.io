@@ -15,6 +15,19 @@ export function cardFingerprintInput(cardId,row){
  if(!row.importIdentity||!Number.isInteger(row.importSequence)||row.importSequence<1)throw Error("Invalid statement row identity");
  return "tevuna-credit-card-v3|"+cardId+"|"+row.importIdentity+"|"+row.importSequence;
 }
+// V4 is used only when an old V3 identity collides with an actual charge in another billing month.
+export function cardChargeFingerprintInput(cardId,row,billingMonth){
+ if(!/^\\d{4}-(0[1-9]|1[0-2])-01$/.test(String(billingMonth)))throw Error("Invalid billing month for repeat charge");
+ if(!row.importIdentity||!Number.isInteger(row.importSequence)||row.importSequence<1)throw Error("Invalid charge identity");
+ return "tevuna-credit-card-v4|"+cardId+"|"+row.importIdentity+"|"+row.importSequence+"|"+billingMonth;
+}
+export function chooseBillingAwareFingerprint(record,oldRecord,v4Hash){
+ if(!oldRecord)return record.source_fingerprint;
+ if(oldRecord.card_id!==record.card_id)throw Error("Duplicate identity belongs to another card");
+ if(!oldRecord.billing_month)throw Error("An older matching transaction lacks a verified billing period");
+ if(oldRecord.billing_month===record.billing_month)return record.source_fingerprint;
+ return v4Hash;
+}
 export function cardCheck(rows,cardLastDigits){
  if(!/^\d{4}$/.test(String(cardLastDigits)))return {ok:false,reason:"יש לציין את ארבע הספרות האחרונות של הכרטיס."};
  const different=[...new Set(rows.map(r=>r.rowCardLast4).filter(Boolean))];
