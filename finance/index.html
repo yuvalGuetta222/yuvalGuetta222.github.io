@@ -117,6 +117,16 @@
     <div class="notice"><b>מה מייבאים?</b><p>עמודות של תאריך עסקה או חיוב, שם בית עסק וסכום חיוב בשקלים. אם יש תשלומים, מומלץ לבחור בסכום החיוב התקופתי ולא במחיר המקורי הכולל, כדי למנוע ספירה כפולה.</p></div>
     <p class="subtitle"><b>פרטיות:</b> אין להזין מספרי כרטיס מלאים, קוד סודי או סיסמאות. לא קוראים ישירות את חשבון הבנק. רק רשומות שתאשרו יישמרו.</p>
     <p id="import-source" class="muted"></p>
+<section class="box import-card-identity">
+  <h3>לאיזה כרטיס שייך הפירוט?</h3>
+  <p class="subtitle">יש לבחור כרטיס לכל קובץ. שני כרטיסים באותו חודש ייספרו יחד בסיכום, אבל העסקאות יזוהו בנפרד כדי למנוע מחיקת חיובים בטעות.</p>
+  <label>בחירת כרטיס אשראי<select id="import-card-select" required><option value="new">+ הוספת כרטיס חדש</option></select></label>
+  <div id="import-card-new" class="import-card-new">
+   <label>שם לזיהוי הכרטיס<input id="import-card-name" maxlength="50" placeholder="למשל ויזה שלי, כרטיס משפחתי"></label>
+   <label>4 ספרות אחרונות בלבד<input id="import-card-last4" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" placeholder="לדוגמה 7888"></label>
+  </div>
+  <p id="import-card-check" class="note" role="status">אין צורך במספר הכרטיס המלא. לא שומרים מספר כרטיס מלא.</p>
+ </section>
     <label>חודש הפירוט / מועד החיוב (אופציונלי)<input id="import-statement-month" type="month" aria-label="חודש פירוט האשראי"></label><p class="help">זהו רק שם תקופת הדוח, למשל אוקטובר 2026. העסקאות יישארו בתאריכים שמופיעים בקובץ, גם אם התאריכים שייכים לחודש אחר.</p>
     <section class="box import-verify"><h3>בדיקת התאמה לדוח המקורי</h3><p class="subtitle">אם בדוח מופיעים סך העסקאות וסכום חיוב כולל, הזינו אותם. אחרת הייבוא יסומן "לא אומת".</p>
 <div class="mapping-grid"><label>מספר עסקאות בדוח<input id="import-expected-count" type="number" min="0" step="1" placeholder="למשל 128"></label>
@@ -128,7 +138,7 @@
    <div class="box">
     <h2>איך מנתחים את ההוצאות?</h2>
     <div class="import-feature"><b>◉ קטגוריות מהקובץ</b><p>כשחברת האשראי כוללת עמודת קטגוריה או סיווג, היא תקבע את התיוג. רק כשקטגוריה חסרה נציע זיהוי לפי בית העסק. אפשר לתקן ידנית.</p></div>
-    <div class="import-feature"><b>▥ בדיקת כפילויות</b><p>אותה עסקה המיובאת שוב מאותו פירוט לא אמורה להיספר מחדש.</p></div>
+    <div class="import-feature"><b>▥ איחוד כמה כרטיסים</b><p>קובצי אשראי מאותו חודש מתווספים לסיכום המשפחתי. זיהוי כפילויות פועל בתוך כל כרטיס בנפרד, כדי לא להעלים עסקאות של כרטיס אחר.</p></div>
     <div class="import-feature"><b>↑ שינוי מול חודש קודם</b><p>נזהה עליות בקטגוריות, תוך סימון מקרים שבהם לא קיימים מספיק נתונים להשוואה.</p></div>
     <div class="import-feature"><b>✦ תרחישי חיסכון</b><p>נראה הוצאות גמישות ונסביר מה עשוי להשתנות אם מצמצמים אחוז מסוים. אלה הערכות ולא הבטחה לחיסכון.</p></div>
     <div class="notice"><b>איך מוציאים פירוט?</b><p>באתר או באפליקציה של חברת האשראי, חפשו ״פירוט עסקאות״ / ״דפי פירוט״ וייצוא ל-Excel. אם יש רק PDF, אפשר לבקש/לייצא קובץ XLSX או CSV; PDF לא נתמך עדיין.</p></div>
