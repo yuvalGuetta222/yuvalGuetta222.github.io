@@ -21,3 +21,22 @@ export function cardCheck(rows,cardLastDigits){
  if(different.length && different[0]!==cardLastDigits)return {ok:false,reason:"מספר הכרטיס בקובץ מסתיים ב-"+different[0]+" אבל נבחר כרטיס שמסתיים ב-"+cardLastDigits+". בחרו את הכרטיס הנכון."};
  return {ok:true,reason:different.length?"הכרטיס תואם לעמודת הזיהוי בקובץ.":"לא נמצאה בקובץ עמודת כרטיס חד־משמעית. הזיהוי מבוסס על הכרטיס שבחרתם."};
 }
+
+/* Legacy imports lacked payment-card IDs. Exact matches are warnings only:
+   neither a confirmed duplicate nor evidence of separate card spending. */
+const similarKey=row=>[
+ String(row.occurred_on||""),
+ String(row.merchant||"").normalize("NFKC").toLowerCase().replace(/\s+/g," ").trim(),
+ String(row.amount_agorot||0),
+ String(row.entry_kind||"expense")
+].join("|");
+export function potentialLegacyOverlap(incoming,legacy){
+ const counts=new Map();
+ for(const row of legacy||[]){const k=similarKey(row);counts.set(k,(counts.get(k)||0)+1)}
+ let possible=0;
+ for(const row of incoming||[]){
+  const k=similarKey(row),available=counts.get(k)||0;
+  if(available>0){possible++;counts.set(k,available-1)}
+ }
+ return possible;
+}
