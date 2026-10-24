@@ -2,7 +2,7 @@ import { CATEGORIES,parseCSV,findHeaderRow,guessMapping,convertRows,fileIsSuppor
 import {cardCheck,cardFingerprintInput,potentialLegacyOverlap,sheetCardSummary} from "./card-import.mjs";
 const $=id=>document.getElementById(id);
 let workbook=[],rows=[],mapping={},headerRow=-1,candidates=[],fileType="csv",fileSize=0,rawFileName="";
-const FIELDS=[["date","תאריך עסקה / חיוב *"],["merchant","בית עסק / תיאור *"],["amount","סכום חיוב בשקלים *"],["category","קטגוריה מתוך הדוח (אופציונלי)"],["kind","חיוב או זיכוי (אופציונלי)"],["installment","תשלומים בקובץ"],["installmentNumber","תשלום נוכחי"],["installmentTotal","סך תשלומים"],["reference","אסמכתא (אופציונלי)"],["card","זיהוי כרטיס (אופציונלי)"]];
+const FIELDS=[["date","תאריך עסקה *"],["billingDate","תאריך חיוב (אם קיים)"],["merchant","בית עסק / תיאור *"],["amount","סכום חיוב בשקלים *"],["category","קטגוריה מתוך הדוח (אופציונלי)"],["kind","חיוב או זיכוי (אופציונלי)"],["installment","תשלומים בקובץ"],["installmentNumber","תשלום נוכחי"],["installmentTotal","סך תשלומים"],["reference","אסמכתא (אופציונלי)"],["card","זיהוי כרטיס (אופציונלי)"]];
 let runtime=null,cards=[];
 const selectedCard=()=>cards.find(c=>c.id===$("import-card-select").value)||null;
 function option(v,label){const e=document.createElement("option");e.value=v;e.textContent=label;return e}
@@ -269,7 +269,7 @@ async function save(){
    mapped.push({household_id:context.household,created_by:context.user.id,occurred_on:row.occurred_on,
     merchant:row.merchant,category:row.category,amount_agorot:row.amount_agorot,
     card_id:card.id,
-    entry_kind:row.entry_kind,source:fileType,source_fingerprint:fp,billing_month:$("import-statement-month").value?$("import-statement-month").value+"-01":null,installment_number:row.installment_number,installment_total:row.installment_total});
+    entry_kind:row.entry_kind,source:fileType,source_fingerprint:fp,billing_month:row.billingMonth||($("import-statement-month").value?$("import-statement-month").value+"-01":null),installment_number:row.installment_number,installment_total:row.installment_total});
   }
   const filename=String(rawFileName||"פירוט אשראי").slice(0,180);
   const selectedSheet=workbook[Number($("sheet-select").value)]?.name||null;
@@ -300,14 +300,14 @@ async function save(){
    const {error:linkError}=await runtime.supabase.from("tevuna_import_batch_transactions")
     .upsert(links,{onConflict:"batch_id,transaction_id",ignoreDuplicates:true});
    if(linkError)throw linkError;
-   const month=$("import-statement-month").value?$("import-statement-month").value+"-01":null;
-   if(month){
-    for(const t of canonical.filter(x=>!x.billing_month)){
+   const monthByFingerprint=new Map(part.map(x=>[x.source_fingerprint,x.billing_month]));
+   if(part.some(x=>x.billing_month)){
+    for(const t of canonical.filter(x=>!x.billing_month&&monthByFingerprint.get(x.source_fingerprint))){
      const {error:billingError}=await runtime.supabase.from("tevuna_transactions")
-       .update({billing_month:month}).eq("id",t.id).eq("household_id",context.household).is("billing_month",null);
+       .update({billing_month:monthByFingerprint.get(t.source_fingerprint)}).eq("id",t.id).eq("household_id",context.household).is("billing_month",null);
      if(billingError)throw billingError;
     }
-    if(canonical.some(t=>t.billing_month&&t.billing_month!==month))
+    if(canonical.some(t=>t.billing_month&&monthByFingerprint.get(t.source_fingerprint)&&t.billing_month!==monthByFingerprint.get(t.source_fingerprint)))
      say("⚠ עסקאות כפולות עם חודש חיוב אחר לא שונו. בדקו התאמה בין הקבצים.");
    }
    say("מייבא… "+stored+" עסקאות חדשות; "+duplicates+" עסקאות שכבר קיימות קושרו גם לדוח זה.");
