@@ -8,6 +8,7 @@ import {recurringIncomeSummary} from "./income-utils.mjs";
 import {setupBatches} from "./import-batches.js";
 import {setupHistory} from "./history.js";
 import {setupImporter} from "./importer.js";
+import {setupBulkImporter} from "./bulk-import.js";
 import {CATEGORIES} from "./credit-core.mjs";
 import {setupAnalysis} from "./analysis.js";
 import {createClient} from "https://esm.sh/@supabase/supabase-js@2.76.1";
@@ -315,6 +316,7 @@ $("budget-form").addEventListener("submit",async e=>{
  }catch(err){notice(authError(err))}finally{button.disabled=false}
 });
 setupImporter({supabase,notice,reload,getContext:()=>({user,household})});
+setupBulkImporter({supabase,notice,reload,getContext:()=>({user,household})});
 setupBackup({supabase,getContext:()=>({user,household})});
 setupBatches({supabase,notice,reload,getContext:()=>({user,household})});
 setupAnalysis({supabase,getContext:()=>({user,household})});
