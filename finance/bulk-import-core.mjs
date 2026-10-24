@@ -1,5 +1,5 @@
 import {findHeaderRow,convertRows} from "./credit-core.mjs";
-import {sheetCardSummary,cardFingerprintInput} from "./card-import.mjs";
+import {sheetCardSummary,cardFingerprintInput,cardChargeFingerprintInput} from "./card-import.mjs";
 
 const hebrewMonths={
  ינואר:1,פברואר:2,מרץ:3,אפריל:4,מאי:5,יוני:6,יולי:7,אוגוסט:8,ספטמבר:9,אוקטובר:10,נובמבר:11,דצמבר:12
@@ -100,6 +100,7 @@ export async function buildBulkTransactions({rows,household,userId,statementMont
    merchant:row.merchant,category:row.category,amount_agorot:row.amount_agorot,
    card_id:id,entry_kind:row.entry_kind,source,
    source_fingerprint:await hash(canonical),
+   dedupe_v4_input:cardChargeFingerprintInput(id,row,row.billingMonth||statementMonth+"-01"),
    billing_month:row.billingMonth||statementMonth+"-01",
    installment_number:row.installment_number,
    installment_total:row.installment_total
