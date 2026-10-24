@@ -36,6 +36,18 @@ function render(){
     Number(b.transaction_count)+" עסקאות שנשמרו","סכום נטו: "+money(b.net_amount_agorot),b.expected_net_agorot===null?"ללא בדיקת סכום מקור":b.net_amount_agorot===b.expected_net_agorot?"סכום תואם לביקורת":"פער מול סיכום מקור"
    ].join("  •  "),"statement-details");
   main.append(details);
+  if(b.source_header_total_agorot!==null&&b.source_header_total_agorot!==undefined){
+   const difference=Number(b.source_header_total_agorot)-Number(b.net_amount_agorot);
+   const statementNote=el("p",difference===0?
+    "סכום הפירוט תואם לגיליון הבקרה בקובץ (לא בוצע אימות מול ה-PDF המקורי)":
+    "פער לבדיקה בין הכותרת שתועדה לבין העסקאות בדוח הזה: "+money(Math.abs(difference))+
+    ". ייתכן שהקובץ חלקי; אין ליצור עסקה מלאכותית בגובה ההפרש.",
+    "note statement-source-audit"+(difference!==0?" warning":""));
+   main.append(statementNote);
+   if(b.source_header_note&&difference!==0)
+    main.append(el("p",b.source_header_note,"note"));
+  }
+
   const action=el("button","מחיקת הפירוט","danger delete-statement");action.type="button";
   action.setAttribute("aria-label","מחיקת הפירוט "+b.filename);
   action.addEventListener("click",()=>openConfirm(b));
@@ -81,7 +93,7 @@ async function refresh(){
  const current=++seq;
  if(!$("statements").classList.contains("hidden"))status("טוען פירוטי אשראי…");
  const [summary,profiles]=await Promise.all([runtime.supabase.from("tevuna_import_batch_summary")
-  .select("id,filename,sheet_name,file_kind,imported_at,transaction_count,net_amount_agorot,first_transaction_date,last_transaction_date,statement_month,expected_count,expected_net_agorot,card_id,card_mode,card_last4s")
+  .select("id,filename,sheet_name,file_kind,imported_at,transaction_count,net_amount_agorot,first_transaction_date,last_transaction_date,statement_month,expected_count,expected_net_agorot,card_id,card_mode,card_last4s,source_header_total_agorot,source_header_note")
   .eq("household_id",ctx.household).order("imported_at",{ascending:false}).limit(400),
   runtime.supabase.from("tevuna_cards").select("id,nickname,last4").eq("household_id",ctx.household)]);
  const {data,error}=summary;
