@@ -96,21 +96,30 @@ $("date-basis").addEventListener("change",reload);
 const cadenceMonths={monthly:1,bimonthly:2,quarterly:3,yearly:12};
 async function loadTransactions(start,next){
  const fields="id,merchant,category,amount_agorot,entry_kind,occurred_on,billing_month,installment_number,installment_total,source_snapshot,source,card_id";
- const basis=$("date-basis").value==="billing"?"billing_month":"occurred_on";
- const fetch=async(field,manual=false)=>{
-  const result=[];
+ const mode=$("date-basis").value;
+ const get=async(table,dateField,filterManual=false)=>{
+  const rows=[];
   for(let offset=0;offset<10000;offset+=1000){
-   let query=supabase.from("tevuna_transactions").select(fields).eq("household_id",household)
-    .gte(field,start).lt(field,next).order(field,{ascending:false}).order("id").range(offset,offset+999);
-   if(manual)query=query.eq("source","manual");else if(basis==="billing_month")query=query.neq("source","manual");
-   const {data:page,error}=await query;if(error)return {data:[],error};
-   result.push(...(page||[]));if(!page||page.length<1000)return {data:result,error:null};
+   let query=supabase.from(table).select(fields).eq("household_id",household)
+     .gte(dateField,start).lt(dateField,next)
+     .order(dateField,{ascending:false}).order("id").range(offset,offset+999);
+   if(filterManual)query=query.eq("source","manual");
+   else if(table==="tevuna_transactions"&&mode!=="transaction")query=query.neq("source","manual");
+   const {data:page,error}=await query;
+   if(error)return {data:[],error};
+   rows.push(...(page||[]));
+   if(!page||page.length<1000)return {data:rows,error:null};
   }
-  return {data:[],error:new Error("נתונים רבים מדי לטעינה מלאה")};
+  return {data:[],error:new Error("יש יותר מדי עסקאות לטעינה מלאה")};
  };
- if(basis==="occurred_on")return fetch(basis);
- const [cards,manual]=await Promise.all([fetch("billing_month"),fetch("occurred_on",true)]);
- if(cards.error)return cards;if(manual.error)return manual;
+ if(mode==="transaction")return get("tevuna_transactions","occurred_on");
+ const [cards,manual]=await Promise.all([
+  mode==="statement"?get("tevuna_statement_transactions","statement_month"):
+    get("tevuna_transactions","billing_month"),
+  get("tevuna_transactions","occurred_on",true)
+ ]);
+ if(cards.error)return cards;
+ if(manual.error)return manual;
  return {data:[...cards.data,...manual.data],error:null};
 }
 
