@@ -37,6 +37,8 @@ test("Tevuna AI opens from dashboard, reports disabled key and does not invent a
  };
  try{
   setupAICoach(runtime);
+  globalThis.document.getElementById("month").value="2026-10";
+  globalThis.document.getElementById("date-basis").value="statement";
   await e.nodes.get("ai-dashboard-open").click();
   assert.equal(calls[0].opts.body.type,"status");
   assert.equal(calls[1].opts.body.type,"summary");
@@ -58,8 +60,10 @@ test("OpenAI key is temporary: input clears and only sends it with direct user a
  };
  try{
   setupAICoach(runtime);
+  globalThis.document.getElementById("month").value="2026-10";
+  globalThis.document.getElementById("date-basis").value="statement";
   const key="sk-proj-"+ "A".repeat(32);
-  e.nodes.get("ai-key-input").value=key;
+  globalThis.document.getElementById("ai-key-input").value=key;
   e.nodes.get("ai-use-key").click();
   assert.equal(e.nodes.get("ai-key-input").value,"");
   await e.nodes.get("ai-dashboard-open").click();
