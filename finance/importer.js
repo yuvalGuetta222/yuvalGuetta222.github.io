@@ -1,8 +1,53 @@
 import { CATEGORIES,parseCSV,findHeaderRow,guessMapping,convertRows,fileIsSupported } from "./credit-core.mjs";
+import {cardCheck,cardFingerprintInput} from "./card-import.mjs";
 const $=id=>document.getElementById(id);
 let workbook=[],rows=[],mapping={},headerRow=-1,candidates=[],fileType="csv",fileSize=0,rawFileName="";
 const FIELDS=[["date","תאריך עסקה / חיוב *"],["merchant","בית עסק / תיאור *"],["amount","סכום חיוב בשקלים *"],["category","קטגוריה מתוך הדוח (אופציונלי)"],["kind","חיוב או זיכוי (אופציונלי)"],["installment","תשלומים בקובץ"],["installmentNumber","תשלום נוכחי"],["installmentTotal","סך תשלומים"],["reference","אסמכתא (אופציונלי)"],["card","זיהוי כרטיס (אופציונלי)"]];
-let runtime=null;
+let runtime=null,cards=[];
+const selectedCard=()=>cards.find(c=>c.id===$("import-card-select").value)||null;
+function option(v,label){const e=document.createElement("option");e.value=v;e.textContent=label;return e}
+function showSelectedCard(){
+ const isNew=$("import-card-select").value==="new";
+ $("import-card-new").classList.toggle("hidden",!isNew);
+ checkSelectedCard();
+}
+function checkSelectedCard(){
+ const chosen=selectedCard(),digits=chosen?.last4||String($("import-card-last4").value||"").trim();
+ const result=cardCheck(candidates.filter(x=>x.selected),digits);
+ const label=chosen?chosen.nickname+" •••• "+chosen.last4:"כרטיס חדש •••• "+(digits||"????");
+ $("import-card-check").textContent=result.ok?label+" — "+result.reason:"⚠ "+result.reason;
+ $("import-card-check").className="note"+(result.ok?"":" negative");
+ return result.ok;
+}
+async function refreshCards(preferred=null){
+ const context=runtime?.getContext();if(!context?.household)return;
+ const {data,error}=await runtime.supabase.from("tevuna_cards")
+  .select("id,nickname,last4").eq("household_id",context.household).order("nickname");
+ if(error){say("לא ניתן לטעון את הכרטיסים: "+String(error.message).slice(0,130));return}
+ cards=data||[];
+ const select=$("import-card-select"),previous=preferred||select.value;
+ select.replaceChildren(option("new","+ הוספת כרטיס חדש"));
+ for(const card of cards)select.append(option(card.id,card.nickname+" •••• "+card.last4));
+ select.value=cards.some(c=>c.id===previous)?previous:"new";
+ showSelectedCard();
+}
+async function resolveCard(context){
+ const chosen=selectedCard();if(chosen)return chosen;
+ const nickname=String($("import-card-name").value||"").trim();
+ const last4=String($("import-card-last4").value||"").trim();
+ if(!nickname||nickname.length>50||!/^[0-9]{4}$/.test(last4))throw Error("יש לציין שם לכרטיס וארבע ספרות אחרונות בלבד.");
+ const {data:existing,error:lookupError}=await runtime.supabase.from("tevuna_cards")
+  .select("id,nickname,last4").eq("household_id",context.household).eq("last4",last4).maybeSingle();
+ if(lookupError)throw lookupError;
+ if(existing)throw Error("כרטיס שמסתיים ב-"+last4+" כבר רשום. בחרו אותו מרשימת הכרטיסים כדי להימנע מכפילויות.");
+ const {data:created,error}=await runtime.supabase.from("tevuna_cards")
+  .insert({household_id:context.household,created_by:context.user.id,nickname,last4})
+  .select("id,nickname,last4").single();
+ if(error)throw error;
+ await refreshCards(created.id);
+ return created;
+}
+
 function parseExpectedMoney(value){
  const raw=String(value??"").trim().replace(/,/g,"");
  if(!raw)return null;
@@ -26,7 +71,6 @@ function validationState(){
 function say(message){$("import-status").textContent=message;$("import-status").hidden=!message}
 function reset(){candidates=[];rows=[];mapping={};$("import-review").classList.add("hidden");$("import-save").disabled=true;$("import-preview").replaceChildren()}
 function money(n){return new Intl.NumberFormat("he-IL",{style:"currency",currency:"ILS",minimumFractionDigits:0,maximumFractionDigits:2}).format(n/100)}
-function option(v,label){const e=document.createElement("option");e.value=v;e.textContent=label;return e}
 function headerOptions(mappingToUse){
  const header=rows[headerRow]||[];
  const panel=$("column-mapping");panel.replaceChildren();
