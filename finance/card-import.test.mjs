@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {cardLast4,cardCheck,cardFingerprintInput,potentialLegacyOverlap,spendingByCard} from "./card-import.mjs";
+import {cardLast4,cardCheck,cardFingerprintInput,potentialLegacyOverlap,spendingByCard,cardSpendingReport} from "./card-import.mjs";
 const one="00000000-0000-4000-8000-000000000001",two="00000000-0000-4000-8000-000000000002";
 const row={importIdentity:"2026-10-20|wolt|10000|expense||",importSequence:1,rowCardLast4:null};
 test("Same purchase on two cards must never deduplicate",()=>{
@@ -49,4 +49,34 @@ test("Card totals sum all cards in same month without hiding identically priced 
  assert.ok(results.find(x=>x.key===one)?.total===15000);
  assert.ok(results.find(x=>x.key===two)?.total===13000);
  assert.ok(results.find(x=>x.key==="legacy")?.total===900);
+});
+
+test("Card comparison ranks higher spending, sums refunds and shows top categories",()=>{
+ const t=[
+  {source:"xlsx",card_id:one,amount_agorot:90000,entry_kind:"expense",category:"מזון וסופר"},
+  {source:"xlsx",card_id:one,amount_agorot:10000,entry_kind:"refund",category:"מזון וסופר"},
+  {source:"xlsx",card_id:one,amount_agorot:10000,entry_kind:"expense",category:"תחבורה"},
+  {source:"xlsx",card_id:two,amount_agorot:50000,entry_kind:"expense",category:"קניות"},
+  {source:"xlsx",card_id:null,amount_agorot:10000,entry_kind:"expense",category:"מנויים"}
+ ];
+ const report=cardSpendingReport(t,[{id:one,nickname:"ויזה",last4:"1234"},{id:two,nickname:"מקס",last4:"5678"}]);
+ assert.equal(report.creditNetTotal,150000);
+ assert.equal(report.identifiedNetTotal,140000);
+ assert.equal(report.unassignedNetTotal,10000);
+ assert.equal(report.biggestIdentified.key,one);
+ const first=report.groups[0];
+ assert.equal(first.total,90000);
+ assert.equal(first.categories[0].name,"מזון וסופר");
+ assert.equal(first.categories[0].amount,80000);
+ assert.equal(Math.round(first.percentage),60);
+ assert.equal(report.groups.reduce((sum,item)=>sum+item.total,0),150000);
+});
+test("Old unidentified transactions remain separate instead of being attributed to a new card",()=>{
+ const report=cardSpendingReport([
+  {source:"xlsx",amount_agorot:357400,category:"חשבונות הבית",entry_kind:"expense",card_id:null}
+ ],[{id:one,last4:"7888",nickname:"ויזה"}]);
+ assert.equal(report.groups.length,1);
+ assert.equal(report.groups[0].key,"legacy");
+ assert.equal(report.biggestIdentified,null);
+ assert.equal(report.unassignedNetTotal,357400);
 });
