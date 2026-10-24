@@ -1,7 +1,7 @@
 import {CATEGORIES,parseCSV,fileIsSupported,convertRows,findHeaderRow} from "./credit-core.mjs";
 import {sheetCardSummary,potentialLegacyOverlap} from "./card-import.mjs";
 import {resolveBillingAwareDuplicates} from "./credit-dedupe.mjs";
-import {analyzeWorkbook,extractControlSheet,statementMonthEvidence,validatePreparedReport,parseExpectedAgorot,buildBulkTransactions} from "./bulk-import-core.mjs";
+import {analyzeWorkbook,extractControlSheet,statementMonthEvidence,validatePreparedReport,parseExpectedAgorot,auditRecurringStatement} from "./bulk-import-core.mjs";
 
 const $=id=>document.getElementById(id);
 const FILE_LIMIT=20,PER_FILE=8*1024*1024,TOTAL=50*1024*1024,MAX_ROWS=4000,PAGE=40;
@@ -54,6 +54,7 @@ function prepareSheet(item,index){
  item.sourceHeaderAgorot=audit.sourceHeaderAgorot;
  item.expectedCount=audit.expectedCount===null?"":String(audit.expectedCount);
  item.expectedTotal=audit.expectedAgorot===null?"":(audit.expectedAgorot/100).toFixed(2);
+ item.structuralAudit=auditRecurringStatement({sheet,headerIndex:header.index,mapping:header.mapping,parsed,control:audit});
  item.manualCard="";
  item.manualNewLast4="";
  item.manualNewName="";
@@ -96,10 +97,10 @@ function updateItemSummary(item,body){
  const detail=body.querySelector("[data-bulk-stats]");
  detail.textContent=selected.length+" עסקאות • "+fmt(net)+" נטו • חודשי עסקאות: "+
   (reportDates.length?reportDates.join(", "):"אין")+" • "+item.skipped+" שורות שלא נקלטו";
- const errs=validatePreparedReport({
+ const errs=[...(item.structuralAudit?.issues||[]),...validatePreparedReport({
   rows:item.rows,statementMonth:item.month,manualLast4:item.manualCard==="new"?item.manualNewLast4:item.manualCard,
   expectedCount:item.expectedCount,expectedAgorot:parseExpectedAgorot(item.expectedTotal)
- });
+ })];
  const status=body.querySelector("[data-bulk-validation]");
  status.textContent=errs.length?"⚠ "+errs.join(" "):
   "מוכן לייבוא. "+(item.expectedCount!==""&&item.expectedTotal!==""?
@@ -296,73 +297,46 @@ async function potentialOldDuplicates(context,rows){
  throw Error("קיימים יותר מדי חיובים ישנים ללא זיהוי כרטיס. הייבוא הופסק לבדיקת כפילויות.");
 }
 async function persist(context,item){
- const selected=item.rows.filter(x=>x.selected),summary=sheetCardSummary(selected);
- const byDigits=new Map();
- for(const {last4} of summary.cards)byDigits.set(last4,await cardFor(context,last4));
- if(!summary.cards.length){
-  const four=item.manualCard==="new"?item.manualNewLast4:item.manualCard;
-  byDigits.set(four,await cardFor(context,four,item.manualNewName));
- }
- const ids=new Map([...byDigits].map(([four,card])=>[four,card.id]));
- if(!summary.cards.length)ids.set("manual",[...byDigits.values()][0].id);
- const mapped=await buildBulkTransactions({
-  rows:selected,household:context.household,userId:context.user.id,
-  statementMonth:item.month,source:/\.xlsx$/i.test(item.filename)?"xlsx":"csv",
-  cardIds:ids,hash:digest
+ const selected=item.rows.filter(x=>x.selected);
+ const summary=sheetCardSummary(selected);
+ if(summary.unknownCount>0&&!item.manualCard)
+  throw Error("חסר זיהוי כרטיס בחלק מהעסקאות.");
+ const manualLast4=item.manualCard==="new"?item.manualNewLast4:item.manualCard;
+ const rows=selected.map(row=>({
+  occurred_on:row.occurred_on,
+  billing_month:row.billingMonth||item.month+"-01",
+  merchant:row.merchant,
+  category:row.category,
+  amount_agorot:row.amount_agorot,
+  entry_kind:row.entry_kind,
+  card_last4:row.rowCardLast4||manualLast4,
+  import_identity:row.importIdentity,
+  import_sequence:row.importSequence,
+  installment_number:row.installment_number,
+  installment_total:row.installment_total
+ }));
+ const expectedNet=parseExpectedAgorot(item.expectedTotal);
+ const calculated=selected.reduce((n,r)=>n+(r.entry_kind==="refund"?-1:1)*r.amount_agorot,0);
+ const {data,error}=await ctx.supabase.rpc("tevuna_import_statement_verified",{
+  p_household:context.household,
+  p_filename:item.filename.slice(0,180),
+  p_sheet_name:String(item.sheets[item.sheetIndex]?.name||"").slice(0,120)||null,
+  p_file_kind:/\.xlsx$/i.test(item.filename)?"xlsx":"csv",
+  p_statement_month:item.month+"-01",
+  p_rows:rows,
+  p_expected_count:item.expectedCount!==""?Number(item.expectedCount):selected.length,
+  p_expected_net_agorot:expectedNet??calculated,
+  p_source_header_total_agorot:item.sourceHeaderAgorot,
+  p_source_header_note:item.sourceHeaderAgorot===null?
+   "לא נמצא גיליון בקרה עם סכום כותרת.":
+   "נתון מתוך גיליון הבקרה בקובץ; אין אימות ישיר מול PDF חברת האשראי."
  });
- await resolveBillingAwareDuplicates({supabase:ctx.supabase,household:context.household,rows:mapped,hash:digest});
- let batchId=null,stored=0,duplicates=0;
- try{
-  const first=selected[0];
-  const fileSource=item.sheets[item.sheetIndex]?.name||null;
-  const {data:batch,error:batchError}=await ctx.supabase.from("tevuna_import_batches")
-   .insert({household_id:context.household,created_by:context.user.id,
-    filename:item.filename.slice(0,180),sheet_name:fileSource?.slice(0,120)||null,
-    file_kind:/\.xlsx$/i.test(item.filename)?"xlsx":"csv",
-    card_id:byDigits.size===1?[...byDigits.values()][0].id:null,
-    card_mode:summary.cards.length?"automatic":"manual",
-    statement_month:item.month+"-01",expected_count:item.expectedCount!==""?Number(item.expectedCount):null,
-    expected_net_agorot:parseExpectedAgorot(item.expectedTotal),
-    source_header_total_agorot:item.sourceHeaderAgorot,
-    source_header_note:item.sourceHeaderAgorot===null?"לא נמצאה כותרת סכום לבקרה בקובץ.":"סכום כותרת נלקח מגיליון הבקרה של הקובץ, ולא אומת מול PDF הבנק."})
-   .select("id").single();
-  if(batchError)throw batchError;
-  batchId=batch.id;
-  for(let i=0;i<mapped.length;i+=75){
-   const part=mapped.slice(i,i+75).map(x=>({...x,import_batch_id:batchId}));
-   const {data:added,error:upsertError}=await ctx.supabase.from("tevuna_transactions")
-    .upsert(part,{onConflict:"household_id,source_fingerprint",ignoreDuplicates:true}).select("id");
-   if(upsertError)throw upsertError;
-   stored+=added?.length||0;duplicates+=part.length-(added?.length||0);
-   const {data:actual,error:lookupError}=await ctx.supabase.from("tevuna_transactions")
-    .select("id,source_fingerprint,billing_month,card_id").eq("household_id",context.household)
-    .in("source_fingerprint",part.map(x=>x.source_fingerprint));
-   if(lookupError)throw lookupError;
-   if(actual?.length!==part.length)throw Error("לא ניתן לאתר את כל העסקאות לאחר השמירה.");
-   const rowFor=new Map(part.map(x=>[x.source_fingerprint,x]));
-   for(const tx of actual){
-    const wanted=rowFor.get(tx.source_fingerprint);
-    if(!wanted||tx.card_id!==wanted.card_id)throw Error("נמצאה סתירה בזיהוי כרטיס. השמירה הופסקה.");
-   }
-   const {error:linkError}=await ctx.supabase.from("tevuna_import_batch_transactions")
-    .upsert(actual.map(x=>({household_id:context.household,batch_id:batchId,transaction_id:x.id})),
-     {onConflict:"batch_id,transaction_id",ignoreDuplicates:true});
-   if(linkError)throw linkError;
-   for(const tx of actual.filter(x=>!x.billing_month)){
-    const {error:updateError}=await ctx.supabase.from("tevuna_transactions")
-     .update({billing_month:rowFor.get(tx.source_fingerprint).billing_month})
-     .eq("id",tx.id).eq("household_id",context.household).is("billing_month",null);
-    if(updateError)throw updateError;
-   }
-   if(actual.some(x=>x.billing_month&&x.billing_month!==rowFor.get(x.source_fingerprint)?.billing_month))
-    notify("לתשומת לב: חיובים חוזרים עם חודש חיוב שונה נשארו בתאריך החיוב המקורי.");
-  }
-  return {stored,duplicates};
- }catch(error){
-  error.message="ייבוא חלקי אפשרי בדוח "+item.filename+": "+String(error.message||error);
-  if(batchId)error.batchId=batchId;
-  throw error;
- }
+ if(error)throw error;
+ if(!data||Number(data.transaction_count)!==selected.length||
+     Number(data.new_count)+Number(data.existing_count)!==selected.length||
+     Number(data.net_agorot)!==calculated)
+  throw Error("שרת הנתונים החזיר תוצאה לא צפויה. בדקו את הייבוא לפני ניסיון חוזר.");
+ return {stored:Number(data.new_count),duplicates:Number(data.existing_count)};
 }
 async function saveAll(){
  if(busy)return;
@@ -371,11 +345,11 @@ async function saveAll(){
  if(!pending.length)return;
  try{
   for(const item of pending){
-   const errors=validatePreparedReport({
+   const errors=[...(item.structuralAudit?.issues||[]),...validatePreparedReport({
     rows:item.rows,statementMonth:item.month,
     manualLast4:item.manualCard==="new"?item.manualNewLast4:item.manualCard,
     expectedCount:item.expectedCount,expectedAgorot:parseExpectedAgorot(item.expectedTotal)
-   });
+   })];
    if(item.error||errors.length||(item.manualCard==="new"&&!item.manualNewName.trim()))
     throw Error("קיימת בעיית אימות ב-"+item.filename+". תקנו לפני השמירה.");
   }
