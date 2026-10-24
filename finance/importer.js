@@ -1,5 +1,6 @@
 import { CATEGORIES,parseCSV,findHeaderRow,guessMapping,convertRows,fileIsSupported } from "./credit-core.mjs";
-import {cardCheck,cardFingerprintInput,potentialLegacyOverlap,sheetCardSummary} from "./card-import.mjs";
+import {cardCheck,cardFingerprintInput,cardChargeFingerprintInput,potentialLegacyOverlap,sheetCardSummary} from "./card-import.mjs";
+import {resolveBillingAwareDuplicates} from "./credit-dedupe.mjs";
 const $=id=>document.getElementById(id);
 let workbook=[],rows=[],mapping={},headerRow=-1,candidates=[],fileType="csv",fileSize=0,rawFileName="";
 const FIELDS=[["date","תאריך עסקה *"],["billingDate","תאריך חיוב (אם קיים)"],["merchant","בית עסק / תיאור *"],["amount","סכום חיוב בשקלים *"],["category","קטגוריה מתוך הדוח (אופציונלי)"],["kind","חיוב או זיכוי (אופציונלי)"],["installment","תשלומים בקובץ"],["installmentNumber","תשלום נוכחי"],["installmentTotal","סך תשלומים"],["reference","אסמכתא (אופציונלי)"],["card","זיהוי כרטיס (אופציונלי)"]];
@@ -269,8 +270,11 @@ async function save(){
    mapped.push({household_id:context.household,created_by:context.user.id,occurred_on:row.occurred_on,
     merchant:row.merchant,category:row.category,amount_agorot:row.amount_agorot,
     card_id:card.id,
-    entry_kind:row.entry_kind,source:fileType,source_fingerprint:fp,billing_month:row.billingMonth||($("import-statement-month").value?$("import-statement-month").value+"-01":null),installment_number:row.installment_number,installment_total:row.installment_total});
+    entry_kind:row.entry_kind,source:fileType,source_fingerprint:fp,billing_month:row.billingMonth||($("import-statement-month").value?$("import-statement-month").value+"-01":null),
+    dedupe_v4_input:cardChargeFingerprintInput(card.id,row,row.billingMonth||($("import-statement-month").value?$("import-statement-month").value+"-01":null)),
+    installment_number:row.installment_number,installment_total:row.installment_total});
   }
+  await resolveBillingAwareDuplicates({supabase:runtime.supabase,household:context.household,rows:mapped,hash:digest});
   const filename=String(rawFileName||"פירוט אשראי").slice(0,180);
   const selectedSheet=workbook[Number($("sheet-select").value)]?.name||null;
   const {data:batch,error:batchError}=await runtime.supabase.from("tevuna_import_batches").insert({
