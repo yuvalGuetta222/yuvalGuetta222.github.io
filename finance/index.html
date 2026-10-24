@@ -31,6 +31,7 @@
  <nav class="navigation top-navigation" aria-label="ניווט ראשי">
 <button data-screen="dashboard" class="active">סקירה</button>
 <button data-screen="history">השוואת חודשים</button>
+<button data-screen="ai" id="ai-nav-entry">✦ יועץ AI</button>
 <details class="nav-more" id="nav-more"><summary>ניהול נתונים <span aria-hidden="true">⌄</span></summary>
 <div class="nav-more-menu">
 <button data-screen="import">ייבוא אשראי</button>
@@ -58,6 +59,11 @@
     <p id="source-audit-overview" class="note"></p>
     <div id="source-audit-rows" class="source-audit-rows"></div>
     <p class="note">הבקרה מסתמכת על גיליונות הסיכום שצורפו לקבצים, ולא על אימות ישיר מול דוח ה-PDF המקורי. לא ייווצרו עסקאות משוערות כדי לסגור הפרשים.</p>
+  </section>
+  <section class="box ai-dashboard-teaser">
+   <div><span class="eyebrow">TEVUNA AI</span><h2>יועץ פיננסי חכם</h2>
+   <p class="subtitle">רוצים להבין מה השתנה בהוצאות או איפה אפשר לחסוך? שואלים את ה-AI על סיכומי הנתונים של החודש, בלי לשלוח דוחות מלאים.</p></div>
+   <button type="button" id="ai-dashboard-open" class="secondary">✦ נתח את החודש עם AI</button>
   </section>
   <section class="box categories-main" aria-labelledby="categories-title">
    <div class="section-heading"><div><span class="eyebrow">SPENDING BY CATEGORY</span><h2 id="categories-title">לאן הכסף הולך?</h2><p class="subtitle">ממוין מההוצאה הגבוהה לנמוכה. לחיצה על קטגוריה פותחת את כל העסקאות והזיכויים שלה בחודש הנבחר.</p></div><div class="category-total" id="category-grand-total"></div></div>
@@ -103,6 +109,46 @@
   </details>
   <div class="box disclaimer"><b>איך קוראים את המספרים?</b><p>התחייבויות קבועות נכללות כשריון תקציבי, אלא אם שויכו לעסקאות האשראי של החודש. סכומים תקופתיים מוצגים כממוצע חודשי לתכנון בלבד. הנתונים אינם מהווים ייעוץ השקעות או המלצה לקחת אשראי.</p></div>
  </section>
+
+ <section id="ai" class="screen hidden">
+  <div class="ai-layout">
+   <section class="box ai-main" aria-labelledby="ai-title">
+    <div class="section-intro">
+     <span class="eyebrow">TEVUNA • FINANCIAL AI</span>
+     <h2 id="ai-title">מה הייתם רוצים להבין לגבי הכסף שלכם?</h2>
+     <p class="subtitle">יועץ AI אמיתי שמפרש נתוני תקציב מחושבים, לא משנה עסקאות ולא מחליף את דוחות האשראי או ייעוץ מקצועי.</p>
+    </div>
+    <div class="ai-quick-actions">
+     <button type="button" data-ai-task="summary" class="secondary">✦ סכם לי את החודש</button>
+     <button type="button" data-ai-task="saving" class="secondary">איפה אפשר לחסוך?</button>
+    </div>
+    <form id="ai-question-form" class="ai-question-form">
+     <label for="ai-question">שאלה חופשית על התקציב</label>
+     <textarea id="ai-question" rows="3" maxlength="400" placeholder="לדוגמה: מה ההוצאה הגבוהה החודש, ואילו קטגוריות כדאי לבדוק?" required></textarea>
+     <button type="submit" id="ai-ask" class="primary">שאל את היועץ ✦</button>
+    </form>
+    <p id="ai-feedback" class="feedback" role="status" aria-live="polite"></p>
+    <div id="ai-conversation" class="ai-conversation" role="log" aria-live="polite">
+     <p class="empty">בחרו ניתוח או שאלו שאלה. התשובה תתייחס לחודש ולשיטת התאריכים שנבחרו בראש האתר.</p>
+    </div>
+   </section>
+   <aside class="box ai-side" aria-labelledby="ai-safety-title">
+    <h2 id="ai-safety-title">פרטיות וחיבור AI</h2>
+    <p id="ai-connection-status" class="note" role="status">בודק זמינות של מודל AI...</p>
+    <div id="ai-key-setup">
+     <p class="note">להפעלת AI אמיתי נדרש מפתח OpenAI API. אם הוגדר מפתח בשרת, אין צורך להזינו כאן. אחרת אפשר להשתמש במפתח זמני.</p>
+     <label for="ai-key-input">מפתח זמני (לא נשמר בדפדפן או במסד הנתונים)</label>
+     <input type="password" id="ai-key-input" autocomplete="off" spellcheck="false" placeholder="OpenAI API key">
+     <div class="ai-key-actions">
+      <button id="ai-use-key" type="button" class="secondary">הפעל מפתח זמני</button>
+      <button id="ai-clear-key" type="button" class="link">נקה מפתח</button>
+     </div>
+    </div>
+    <p class="note">מועברים לשרת המאובטח רק סיכומי הוצאות לפי קטגוריות, תקציבים והכנסות מחודש נבחר ומהחודש הקודם. משם הם נשלחים לספק ה-AI רק כשמבקשים תשובה. לא שולחים את הקובץ המקורי, שמות בתי עסק, מספרי כרטיסים או פרטי חשבון.</p>
+    <p class="note">השירות עשוי להיות כרוך בעלות API בהתאם לספק ולחשבון המפתח. לכל משתמש יש מכסה של עד 25 בקשות ביום. אין שמירת שיחות AI במסד הנתונים.</p>
+   </aside>
+  </div>
+ </section>
  <section id="history" class="screen hidden">
  <div class="box history-top">
   <div class="heading" style="margin-bottom:12px">
@@ -111,6 +157,7 @@
   </div>
   <p id="history-coverage" class="note">בחרו טווח להצגת ההיסטוריה.</p><p id="history-error" class="feedback" role="status" aria-live="polite"></p>
  </div>
+ <div class="box ai-history-teaser"><div><b>✦ תובנות AI על מגמות ההוצאות</b><p class="subtitle">שאלו למה הוצאות מסוימות גדלו ואיך לבדוק אותן בצורה מדודה.</p></div><button id="ai-history-open" type="button" class="secondary">ניתוח AI והשוואה</button></div>
  <div class="stats" id="history-cards"></div>
  <div class="box history-block"><h2>מגמת הכנסות והוצאות</h2><p class="subtitle">השוואה על אותה סקאלה כספית: <span class="dot income"></span> הכנסות שהתקבלו • <span class="dot expense"></span> עסקאות אשראי נטו • <span class="dot fixed"></span> התחייבויות קבועות שטרם נכללו באשראי. *חודש נוכחי חלקי.</p><div class="history-chart" id="history-chart"></div></div>
  <div class="box history-block"><h2>כמה יותר או פחות בכל חודש?</h2><p class="subtitle">היתרה לתכנון מחושבת לאחר עסקאות האשראי וההתחייבויות הקבועות שטרם נכללו בהן. היא אינה יתרת חשבון בנק; חודש ללא פירוט לא נחשב כחודש ללא הוצאות.</p>
