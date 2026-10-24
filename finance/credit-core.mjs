@@ -1,3 +1,4 @@
+import {cardLast4} from "./card-import.mjs";
 /* Tevuna credit statement parsing — local-only, no raw files uploaded. */
 export const CATEGORIES = ["מזון וסופר","מסעדות ומשלוחים","תחבורה","בילויים","בריאות","קניות","חשבונות הבית","שכירות","מנויים","חינוך","ביטוח","נסיעות ונופש","אחר"];
 
@@ -138,7 +139,7 @@ export function parseInstallments(combo,number,total){
 }
 export function convertRows(rows, headerIndex, mapping) {
   const result=[], skipped=[];
-  const counts=new Map();
+  const counts=new Map(),importCounts=new Map();
   for(let i=headerIndex+1;i<rows.length;i++){
     const row=rows[i]||[];
     const cell=k=>mapping[k]>=0?row[mapping[k]]:null;
@@ -159,10 +160,15 @@ export function convertRows(rows, headerIndex, mapping) {
     const card=key(cell("card")||"");
     const identity=[date,key(merchant),String(amount_agorot),entry_kind,reference,card].join("|");
     const seq=(counts.get(identity)||0)+1;counts.set(identity,seq);
+    // V3 identity deliberately excludes the card-cell formatting: the selected
+    // payment-card profile scopes the fingerprint, even when exports omit card columns.
+    const importIdentity=[date,key(merchant),String(amount_agorot),entry_kind,reference].join("|");
+    const importSequence=(importCounts.get(importIdentity)||0)+1;importCounts.set(importIdentity,importSequence);
+    const rowCardLast4=cardLast4(cell("card"));
     const fromFile=sourceCategory(cell("category"));
     const category=fromFile||categorize(merchant);
     const installments=parseInstallments(cell("installment"),cell("installmentNumber"),cell("installmentTotal"));
-    result.push({line:i+1,occurred_on:date,merchant,amount_agorot,entry_kind,category,sourceCategory:fromFile,categoryMethod:fromFile?"file":category==="אחר"?"unknown":"suggestion",...installments,identity,sequence:seq,selected:true});
+    result.push({line:i+1,occurred_on:date,merchant,amount_agorot,entry_kind,category,sourceCategory:fromFile,categoryMethod:fromFile?"file":category==="אחר"?"unknown":"suggestion",...installments,identity,sequence:seq,importIdentity,importSequence,rowCardLast4,selected:true});
   }
   return {valid:result,skipped};
 }
