@@ -3,7 +3,7 @@ import {setupBackup} from "./export-view.js";
 import {cardSpendingReport} from "./card-import.mjs";
 import {householdBalance} from "./household-ledger.mjs";
 import {setupCoach} from "./coach-view.js";
-import {setupAICoach} from "./ai-coach.js";
+import {setupAICoach} from "./ai-coach.js?v=20261025-cfdiag";
 import {setupIncomeManagement} from "./income-view.js";
 import {setupCategoryDashboard} from "./category-view.js";
 import {recurringIncomeSummary} from "./income-utils.mjs";
