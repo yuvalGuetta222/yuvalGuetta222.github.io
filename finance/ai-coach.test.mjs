@@ -31,8 +31,8 @@ test("Tevuna AI opens from dashboard, reports disabled key and does not invent a
   getContext:()=>({user:{id:"user"},household:"00000000-0000-4000-8000-000000000001"}),
   supabase:{functions:{invoke:async(name,opts)=>{
    calls.push({name,opts});
-   if(opts.body.type==="status")return {data:{ready:false,allow_temporary_key:true},error:null};
-   return {data:null,error:{context:{json:async()=>({code:"MISSING_API_KEY",error:"חסר מפתח API"})}}};
+   if(opts.body.type==="status")return {data:{ready:false,provider:"Cloudflare Workers AI"},error:null};
+   return {data:null,error:{context:{json:async()=>({code:"MISSING_API_KEY",error:"יש לחבר חשבון Cloudflare"})}}};
   }}}
  };
  try{
@@ -44,34 +44,36 @@ test("Tevuna AI opens from dashboard, reports disabled key and does not invent a
   assert.equal(calls[1].opts.body.type,"summary");
   assert.equal(calls[1].name,"tevuna-ai-coach");
   assert.equal(calls[1].opts.body.household,"00000000-0000-4000-8000-000000000001");
-  assert.match(e.nodes.get("ai-connection-status").textContent,/לא הוגדר מפתח/);
-  assert.match(e.nodes.get("ai-feedback").textContent,/מפתח/);
+  assert.match(e.nodes.get("ai-connection-status").textContent,/Cloudflare Workers AI/);
+  assert.match(e.nodes.get("ai-feedback").textContent,/Cloudflare/);
   assert.equal(calls[1].opts.headers,undefined);
  }finally{e.restore()}
 });
-test("OpenAI key is temporary: input clears and only sends it with direct user actions",async()=>{
+test("Cloudflare AI sends only the selected month context and receives a model response without any client-side credentials",async()=>{
  const e=environment(),calls=[];
  const runtime={
   getContext:()=>({user:{id:"user"},household:"00000000-0000-4000-8000-000000000001"}),
   supabase:{functions:{invoke:async(name,opts)=>{
    calls.push(opts);
-   return {data:opts.body.type==="status"?{ready:false}:{answer:"זהו ניתוח מבוסס נתונים.",uncertain:false},error:null};
+   return {data:opts.body.type==="status"?{ready:true,provider:"Cloudflare Workers AI"}:
+     {answer:"זו תשובת AI מאובטחת.",provider:"Cloudflare Workers AI",uncertain:false},error:null};
   }}}
  };
  try{
   setupAICoach(runtime);
   globalThis.document.getElementById("month").value="2026-10";
   globalThis.document.getElementById("date-basis").value="statement";
-  const key="sk-proj-"+ "A".repeat(32);
-  globalThis.document.getElementById("ai-key-input").value=key;
-  e.nodes.get("ai-use-key").click();
-  assert.equal(e.nodes.get("ai-key-input").value,"");
   await e.nodes.get("ai-dashboard-open").click();
-  assert.equal(calls[1].headers["x-tevuna-ai-key"],key);
+  assert.equal(calls[0].body.type,"status");
   assert.equal(calls[1].body.type,"summary");
+  assert.equal(calls[1].body.month,"2026-10");
+  assert.equal(calls[1].body.basis,"statement");
+  assert.equal(calls[1].headers,undefined);
   assert.ok(e.nodes.get("ai-conversation").children.length>=2);
-  e.nodes.get("ai-clear-key").click();
+  assert.match(e.nodes.get("ai-connection-status").textContent,/Cloudflare/);
+  assert.equal(e.nodes.get("ai-key-setup").hidden,true);
   await e.tasks[1].click();
+  assert.equal(calls.at(-1).body.type,"saving");
   assert.equal(calls.at(-1).headers,undefined);
  }finally{e.restore()}
 });
@@ -81,6 +83,8 @@ test("No provider key or raw transaction upload appears in public HTML and front
  assert.match(html,/id="ai-conversation"/);
  assert.match(html,/data-screen="ai"/);
  assert.match(html,/id="ai-history-open"/);
+ assert.match(html,/Cloudflare Workers AI/);
+ assert.doesNotMatch(html,/OpenAI API key|id="ai-key-input"/);
  assert.doesNotMatch(src,/localStorage|sessionStorage|service_role|INSERT INTO/);
  assert.doesNotMatch(src,/from\("tevuna_transactions"\)/);
 });
