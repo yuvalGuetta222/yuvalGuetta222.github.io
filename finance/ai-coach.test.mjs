@@ -25,7 +25,7 @@ function environment(){
  globalThis.document=doc;
  return {nodes,tasks,listeners,restore(){globalThis.document=original}};
 }
-test("Tevuna AI opens from dashboard, reports disabled key and does not invent an answer",async()=>{
+test("Without Cloudflare configuration, AI requests are blocked before displaying an assistant answer",async()=>{
  const e=environment(),calls=[];
  const runtime={
   getContext:()=>({user:{id:"user"},household:"00000000-0000-4000-8000-000000000001"}),
@@ -40,13 +40,12 @@ test("Tevuna AI opens from dashboard, reports disabled key and does not invent a
   globalThis.document.getElementById("month").value="2026-10";
   globalThis.document.getElementById("date-basis").value="statement";
   await e.nodes.get("ai-dashboard-open").click();
-  assert.equal(calls[0].opts.body.type,"status");
-  assert.equal(calls[1].opts.body.type,"summary");
-  assert.equal(calls[1].name,"tevuna-ai-coach");
-  assert.equal(calls[1].opts.body.household,"00000000-0000-4000-8000-000000000001");
+  assert.ok(calls.length>=1);
+  assert.ok(calls.every(c=>c.opts.body.type==="status"));
   assert.match(e.nodes.get("ai-connection-status").textContent,/Cloudflare Workers AI/);
   assert.match(e.nodes.get("ai-feedback").textContent,/Cloudflare/);
-  assert.equal(calls[1].opts.headers,undefined);
+  assert.equal(e.nodes.get("ai-conversation").children.length,0);
+  assert.ok(calls.every(c=>c.opts.headers===undefined));
  }finally{e.restore()}
 });
 test("Cloudflare AI sends only the selected month context and receives a model response without any client-side credentials",async()=>{
@@ -64,11 +63,11 @@ test("Cloudflare AI sends only the selected month context and receives a model r
   globalThis.document.getElementById("month").value="2026-10";
   globalThis.document.getElementById("date-basis").value="statement";
   await e.nodes.get("ai-dashboard-open").click();
-  assert.equal(calls[0].body.type,"status");
-  assert.equal(calls[1].body.type,"summary");
-  assert.equal(calls[1].body.month,"2026-10");
-  assert.equal(calls[1].body.basis,"statement");
-  assert.equal(calls[1].headers,undefined);
+  const summaries=calls.filter(c=>c.body.type==="summary");
+  assert.equal(summaries.length,1);
+  assert.equal(summaries[0].body.month,"2026-10");
+  assert.equal(summaries[0].body.basis,"statement");
+  assert.equal(summaries[0].headers,undefined);
   assert.ok(e.nodes.get("ai-conversation").children.length>=2);
   assert.match(e.nodes.get("ai-connection-status").textContent,/Cloudflare/);
   assert.equal(e.nodes.get("ai-key-setup").hidden,true);
