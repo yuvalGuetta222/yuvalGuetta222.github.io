@@ -136,16 +136,11 @@
     <h2 id="ai-safety-title">פרטיות וחיבור AI</h2>
     <p id="ai-connection-status" class="note" role="status">בודק זמינות של מודל AI...</p>
     <div id="ai-key-setup">
-     <p class="note">להפעלת AI אמיתי נדרש מפתח OpenAI API. אם הוגדר מפתח בשרת, אין צורך להזינו כאן. אחרת אפשר להשתמש במפתח זמני.</p>
-     <label for="ai-key-input">מפתח זמני (לא נשמר בדפדפן או במסד הנתונים)</label>
-     <input type="password" id="ai-key-input" autocomplete="off" spellcheck="false" placeholder="OpenAI API key">
-     <div class="ai-key-actions">
-      <button id="ai-use-key" type="button" class="secondary">הפעל מפתח זמני</button>
-      <button id="ai-clear-key" type="button" class="link">נקה מפתח</button>
-     </div>
+     <p class="note">בחרנו ב-Cloudflare Workers AI בתוכנית החינמית. כדי להפעיל תשובות צריך לחבר פעם אחת חשבון Cloudflare דרך הגדרת הסודות של Supabase. אין להזין טוקן או מזהה חשבון בשיחה או באתר.</p>
+     <p class="note">יש להגדיר בסודות הפרויקט את <code>CLOUDFLARE_ACCOUNT_ID</code> ואת <code>CLOUDFLARE_API_TOKEN</code>, עם הרשאת Workers AI בלבד. לאחר ההגדרה רעננו את האפליקציה.</p>
     </div>
     <p class="note">מועברים לשרת המאובטח רק סיכומי הוצאות לפי קטגוריות, תקציבים והכנסות מחודש נבחר ומהחודש הקודם. משם הם נשלחים לספק ה-AI רק כשמבקשים תשובה. לא שולחים את הקובץ המקורי, שמות בתי עסק, מספרי כרטיסים או פרטי חשבון.</p>
-    <p class="note">השירות עשוי להיות כרוך בעלות API בהתאם לספק ולחשבון המפתח. לכל משתמש יש מכסה של עד 25 בקשות ביום. אין שמירת שיחות AI במסד הנתונים.</p>
+    <p class="note">Cloudflare Workers AI כוללת מכסה חינמית של 10,000 Neurons ליום. בחשבון Workers Free הבקשות נעצרות כשמגיעים לתקרה, ללא שדרוג אוטומטי למסלול בתשלום. בנוסף הגדרנו מכסה של עד 25 בקשות למשתמש ביום. אין שמירת שיחות AI במסד הנתונים.</p>
    </aside>
   </div>
  </section>
