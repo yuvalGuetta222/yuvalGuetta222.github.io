@@ -117,9 +117,21 @@ async function run(req:Request){
  try{body=await req.json()}catch{return send({error:"בקשה לא תקינה"},400)}
  const accountId=Deno.env.get("CLOUDFLARE_ACCOUNT_ID")?.trim()||"";
  const apiToken=Deno.env.get("CLOUDFLARE_API_TOKEN")?.trim()||"";
- const workerModel="@cf/meta/llama-3.1-8b-instruct";
+ const workerModel="@cf/meta/llama-3.1-8b-instruct-fp8";
  const configured=!!(accountId&&apiToken);
+ const tokenStructureOk=!!apiToken&&apiToken.length>=20&&apiToken.length<=512&&/^[A-Za-z0-9._~-]+$/.test(apiToken);
+ const safeNetworkError=(error:unknown)=>{
+  const err=error as {message?:string,cause?:{message?:string}};
+  const raw=String(err?.message||err?.cause?.message||"unknown");
+  const sanitized=raw.replaceAll(apiToken,"[REDACTED]").replaceAll(accountId,"[ACCOUNT]")
+   .replace(/Bearer\s+[^\s"']+/gi,"Bearer [REDACTED]");
+  if(/invalid.+header|header.+invalid|invalid character|header value|headersinit/i.test(sanitized))return "INVALID_HEADER";
+  if(/certificate|cert |tls|ssl/i.test(sanitized))return "TLS_FAILURE";
+  if(/dns|lookup|resolve|network|connect|request|fetch/i.test(sanitized))return "NETWORK_FAILURE";
+  return "UNKNOWN_TRANSPORT_ERROR";
+ };
  if(body?.type==="status"){
+  if(configured&&!tokenStructureOk)return send({ready:false,configured:true,token_active:false,provider:"Cloudflare Workers AI",model:workerModel,code:"CLOUDFLARE_TOKEN_FORMAT"});
   if(!configured||!/^[a-f0-9]{32}$/i.test(accountId))
    return send({ready:false,configured:false,provider:"Cloudflare Workers AI",model:workerModel,code:"MISSING_CLOUDFLARE_CONFIG"});
   // An active token can be verified for free without sending financial data or
@@ -135,9 +147,10 @@ async function run(req:Request){
    return send({ready:active,configured:true,token_active:active,
     provider:"Cloudflare Workers AI",model:workerModel,code:active?"CLOUDFLARE_TOKEN_ACTIVE":"CLOUDFLARE_TOKEN_INVALID"});
   }catch(error){
-   console.error("Tevuna Cloudflare token check failed",{step:"verify",name:error instanceof Error?error.name:"unknown"});
+   const classification=safeNetworkError(error);
+   console.error("Tevuna Cloudflare token check failed",{step:"verify",classification,name:error instanceof Error?error.name:"unknown"});
    return send({ready:false,configured:true,provider:"Cloudflare Workers AI",
-    model:workerModel,code:"CLOUDFLARE_UNREACHABLE"});
+    model:workerModel,code:"CLOUDFLARE_UNREACHABLE",reason:classification});
   }finally{clearTimeout(healthTimeout)}
  }
  const month=body?.month,basis=body?.basis||"statement",type=body?.type||"summary";
@@ -151,6 +164,7 @@ async function run(req:Request){
  if(type==="question"&&(!question||question.length>400))return send({error:"כתבו שאלה באורך עד 400 תווים"},400);
  if(!configured||!/^[a-f0-9]{32}$/i.test(accountId))
   return send({error:"לא הוגדר חיבור Cloudflare Workers AI בשרת. נדרשים CLOUDFLARE_ACCOUNT_ID ו-CLOUDFLARE_API_TOKEN בסודות הפרויקט.",code:"MISSING_CLOUDFLARE_CONFIG"},503);
+ if(!tokenStructureOk)return send({error:"טוקן Cloudflare נשמר בפורמט שגוי (למשל Bearer, רווחים או סימני מרכאות). יש להזין רק את ערך הטוקן כפי שניתן ב-Cloudflare.",code:"CLOUDFLARE_TOKEN_FORMAT"},400);
  const {data:membership,error:memberError}=await db.from("tevuna_members")
   .select("household_id").eq("household_id",household).eq("user_id",user.id).maybeSingle();
  if(memberError||!membership)return send({error:"אין הרשאה לנתוני משק הבית"},403);
@@ -187,12 +201,13 @@ async function run(req:Request){
    uncertain:context.evidence.unverified_discrepancies||context.evidence.previous_unverified_discrepancies});
  }catch(error){
   const type=error instanceof Error?error.name:"unknown";
-  console.error("Tevuna Workers AI request failure",{phase,type});
+  const classification=safeNetworkError(error);
+  console.error("Tevuna Workers AI request failure",{phase,type,classification});
   const timedOut=abort.signal.aborted;
   return send({error:timedOut?
     "החיבור למודל Cloudflare חרג מזמן ההמתנה. לא שונו נתונים.":
     "השרת לא הצליח להשלים את הקריאה ל-Cloudflare AI. לא שונו נתונים.",
-    code:timedOut?"CLOUDFLARE_TIMEOUT":"CLOUDFLARE_REQUEST_ERROR",step:phase},timedOut?504:502);
+    code:timedOut?"CLOUDFLARE_TIMEOUT":"CLOUDFLARE_REQUEST_ERROR",step:phase,reason:classification},timedOut?504:502);
  }
  finally{clearTimeout(timer)}
 }
