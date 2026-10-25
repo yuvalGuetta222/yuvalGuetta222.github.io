@@ -1,5 +1,6 @@
 // Cloudflare AI credentials are configured on the secure Supabase server only.
 let authenticated=false;
+let providerReady=false;
 let inFlight=false;
 const $=id=>document.getElementById(id);
 function message(who,content){
@@ -22,23 +23,26 @@ function setBusy(value){
 function getError(result){
  const server=result?.context?.body;
  if(server?.error)return String(server.error);
- return "הקריאה לשירות ה-AI נכשלה. בדקו את החיבור והמפתח.";
+ return "הקריאה לשירות ה-AI נכשלה. בדקו את חיבור Cloudflare ב-Supabase.";
 }
 export function setupAICoach(runtime){
  const context=runtime;
  async function refreshStatus(){
   const {user,household}=runtime.getContext();
-  if(!user||!household){authenticated=false;return}
+  if(!user||!household){authenticated=false;providerReady=false;return false}
   authenticated=true;
   const {data,error}=await runtime.supabase.functions.invoke("tevuna-ai-coach",{body:{type:"status"}});
   if(error){
+   providerReady=false;
    $("ai-connection-status").textContent="שירות AI אינו זמין. השאלות לא יישלחו עד שהחיבור יאומת.";
-   return;
+   return false;
   }
-  $("ai-connection-status").textContent=data?.ready?
+  providerReady=!!data?.ready;
+  $("ai-connection-status").textContent=providerReady?
    "✓ Cloudflare Workers AI מחובר דרך שרת תבונה. הניתוח מופעל רק כשלוחצים על כפתור.":
    "יועץ Cloudflare Workers AI מותקן, אך טרם חובר לחשבון Cloudflare. יש להגדיר ב-Supabase את CLOUDFLARE_ACCOUNT_ID ואת CLOUDFLARE_API_TOKEN.";
-  $("ai-key-setup").hidden=!!data?.ready;
+  $("ai-key-setup").hidden=providerReady;
+  return providerReady;
  }
  async function ask(type,question=""){
   if(inFlight)return;
@@ -47,6 +51,10 @@ export function setupAICoach(runtime){
   const month=$("month").value,basis=$("date-basis").value;
   if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)){status("בחרו חודש תקין.");return}
   if(type==="question"&&(!question.trim()||question.length>400)){status("כתבו שאלה עד 400 תווים.");return}
+  if(!await refreshStatus()){
+   status("יועץ AI עדיין לא מחובר ל-Cloudflare. הגדירו את פרטי החיבור בסודות Supabase ואז רעננו את האתר. לא נשלחה בקשה לניתוח ולא שונו נתונים.");
+   return;
+  }
   if(type==="question")message("user",question);
   else message("user",type==="summary"?"סכם את המצב הפיננסי בחודש הנבחר":"איפה אפשר לחסוך החודש?");
   setBusy(true);status("מנתח נתוני תקציב מסוכמים... לא שולח את דוחות האשראי הגולמיים.");
@@ -63,8 +71,7 @@ export function setupAICoach(runtime){
    if(data.uncertain)status("התגובה כוללת הסתייגות: בחודש הנבחר קיימים פערים בין חלק ממקורות האשראי.");
    else status("הניתוח הושלם. סכומי היסוד מחושבים במסד הנתונים, ה-AI מסביר אותם בלבד.");
   }catch(error){
-   status(String(error?.message||error).slice(0,230));
-   message("ai","לא התקבלה תשובת AI. לא בוצע שינוי בנתונים. "+String(error?.message||"").slice(0,180));
+   status("הניתוח לא הושלם: "+String(error?.message||error).slice(0,230)+" הנתונים לא שונו.");
   }finally{setBusy(false)}
  }
  function open(type){
