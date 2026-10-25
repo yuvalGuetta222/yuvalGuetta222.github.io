@@ -119,7 +119,27 @@ async function run(req:Request){
  const apiToken=Deno.env.get("CLOUDFLARE_API_TOKEN")?.trim()||"";
  const workerModel="@cf/meta/llama-3.1-8b-instruct";
  const configured=!!(accountId&&apiToken);
- if(body?.type==="status")return send({ready:configured,provider:"Cloudflare Workers AI",model:workerModel,free_tier:true});
+ if(body?.type==="status"){
+  if(!configured||!/^[a-f0-9]{32}$/i.test(accountId))
+   return send({ready:false,configured:false,provider:"Cloudflare Workers AI",model:workerModel,code:"MISSING_CLOUDFLARE_CONFIG"});
+  // An active token can be verified for free without sending financial data or
+  // running a model. This is not yet a guarantee of Workers AI model permissions.
+  const healthAbort=new AbortController();
+  const healthTimeout=setTimeout(()=>healthAbort.abort(),6000);
+  try{
+   const check=await fetch("https://api.cloudflare.com/client/v4/user/tokens/verify",{
+    method:"GET",signal:healthAbort.signal,headers:{"Authorization":"Bearer "+apiToken}
+   });
+   const result=await check.json();
+   const active=check.ok&&result?.success===true&&result?.result?.status==="active";
+   return send({ready:active,configured:true,token_active:active,
+    provider:"Cloudflare Workers AI",model:workerModel,code:active?"CLOUDFLARE_TOKEN_ACTIVE":"CLOUDFLARE_TOKEN_INVALID"});
+  }catch(error){
+   console.error("Tevuna Cloudflare token check failed",{step:"verify",name:error instanceof Error?error.name:"unknown"});
+   return send({ready:false,configured:true,provider:"Cloudflare Workers AI",
+    model:workerModel,code:"CLOUDFLARE_UNREACHABLE"});
+  }finally{clearTimeout(healthTimeout)}
+ }
  const month=body?.month,basis=body?.basis||"statement",type=body?.type||"summary";
  const household=body?.household;
  if(typeof month!=="string"||!/^20\d{2}-(0[1-9]|1[0-2])$/.test(month)
@@ -143,6 +163,7 @@ async function run(req:Request){
   type==="saving"?"הצע עד שלוש פעולות אפשריות לחיסכון על בסיס הנתונים, בלי להבטיח תוצאה.":
   "ענה לשאלה: "+question;
  const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),18000);
+ let phase="connect";
  try{
   const response=await fetch("https://api.cloudflare.com/client/v4/accounts/"+accountId+
    "/ai/run/"+workerModel,{
@@ -157,13 +178,22 @@ async function run(req:Request){
    response.status===429||response.status===402?
    "מכסת Cloudflare Workers AI החינמית נוצלה או חלה מגבלת בקשות. לא בוצע חיוב אוטומטי.":
    "שירות Cloudflare AI לא השלים את הבקשה. לא שונו נתונים."},response.status===429?429:502);
+  phase="parse-response";
   const result=await response.json();
-  if(result?.success===false)throw Error("Cloudflare returned failure");
+  if(result?.success===false)return send({error:"Cloudflare לא החזיר תשובה תקינה. בדקו הרשאות טוקן ומכסת Workers AI.",code:"CLOUDFLARE_RESPONSE_ERROR"},502);
   const answer=String(result?.result?.response||"").trim().slice(0,3500);
   if(!answer)return send({error:"לא התקבלה תשובה ממודל Cloudflare"},502);
   return send({answer,provider:"Cloudflare Workers AI",model:workerModel,month,basis,
    uncertain:context.evidence.unverified_discrepancies||context.evidence.previous_unverified_discrepancies});
- }catch{return send({error:"שירות ה-AI לא השיב בזמן. הנתונים נשארו ללא שינוי."},504)}
+ }catch(error){
+  const type=error instanceof Error?error.name:"unknown";
+  console.error("Tevuna Workers AI request failure",{phase,type});
+  const timedOut=abort.signal.aborted;
+  return send({error:timedOut?
+    "החיבור למודל Cloudflare חרג מזמן ההמתנה. לא שונו נתונים.":
+    "השרת לא הצליח להשלים את הקריאה ל-Cloudflare AI. לא שונו נתונים.",
+    code:timedOut?"CLOUDFLARE_TIMEOUT":"CLOUDFLARE_REQUEST_ERROR",step:phase},timedOut?504:502);
+ }
  finally{clearTimeout(timer)}
 }
 Deno.serve(req=>run(req).catch(()=>send({error:"שירות ה-AI אינו זמין כעת. הנתונים נשארו ללא שינוי."},500)));
