@@ -38,11 +38,16 @@ export function setupAICoach(runtime){
    return false;
   }
   providerReady=!!data?.ready;
+  const configured=!!data?.configured||providerReady;
   $("ai-connection-status").textContent=providerReady?
-   "✓ Cloudflare Workers AI מחובר דרך שרת תבונה. הניתוח מופעל רק כשלוחצים על כפתור.":
+   "✓ טוקן Cloudflare מאומת כפעיל. אפשר לנסות ניתוח AI כדי לבדוק גם את הגישה למודל.":
+   data?.code==="CLOUDFLARE_TOKEN_INVALID"?
+    "⚠ פרטי Cloudflare נשמרו, אבל טוקן ה-API נדחה או אינו פעיל. בדקו את ההרשאות ב-Cloudflare.":
+   data?.code==="CLOUDFLARE_UNREACHABLE"?
+    "⚠ פרטי Cloudflare שמורים, אך השרת לא הצליח לבדוק את הטוקן. אפשר לנסות ניתוח כדי לקבל שגיאה מדויקת יותר.":
    "יועץ Cloudflare Workers AI מותקן, אך טרם חובר לחשבון Cloudflare. יש להגדיר ב-Supabase את CLOUDFLARE_ACCOUNT_ID ואת CLOUDFLARE_API_TOKEN.";
-  $("ai-key-setup").hidden=providerReady;
-  return providerReady;
+  $("ai-key-setup").hidden=configured;
+  return configured;
  }
  async function ask(type,question=""){
   if(inFlight)return;
