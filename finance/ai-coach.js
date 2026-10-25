@@ -1,5 +1,4 @@
-// Provider token is held in page memory and cleared when the page unloads.
-let temporaryKey="";
+// Cloudflare AI credentials are configured on the secure Supabase server only.
 let authenticated=false;
 let inFlight=false;
 const $=id=>document.getElementById(id);
@@ -36,15 +35,10 @@ export function setupAICoach(runtime){
    $("ai-connection-status").textContent="שירות AI אינו זמין. השאלות לא יישלחו עד שהחיבור יאומת.";
    return;
   }
-  if(data?.ready){
-   $("ai-connection-status").textContent="✓ ה-AI מחובר דרך שרת תבונה. לא צריך מפתח זמני.";
-   $("ai-key-setup").hidden=true;
-  }else{
-   $("ai-key-setup").hidden=false;
-   $("ai-connection-status").textContent=temporaryKey?
-    "מפתח זמני נטען לזיכרון הדף. ניתוח AI יתבצע רק בלחיצה על כפתור.":
-    "המודל מותקן, אך לא הוגדר מפתח API בשרת. הזינו מפתח זמני כדי להפעיל תשובות AI אמיתיות.";
-  }
+  $("ai-connection-status").textContent=data?.ready?
+   "✓ Cloudflare Workers AI מחובר דרך שרת תבונה. הניתוח מופעל רק כשלוחצים על כפתור.":
+   "יועץ Cloudflare Workers AI מותקן, אך טרם חובר לחשבון Cloudflare. יש להגדיר ב-Supabase את CLOUDFLARE_ACCOUNT_ID ואת CLOUDFLARE_API_TOKEN.";
+  $("ai-key-setup").hidden=!!data?.ready;
  }
  async function ask(type,question=""){
   if(inFlight)return;
@@ -58,7 +52,6 @@ export function setupAICoach(runtime){
   setBusy(true);status("מנתח נתוני תקציב מסוכמים... לא שולח את דוחות האשראי הגולמיים.");
   try{
    const opts={body:{type,question,month,basis,household}};
-   if(temporaryKey)opts.headers={"x-tevuna-ai-key":temporaryKey};
    const {data,error}=await context.supabase.functions.invoke("tevuna-ai-coach",opts);
    if(error){
     let actual=data;
@@ -84,19 +77,6 @@ export function setupAICoach(runtime){
  $("ai-question-form").addEventListener("submit",e=>{
   e.preventDefault();const question=$("ai-question").value.trim();
   if(question){ask("question",question);$("ai-question").value=""}
- });
- $("ai-use-key").addEventListener("click",()=>{
-  const candidate=$("ai-key-input").value.trim();
-  if(!/^sk-[A-Za-z0-9_-]{15,}$/.test(candidate)){status("פורמט מפתח OpenAI אינו תקין.");return}
-  temporaryKey=candidate;
-  $("ai-key-input").value="";
-  $("ai-connection-status").textContent="✓ מפתח זמני נטען רק לזיכרון הדף; הוא ייעלם ברענון או בסגירת האתר.";
-  status("אפשר לשאול שאלה או לבקש סיכום.");
- });
- $("ai-clear-key").addEventListener("click",()=>{
-  temporaryKey="";$("ai-key-input").value="";
-  $("ai-connection-status").textContent="מפתח זמני נוקה. לא נשמר שום מפתח באתר.";
-  status("");
  });
  document.addEventListener("tevuna:screen-changed",event=>{
   if(event.detail?.screen==="ai")refreshStatus();
