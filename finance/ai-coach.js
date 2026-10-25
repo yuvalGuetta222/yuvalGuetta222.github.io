@@ -39,16 +39,20 @@ export function setupAICoach(runtime){
   }
   providerReady=!!data?.ready;
   const configured=!!data?.configured||providerReady;
-  $("ai-connection-status").textContent=providerReady?
-   "✓ טוקן Cloudflare מאומת כפעיל. אפשר לנסות ניתוח AI כדי לבדוק גם את הגישה למודל.":
+  const statusText=providerReady?
+   "✓ טוקן Cloudflare פעיל. ניתן לנסות ניתוח כדי לבדוק את הרשאות המודל.":
+   data?.code==="CLOUDFLARE_TOKEN_FORMAT"?
+    "⚠ טוקן Cloudflare נשמר בפורמט לא תקין. בסודות Supabase יש לשמור רק את ערך הטוקן, בלי Bearer, מרכאות או רווחים.":
    data?.code==="CLOUDFLARE_TOKEN_INVALID"?
-    "⚠ פרטי Cloudflare נשמרו, אבל טוקן ה-API נדחה או אינו פעיל. בדקו את ההרשאות ב-Cloudflare.":
+    "⚠ הטוקן נשמר אבל נדחה על ידי Cloudflare. יש לבדוק הרשאות Workers AI ולהפיק טוקן חדש במקרה הצורך.":
    data?.code==="CLOUDFLARE_UNREACHABLE"?
-    "⚠ פרטי Cloudflare שמורים, אך השרת לא הצליח לבדוק את הטוקן. אפשר לנסות ניתוח כדי לקבל שגיאה מדויקת יותר.":
-   "יועץ Cloudflare Workers AI מותקן, אך טרם חובר לחשבון Cloudflare. יש להגדיר ב-Supabase את CLOUDFLARE_ACCOUNT_ID ואת CLOUDFLARE_API_TOKEN.";
-  $("ai-key-setup").hidden=configured;
-  return configured;
- }
+    "⚠ פרטי Cloudflare שמורים, אבל Supabase אינו מצליח ליצור קשר עם Cloudflare."+
+     (data?.reason==="TLS_FAILURE"?" נמצאה בעיית TLS.":data?.reason==="INVALID_HEADER"?" נמצאה בעיית כותרות HTTP.":" נמצאה שגיאת תקשורת.")+
+     " אין צורך להעלות מחדש את דוחות האשראי.":
+   "יועץ Cloudflare Workers AI מותקן, אך טרם חובר לחשבון Cloudflare.";
+  $("ai-connection-status").textContent=statusText;
+  $("ai-key-setup").hidden=configured&&data?.code!=="CLOUDFLARE_TOKEN_FORMAT";
+  return configured&&data?.code!=="CLOUDFLARE_TOKEN_FORMAT"; }
  async function ask(type,question=""){
   if(inFlight)return;
   const {user,household}=context.getContext();
