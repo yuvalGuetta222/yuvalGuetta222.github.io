@@ -5,7 +5,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.76.1";
 const ORIGIN = "https://yuvalguetta222.github.io";
 const cors = {
   "Access-Control-Allow-Origin": ORIGIN,
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-tevuna-ai-key",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Vary": "Origin",
 };
@@ -115,8 +115,11 @@ async function run(req:Request){
  if(authError||!user)return send({error:"נדרשת התחברות מאומתת"},401);
  let body:any;
  try{body=await req.json()}catch{return send({error:"בקשה לא תקינה"},400)}
- const configuredKey=Deno.env.get("OPENAI_API_KEY")?.trim()||"";
- if(body?.type==="status")return send({ready:!!configuredKey,allow_temporary_key:true,model:"gpt-4o-mini"});
+ const accountId=Deno.env.get("CLOUDFLARE_ACCOUNT_ID")?.trim()||"";
+ const apiToken=Deno.env.get("CLOUDFLARE_API_TOKEN")?.trim()||"";
+ const workerModel="@cf/meta/llama-3.1-8b-instruct";
+ const configured=!!(accountId&&apiToken);
+ if(body?.type==="status")return send({ready:configured,provider:"Cloudflare Workers AI",model:workerModel,free_tier:true});
  const month=body?.month,basis=body?.basis||"statement",type=body?.type||"summary";
  const household=body?.household;
  if(typeof month!=="string"||!/^20\d{2}-(0[1-9]|1[0-2])$/.test(month)
@@ -126,9 +129,8 @@ async function run(req:Request){
   return send({error:"בקשה פיננסית לא תקינה"},400);
  const question=String(body?.question||"").trim();
  if(type==="question"&&(!question||question.length>400))return send({error:"כתבו שאלה באורך עד 400 תווים"},400);
- const apiKey=configuredKey||(req.headers.get("x-tevuna-ai-key")?.trim()||"");
- if(!apiKey||!/^sk-[A-Za-z0-9_-]{15,}$/.test(apiKey))
-  return send({error:"יש להגדיר מפתח OpenAI API מאובטח או להזין מפתח זמני בשיחה.",code:"MISSING_API_KEY"},503);
+ if(!configured||!/^[a-f0-9]{32}$/i.test(accountId))
+  return send({error:"לא הוגדר חיבור Cloudflare Workers AI בשרת. נדרשים CLOUDFLARE_ACCOUNT_ID ו-CLOUDFLARE_API_TOKEN בסודות הפרויקט.",code:"MISSING_CLOUDFLARE_CONFIG"},503);
  const {data:membership,error:memberError}=await db.from("tevuna_members")
   .select("household_id").eq("household_id",household).eq("user_id",user.id).maybeSingle();
  if(memberError||!membership)return send({error:"אין הרשאה לנתוני משק הבית"},403);
@@ -142,21 +144,24 @@ async function run(req:Request){
   "ענה לשאלה: "+question;
  const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),18000);
  try{
-  const response=await fetch("https://api.openai.com/v1/chat/completions",{
+  const response=await fetch("https://api.cloudflare.com/client/v4/accounts/"+accountId+
+   "/ai/run/"+workerModel,{
    method:"POST",signal:abort.signal,
-   headers:{"Authorization":"Bearer "+apiKey,"Content-Type":"application/json"},
-   body:JSON.stringify({model:"gpt-4o-mini",store:false,max_tokens:520,temperature:0.3,
+   headers:{"Authorization":"Bearer "+apiToken,"Content-Type":"application/json"},
+   body:JSON.stringify({max_tokens:520,temperature:0.3,
     messages:[{role:"system",content:SYSTEM},{role:"user",content:
       "משימה: "+command+"\nנתוני תקציב מסוכמים בלבד: "+JSON.stringify(context)}]})
   });
   if(!response.ok)return send({error:response.status===401||response.status===403?
-   "מפתח OpenAI אינו תקין או אינו מורשה.":
-   response.status===429?"ספק ה-AI הגיע למגבלת השימוש.":
-   "שירות ה-AI לא השלים את הבקשה. לא שונו נתונים."},response.status===429?429:502);
+   "טוקן Cloudflare אינו תקין או חסרות הרשאות Workers AI.":
+   response.status===429||response.status===402?
+   "מכסת Cloudflare Workers AI החינמית נוצלה או חלה מגבלת בקשות. לא בוצע חיוב אוטומטי.":
+   "שירות Cloudflare AI לא השלים את הבקשה. לא שונו נתונים."},response.status===429?429:502);
   const result=await response.json();
-  const answer=String(result?.choices?.[0]?.message?.content||"").trim().slice(0,3500);
-  if(!answer)return send({error:"לא התקבלה תשובה מהמודל"},502);
-  return send({answer,model:"gpt-4o-mini",month,basis,
+  if(result?.success===false)throw Error("Cloudflare returned failure");
+  const answer=String(result?.result?.response||"").trim().slice(0,3500);
+  if(!answer)return send({error:"לא התקבלה תשובה ממודל Cloudflare"},502);
+  return send({answer,provider:"Cloudflare Workers AI",model:workerModel,month,basis,
    uncertain:context.evidence.unverified_discrepancies||context.evidence.previous_unverified_discrepancies});
  }catch{return send({error:"שירות ה-AI לא השיב בזמן. הנתונים נשארו ללא שינוי."},504)}
  finally{clearTimeout(timer)}
