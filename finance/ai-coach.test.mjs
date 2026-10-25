@@ -44,7 +44,7 @@ test("Without Cloudflare configuration, AI requests are blocked before displayin
   assert.ok(calls.every(c=>c.opts.body.type==="status"));
   assert.match(e.nodes.get("ai-connection-status").textContent,/Cloudflare Workers AI/);
   assert.match(e.nodes.get("ai-feedback").textContent,/Cloudflare/);
-  assert.equal(e.nodes.get("ai-conversation").children.length,0);
+  assert.equal(e.nodes.get("ai-conversation")?.children.length??0,0);
   assert.ok(calls.every(c=>c.opts.headers===undefined));
  }finally{e.restore()}
 });
