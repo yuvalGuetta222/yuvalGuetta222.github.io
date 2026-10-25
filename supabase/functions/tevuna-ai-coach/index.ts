@@ -115,8 +115,10 @@ async function run(req:Request){
  if(authError||!user)return send({error:"נדרשת התחברות מאומתת"},401);
  let body:any;
  try{body=await req.json()}catch{return send({error:"בקשה לא תקינה"},400)}
- const accountId=Deno.env.get("CLOUDFLARE_ACCOUNT_ID")?.trim()||"";
- const apiToken=Deno.env.get("CLOUDFLARE_API_TOKEN")?.trim()||"";
+ // Normalize common dashboard copy/paste wrappers; never expose secret values.
+ const accountId=(Deno.env.get("CLOUDFLARE_ACCOUNT_ID")||"").trim().replace(/^["'`]|["'`]$/g,"");
+ const apiToken=(Deno.env.get("CLOUDFLARE_API_TOKEN")||"").trim()
+  .replace(/^Bearer\s+/i,"").replace(/^["'`]|["'`]$/g,"").trim();
  const workerModel="@cf/meta/llama-3.1-8b-instruct-fp8";
  const configured=!!(accountId&&apiToken);
  const tokenStructureOk=!!apiToken&&apiToken.length>=20&&apiToken.length<=512&&/^[A-Za-z0-9._~-]+$/.test(apiToken);
@@ -130,10 +132,29 @@ async function run(req:Request){
   if(/dns|lookup|resolve|network|connect|request|fetch/i.test(sanitized))return "NETWORK_FAILURE";
   return "UNKNOWN_TRANSPORT_ERROR";
  };
+
+ // Network-only probes never transmit a Cloudflare token or financial data.
+ const testPublicReachability=async()=>{
+  const destinations=[
+   ["cloudflare_api","https://api.cloudflare.com/client/v4/user/tokens/verify"],
+   ["public_network","https://www.example.com/"]
+  ] as const;
+  return await Promise.all(destinations.map(async([name,url])=>{
+   const stop=new AbortController(),timer=setTimeout(()=>stop.abort(),3500);
+   try{
+    const response=await fetch(url,{method:"GET",signal:stop.signal,headers:{"Cache-Control":"no-cache"}});
+    return {name,reachable:true,http_status:response.status};
+   }catch(err){
+    return {name,reachable:false,error:safeNetworkError(err)};
+   }finally{clearTimeout(timer)}
+  }));
+ };
  if(body?.type==="status"){
-  if(configured&&!tokenStructureOk)return send({ready:false,configured:true,token_active:false,provider:"Cloudflare Workers AI",model:workerModel,code:"CLOUDFLARE_TOKEN_FORMAT"});
+  if(configured&&!tokenStructureOk)return send({ready:false,configured:true,token_active:false,provider:"Cloudflare Workers AI",model:workerModel,code:"CLOUDFLARE_TOKEN_FORMAT",detail:"Token value has unexpected characters or length"});
   if(!configured||!/^[a-f0-9]{32}$/i.test(accountId))
-   return send({ready:false,configured:false,provider:"Cloudflare Workers AI",model:workerModel,code:"MISSING_CLOUDFLARE_CONFIG"});
+   return send({ready:false,configured,account_id_valid:/^[a-f0-9]{32}$/i.test(accountId),
+    provider:"Cloudflare Workers AI",model:workerModel,
+    code:"MISSING_CLOUDFLARE_CONFIG"});
   // An active token can be verified for free without sending financial data or
   // running a model. This is not yet a guarantee of Workers AI model permissions.
   const healthAbort=new AbortController();
@@ -148,9 +169,15 @@ async function run(req:Request){
     provider:"Cloudflare Workers AI",model:workerModel,code:active?"CLOUDFLARE_TOKEN_ACTIVE":"CLOUDFLARE_TOKEN_INVALID"});
   }catch(error){
    const classification=safeNetworkError(error);
-   console.error("Tevuna Cloudflare token check failed",{step:"verify",classification,name:error instanceof Error?error.name:"unknown"});
+   const probes=await testPublicReachability();
+   const serviceReachable=probes.find(x=>x.name==="cloudflare_api")?.reachable||false;
+   const publicReachable=probes.find(x=>x.name==="public_network")?.reachable||false;
+   const rootCause=serviceReachable?"CREDENTIAL_REQUEST_FAILED":
+    publicReachable?"CLOUDFLARE_HOST_UNREACHABLE":"EDGE_OUTBOUND_NETWORK_FAILURE";
+   console.error("Tevuna Cloudflare connection diagnostic",{step:"verify",classification,rootCause,
+    token_size_ok:tokenStructureOk,account_id_valid:/^[a-f0-9]{32}$/i.test(accountId)});
    return send({ready:false,configured:true,provider:"Cloudflare Workers AI",
-    model:workerModel,code:"CLOUDFLARE_UNREACHABLE",reason:classification});
+    model:workerModel,code:"CLOUDFLARE_UNREACHABLE",reason:classification,diagnostic:rootCause});
   }finally{clearTimeout(healthTimeout)}
  }
  const month=body?.month,basis=body?.basis||"statement",type=body?.type||"summary";
