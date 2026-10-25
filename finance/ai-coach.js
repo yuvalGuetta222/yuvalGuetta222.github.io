@@ -46,9 +46,16 @@ export function setupAICoach(runtime){
    data?.code==="CLOUDFLARE_TOKEN_INVALID"?
     "⚠ הטוקן נשמר אבל נדחה על ידי Cloudflare. יש לבדוק הרשאות Workers AI ולהפיק טוקן חדש במקרה הצורך.":
    data?.code==="CLOUDFLARE_UNREACHABLE"?
-    "⚠ פרטי Cloudflare שמורים, אבל Supabase אינו מצליח ליצור קשר עם Cloudflare."+
-     (data?.reason==="TLS_FAILURE"?" נמצאה בעיית TLS.":data?.reason==="INVALID_HEADER"?" נמצאה בעיית כותרות HTTP.":" נמצאה שגיאת תקשורת.")+
-     " אין צורך להעלות מחדש את דוחות האשראי.":
+    "⚠ פרטי Cloudflare שמורים, אבל אימות הטוקן נכשל. "+
+    (data?.diagnostic==="EDGE_OUTBOUND_NETWORK_FAILURE"?
+      "נמצאה בעיית תקשורת כללית ביציאה משרת Supabase. אין צורך לשנות את הטוקן.":
+     data?.diagnostic==="CLOUDFLARE_HOST_UNREACHABLE"?
+      "שרת Supabase מגיע לאינטרנט אבל לא לשרת Cloudflare. אין צורך להגדיר את הטוקן מחדש.":
+     data?.diagnostic==="CREDENTIAL_REQUEST_FAILED"?
+      "החיבור הציבורי ל-Cloudflare עובד, אבל הקריאה המאומתת נכשלה. צריך לבדוק את פרטי הטוקן והרשאותיו.":
+      data?.reason==="INVALID_HEADER"?
+      "זוהתה בעיית כותרת אימות.":"עדיין לא זוהתה הסיבה המדויקת.")+
+     " קוד אבחון: "+String(data?.diagnostic||data?.reason||"UNKNOWN")+".":
    "יועץ Cloudflare Workers AI מותקן, אך טרם חובר לחשבון Cloudflare.";
   $("ai-connection-status").textContent=statusText;
   $("ai-key-setup").hidden=configured&&data?.code!=="CLOUDFLARE_TOKEN_FORMAT";
@@ -87,6 +94,17 @@ export function setupAICoach(runtime){
   document.querySelector('button[data-screen="ai"]')?.click();
   if(type)return ask(type);
  }
+ $("ai-test-connection").addEventListener("click",async()=>{
+  const btn=$("ai-test-connection");
+  if(btn.disabled)return;
+  btn.disabled=true;
+  status("בודק חיבור Supabase ו-Cloudflare בלי לשלוח נתונים פיננסיים.");
+  try{
+   const ok=await refreshStatus();
+   status(ok?"פרטי החיבור נקלטו. פירוט הבדיקה מופיע באזור החיבור.":
+    "הבדיקה הסתיימה. פירוט התקלה מופיע באזור החיבור.");
+  }finally{btn.disabled=false}
+ });
  $("ai-dashboard-open").addEventListener("click",()=>open("summary"));
  $("ai-history-open").addEventListener("click",()=>open("saving"));
  document.querySelectorAll("[data-ai-task]").forEach(btn=>btn.addEventListener("click",()=>ask(btn.dataset.aiTask)));
