@@ -4,6 +4,7 @@ import {cardSpendingReport} from "./card-import.mjs";
 import {householdBalance} from "./household-ledger.mjs";
 import {setupCoach} from "./coach-view.js";
 import {setupAICoach} from "./ai-coach.js?v=20261026-preset-questions";
+import {setupDecisionCenter} from "./decision-center.js?v=20261026-four-phases";
 import {setupIncomeManagement} from "./income-view.js";
 import {setupCategoryDashboard} from "./category-view.js";
 import {recurringIncomeSummary} from "./income-utils.mjs";
@@ -68,7 +69,7 @@ async function showFor(nextUser){
  household=d.household_id;view("app-view");await reload();
 }
 $("pending-refresh").addEventListener("click",async()=>{notice("בודק הרשאות…","pending-message");const {data:{user:u},error}=await supabase.auth.getUser();if(error){notice("בדיקת האימות נכשלה. נסה להתחבר מחדש.","pending-message");return}await showFor(u)});
-document.querySelectorAll(".logout").forEach(btn=>btn.addEventListener("click",async()=>{const {error}=await supabase.auth.signOut();if(error){notice(authError(error));return}user=null;household=null;data={income:[],transactions:[],fixed:[],budgets:[],recurring:[],coverage:[]};$("password").value="";view("auth-view")}));
+document.querySelectorAll(".logout").forEach(btn=>btn.addEventListener("click",async()=>{const {error}=await supabase.auth.signOut();if(error){notice(authError(error));return}user=null;household=null;data={income:[],transactions:[],fixed:[],budgets:[],recurring:[],coverage:[]};document.dispatchEvent(new Event("tevuna:auth-cleared"));$("password").value="";view("auth-view")}));
 const screenTitles={
  dashboard:["התמונה הכלכלית שלנו","הוצאות, הכנסות ותובנות שמבוססות על מה שנשמר בפועל"],
  history:["השוואת חודשים","איך ההוצאות וההכנסות השתנו לאורך זמן"],
@@ -78,6 +79,7 @@ const screenTitles={
  budgets:["ניהול תקציב","מסגרת חודשית לכל קטגוריה לפי שמות הקטגוריות של חברת האשראי"],
  fixed:["הוצאות קבועות","התחייבויות חוזרות לתכנון משפחתי"],
  backup:["גיבוי וייצוא","שמירת עותק פרטי של נתוני המשפחה והעסקאות"],
+ planning:["תכנון וחיסכון","בקרה על הוצאות, מנויים, תחזית, תרחישים ויעדי חיסכון"],
  ai:["יועץ פיננסי AI","סיכום הוצאות, שאלות והצעות לחיסכון על נתונים מסוכמים ומוגנים"]
 };
 function switchScreen(name){
@@ -87,8 +89,8 @@ function switchScreen(name){
  $("app-screen-title").textContent=title;$("app-screen-description").textContent=description;
  const menu=$("nav-more");if(menu){
   const summary=menu.querySelector("summary");
-  summary.firstChild.textContent=(["dashboard","history","ai"].includes(name)?"ניהול נתונים":title)+" ";
-  menu.classList.toggle("current",!["dashboard","history","ai"].includes(name));menu.open=false;
+  summary.firstChild.textContent=(["dashboard","history","ai","planning"].includes(name)?"ניהול נתונים":title)+" ";
+  menu.classList.toggle("current",!["dashboard","history","ai","planning"].includes(name));menu.open=false;
  }
  document.dispatchEvent(new CustomEvent("tevuna:screen-changed",{detail:{screen:name}}));
 }
@@ -365,6 +367,7 @@ setupAnalysis({supabase,getContext:()=>({user,household})});
 setupHistory({supabase,getContext:()=>({user,household})});
 setupCoach({supabase,getContext:()=>({user,household})});
 setupAICoach({supabase,getContext:()=>({user,household})});
+setupDecisionCenter({supabase,getContext:()=>({user,household})});
 setupCategoryDashboard({supabase,reload,getContext:()=>({user,household})});
 setupIncomeManagement({supabase,notice,reload,getContext:()=>({user,household}),getData:()=>data});
 defaultDates();
@@ -373,7 +376,7 @@ $("fixed-form").elements.start_month.value=$("month").value;
 (async()=>{
  try{const {data:d,error}=await supabase.auth.getSession();if(error)throw error;await showFor(d.session?.user||null);
   supabase.auth.onAuthStateChange((event,session)=>{
-   if(event==="SIGNED_OUT"){user=null;household=null;view("auth-view")}
+   if(event==="SIGNED_OUT"){user=null;household=null;document.dispatchEvent(new Event("tevuna:auth-cleared"));view("auth-view")}
    else if(event==="SIGNED_IN"||event==="TOKEN_REFRESHED"){setTimeout(()=>{if(!household&&session?.user)showFor(session.user)},0)}
   });
  }catch(err){view("auth-view");notice("שגיאה בחיבור לשירות ההתחברות. נסה לטעון את הדף מחדש.","auth-error")}
