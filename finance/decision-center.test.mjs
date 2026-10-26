@@ -45,7 +45,7 @@ test("Stage 2: installments and refunds cannot masquerade as subscriptions",()=>
   tx("2026-10","חנות",7000,{entry_kind:"refund"})],"2026-10").length,0);
 });
 test("Stage 2: budgets and price spikes issue contextual, non-push alerts",()=>{
- const rows=[tx("2026-08","שירות",2000),tx("2026-09","שירות",2000),tx("2026-10","שירות",3800)];
+ const rows=[tx("2026-08","שירות",2000),tx("2026-09","שירות",2000),tx("2026-10","שירות",3200)];
  const data=fixture();
  const {alerts}=buildAlerts({month:"2026-10",data,history:rows});
  assert.ok(alerts.some(x=>x.id==="budget:מזון"));
