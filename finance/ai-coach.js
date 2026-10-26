@@ -72,7 +72,10 @@ export function setupAICoach(runtime){
    return;
   }
   if(type==="question")message("user",question);
-  else message("user",type==="summary"?"סכם את המצב הפיננסי בחודש הנבחר":"איפה אפשר לחסוך החודש?");
+  else {
+   const button=[...document.querySelectorAll("[data-ai-task]")].find(b=>b.dataset.aiTask===type);
+   message("user",button?.textContent?.trim()||"הצג ניתוח פיננסי לחודש הנבחר");
+  }
   setBusy(true);status("מנתח נתוני תקציב מסוכמים... לא שולח את דוחות האשראי הגולמיים.");
   try{
    const opts={body:{type,question,month,basis,household}};

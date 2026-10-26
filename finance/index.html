@@ -118,9 +118,31 @@
      <h2 id="ai-title">מה הייתם רוצים להבין לגבי הכסף שלכם?</h2>
      <p class="subtitle">מנתח חריגות מתקציב, השוואות חודשיות והזדמנויות לחיסכון. כל הסכומים מוצגים בשקלים (₪), על בסיס חישובים מדויקים בצד השרת.</p>
     </div>
-    <div class="ai-quick-actions">
-     <button type="button" data-ai-task="summary" class="secondary">✦ סכם לי את החודש</button>
-     <button type="button" data-ai-task="saving" class="secondary">איפה אפשר לחסוך?</button>
+    <div class="ai-presets" aria-label="שאלות נפוצות ליועץ הפיננסי">
+     <section class="ai-preset-group" aria-labelledby="ai-preset-month">
+      <h3 id="ai-preset-month">תמונת מצב חודשית</h3>
+      <div class="ai-preset-grid">
+       <button type="button" data-ai-task="summary" class="secondary">✦ סכם לי את החודש</button>
+       <button type="button" data-ai-task="cashflow" class="secondary">איך ההכנסות מול ההוצאות?</button>
+       <button type="button" data-ai-task="top" class="secondary">על מה הוצאנו הכי הרבה?</button>
+      </div>
+     </section>
+     <section class="ai-preset-group" aria-labelledby="ai-preset-control">
+      <h3 id="ai-preset-control">בדיקת הוצאות ותקציב</h3>
+      <div class="ai-preset-grid">
+       <button type="button" data-ai-task="compare" class="secondary">מה השתנה מהחודש הקודם?</button>
+       <button type="button" data-ai-task="budget" class="secondary">איפה חרגנו מהתקציב?</button>
+       <button type="button" data-ai-task="remaining" class="secondary">כמה נשאר בתקציב לכל קטגוריה?</button>
+      </div>
+     </section>
+     <section class="ai-preset-group" aria-labelledby="ai-preset-actions">
+      <h3 id="ai-preset-actions">החלטות וצעדים הבאים</h3>
+      <div class="ai-preset-grid">
+       <button type="button" data-ai-task="saving" class="secondary">איפה אפשר לחסוך?</button>
+       <button type="button" data-ai-task="priorities" class="secondary">מה שלושת הדברים שכדאי לעשות?</button>
+       <button type="button" data-ai-task="data_quality" class="secondary">עד כמה הנתונים שלנו אמינים?</button>
+      </div>
+     </section>
     </div>
     <form id="ai-question-form" class="ai-question-form">
      <label for="ai-question">שאלה חופשית על התקציב</label>
