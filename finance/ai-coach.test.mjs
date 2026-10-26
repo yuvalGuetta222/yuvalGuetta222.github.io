@@ -87,3 +87,25 @@ test("No provider key or raw transaction upload appears in public HTML and front
  assert.doesNotMatch(src,/localStorage|sessionStorage|service_role|INSERT INTO/);
  assert.doesNotMatch(src,/from\("tevuna_transactions"\)/);
 });
+
+test("Manual provider probe checks actual model response without sending financial data",async()=>{
+ const e=environment(),calls=[];
+ const household="00000000-0000-4000-8000-000000000001";
+ const runtime={
+  getContext:()=>({user:{id:"user"},household}),
+  supabase:{functions:{invoke:async(name,opts)=>{
+   calls.push({name,...opts});
+   return {data:opts.body.type==="probe"?{ready:true,model_verified:true,code:"CLOUDFLARE_MODEL_VERIFIED"}:
+    {ready:true,configured:true},error:null};
+  }}}
+ };
+ try{
+  setupAICoach(runtime);
+  await e.nodes.get("ai-test-connection").click();
+  assert.equal(calls.length,1);
+  assert.deepEqual(calls[0].body,{type:"probe",household});
+  assert.match(e.nodes.get("ai-feedback").textContent,/לא נשלחו נתונים פיננסיים/);
+  assert.match(e.nodes.get("ai-connection-status").textContent,/המודל חובר/);
+  assert.equal(e.nodes.get("ai-key-setup").hidden,true);
+ }finally{e.restore()}
+});
