@@ -2,7 +2,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.76.1";
 import { buildFinancialInsights } from "./insights.mjs";
-import { readWorkersAIAnswer, builtInFallback } from "./inference.mjs";
+import { readWorkersAIAnswer, builtInFallback, builtInQuestionPrompts } from "./inference.mjs";
 
 const ORIGIN = "https://yuvalguetta222.github.io";
 const cors = {
@@ -220,7 +220,7 @@ async function run(req:Request){
  const household=body?.household;
  if(typeof month!=="string"||!/^20\d{2}-(0[1-9]|1[0-2])$/.test(month)
    ||!["statement","billing","transaction"].includes(basis)
-   ||!["summary","saving","question"].includes(type)
+   ||(type!=="question"&&!Object.hasOwn(builtInQuestionPrompts,type))
    ||typeof household!=="string"||!/^[0-9a-f-]{36}$/i.test(household))
   return send({error:"בקשה פיננסית לא תקינה"},400);
  const question=String(body?.question||"").trim();
@@ -247,9 +247,7 @@ async function run(req:Request){
   const substitute=fallback("AI_DAILY_QUOTA");
   return substitute||send({error:"מכסת בקשות AI היומית נוצלה. ניתן לנסות שוב מחר.",code:"AI_DAILY_QUOTA"},429);
  }
- const command=type==="summary"?"סכם את נתוני התקציב בשקלים במשפטים קצרים, תוך ציון מגבלות האמינות.":
-  type==="saving"?"תן עד שלוש פעולות לבחינת חיסכון על בסיס קטגוריות וחריגות מאומתות בלבד.":
-  "ענה לשאלה: "+question;
+ const command=type==="question"?"ענה לשאלה: "+question:builtInQuestionPrompts[type];
  // Stream rather than waiting for a full synchronous completion. A brief, bounded
  // timeout also protects the free tier from repeated long, unproductive calls.
  const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),18000);
