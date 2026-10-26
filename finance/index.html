@@ -31,6 +31,7 @@
  <nav class="navigation top-navigation" aria-label="ניווט ראשי">
 <button data-screen="dashboard" class="active">סקירה</button>
 <button data-screen="history">השוואת חודשים</button>
+<button data-screen="planning">תכנון וחיסכון</button>
 <button data-screen="ai" id="ai-nav-entry">✦ יועץ AI</button>
 <details class="nav-more" id="nav-more"><summary>ניהול נתונים <span aria-hidden="true">⌄</span></summary>
 <div class="nav-more-menu">
@@ -43,6 +44,13 @@
 </div></details></nav>
  <p class="feedback" id="app-error" role="status" aria-live="polite"></p><datalist id="finance-category-options"><option value="מזון וסופר"><option value="מסעדות ומשלוחים"><option value="תחבורה"><option value="בילויים"><option value="בריאות"><option value="קניות"><option value="חשבונות הבית"><option value="שכירות"><option value="מנויים"><option value="חינוך"><option value="ביטוח"><option value="נסיעות ונופש"><option value="אחר"></datalist>
  <section id="dashboard" class="screen">
+  <section class="box decision-home" aria-labelledby="decision-home-title">
+   <div class="section-heading"><div><span class="eyebrow">FINANCIAL ACTION CENTER</span><h2 id="decision-home-title">מה חשוב לבדוק עכשיו?</h2>
+    <p class="subtitle" id="decision-home-label">התובנות החשובות לחודש</p></div>
+    <button id="decision-home-all" class="secondary" type="button">מעבר למרכז התכנון</button></div>
+   <div class="decision-home-list" id="decision-home-notes" aria-live="polite"><p class="empty">ממתין לטעינת נתונים.</p></div>
+   <p class="note">התראות זמינות בכניסה לאתר ובטעינת נתונים. אינן התראות Push או אימות מול הבנק.</p>
+  </section>
   <div class="stats">
    <div class="box stat"><span>הכנסות שהתקבלו</span><strong id="s-income">₪0</strong><small id="s-income-meta">הכנסות שאושרו לחודש הנבחר</small></div>
    <div class="box stat"><span>הוצאות מעסקאות</span><strong id="s-spent">₪0</strong><small>עסקאות נטו לאחר זיכויים</small></div>
@@ -110,6 +118,56 @@
   <div class="box disclaimer"><b>איך קוראים את המספרים?</b><p>התחייבויות קבועות נכללות כשריון תקציבי, אלא אם שויכו לעסקאות האשראי של החודש. סכומים תקופתיים מוצגים כממוצע חודשי לתכנון בלבד. הנתונים אינם מהווים ייעוץ השקעות או המלצה לקחת אשראי.</p></div>
  </section>
 
+ <section id="planning" class="screen hidden">
+  <div class="decision-layout">
+   <section class="box decision-intro">
+    <span class="eyebrow">TEVUNA • ACTION & SAVING</span>
+    <h2>מרכז התכנון והחיסכון</h2>
+    <p class="subtitle">התראות, חיובים חוזרים, תחזיות, יעדי חיסכון ותרחישים במקום אחד. הסכומים בשקלים והחישובים מתבצעים מנתונים שנשמרו, ללא תלות ב־AI.</p>
+    <p id="planning-status" class="feedback" role="status" aria-live="polite"></p>
+   </section>
+   <div class="two decision-panels">
+    <section class="box" aria-labelledby="decision-alerts-title">
+     <div class="decision-title"><h2 id="decision-alerts-title">התראות ובקרת נתונים</h2><span class="decision-count" id="decision-alert-count">0 התראות באתר</span></div>
+     <p class="subtitle">חריגות מתקציב, פערים בדוחות ועליות מחיר אפשריות. התראות מופיעות באתר כשפותחים אותו.</p>
+     <div id="decision-alerts" class="decision-stack"></div>
+    </section>
+    <section class="box" aria-labelledby="decision-recurring-title">
+     <h2 id="decision-recurring-title">מנויים וחיובים חוזרים אפשריים</h2>
+     <p class="subtitle">זיהוי לפי שלושה חודשי עסקה רצופים, ללא חיובים בתשלומים. זהו סימן לבדיקה ולא הוכחה למנוי או לכסף שאפשר לחסוך.</p>
+     <div id="decision-recurring" class="decision-stack"></div>
+    </section>
+   </div>
+   <div class="two decision-panels">
+    <section class="box" aria-labelledby="decision-forecast-title">
+     <h2 id="decision-forecast-title">תחזית ותכנון לסוף החודש</h2>
+     <p class="subtitle">תחזית מבוססת נתוני עסקאות. לקבלת תחזית עברו לבחירת ״לפי תאריך עסקה״ בראש האתר. נתונים לא מאומתים לא יושלמו בהשערות.</p>
+     <div id="decision-forecast" class="decision-stack"></div>
+    </section>
+    <section class="box" aria-labelledby="decision-scenario-title">
+     <h2 id="decision-scenario-title">סימולטור ״מה יקרה אם?״</h2>
+     <p class="subtitle">בדקו את ההשפעה המשוערת של שינוי הוצאה חודשית. אין שינוי בעסקאות ובתקציב האמיתי.</p>
+     <div class="decision-scenario">
+      <label>סוג שינוי<select id="decision-scenario-kind"><option value="reduce">צמצום הוצאה חודשית</option><option value="add">הוצאה חודשית נוספת</option></select></label>
+      <label>סכום השינוי בשקלים<input id="decision-scenario-amount" type="number" min="0" max="10000000" step="0.01" value="300" inputmode="decimal"></label>
+     </div>
+     <p id="decision-scenario-result" class="decision-scenario-result" role="status"></p>
+    </section>
+   </div>
+   <section class="box" aria-labelledby="decision-goals-title">
+    <div class="section-heading"><div><h2 id="decision-goals-title">יעדי חיסכון משפחתיים</h2>
+      <p class="subtitle">שמירה מאובטחת בענן, מעקב והמחשה של הפקדה חודשית נדרשת. עדכון הסכום שנצבר הוא רישום ידני ולא העברת כסף.</p></div></div>
+    <form id="decision-goal-form" class="decision-goal-form">
+     <label>שם היעד<input name="title" maxlength="80" minlength="2" required placeholder="לדוגמה: חופשה משפחתית"></label>
+     <label>סכום יעד (₪)<input name="target" type="number" min="0.01" max="1000000000" step="0.01" required inputmode="decimal"></label>
+     <label>כבר נצבר (₪)<input name="saved" type="number" min="0" max="1000000000" step="0.01" value="0" inputmode="decimal"></label>
+     <label>תאריך יעד (אופציונלי)<input name="due" type="month"></label>
+     <button class="primary" type="submit">שמירת יעד</button>
+    </form>
+    <div id="decision-goals" class="decision-goal-list"></div>
+   </section>
+  </div>
+ </section>
  <section id="ai" class="screen hidden">
   <div class="ai-layout">
    <section class="box ai-main" aria-labelledby="ai-title">
