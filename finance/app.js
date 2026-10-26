@@ -69,7 +69,7 @@ async function showFor(nextUser){
  household=d.household_id;view("app-view");await reload();
 }
 $("pending-refresh").addEventListener("click",async()=>{notice("בודק הרשאות…","pending-message");const {data:{user:u},error}=await supabase.auth.getUser();if(error){notice("בדיקת האימות נכשלה. נסה להתחבר מחדש.","pending-message");return}await showFor(u)});
-document.querySelectorAll(".logout").forEach(btn=>btn.addEventListener("click",async()=>{const {error}=await supabase.auth.signOut();if(error){notice(authError(error));return}user=null;household=null;data={income:[],transactions:[],fixed:[],budgets:[],recurring:[],coverage:[]};$("password").value="";view("auth-view")}));
+document.querySelectorAll(".logout").forEach(btn=>btn.addEventListener("click",async()=>{const {error}=await supabase.auth.signOut();if(error){notice(authError(error));return}user=null;household=null;data={income:[],transactions:[],fixed:[],budgets:[],recurring:[],coverage:[]};document.dispatchEvent(new Event("tevuna:auth-cleared"));$("password").value="";view("auth-view")}));
 const screenTitles={
  dashboard:["התמונה הכלכלית שלנו","הוצאות, הכנסות ותובנות שמבוססות על מה שנשמר בפועל"],
  history:["השוואת חודשים","איך ההוצאות וההכנסות השתנו לאורך זמן"],
@@ -376,7 +376,7 @@ $("fixed-form").elements.start_month.value=$("month").value;
 (async()=>{
  try{const {data:d,error}=await supabase.auth.getSession();if(error)throw error;await showFor(d.session?.user||null);
   supabase.auth.onAuthStateChange((event,session)=>{
-   if(event==="SIGNED_OUT"){user=null;household=null;view("auth-view")}
+   if(event==="SIGNED_OUT"){user=null;household=null;document.dispatchEvent(new Event("tevuna:auth-cleared"));view("auth-view")}
    else if(event==="SIGNED_IN"||event==="TOKEN_REFRESHED"){setTimeout(()=>{if(!household&&session?.user)showFor(session.user)},0)}
   });
  }catch(err){view("auth-view");notice("שגיאה בחיבור לשירות ההתחברות. נסה לטעון את הדף מחדש.","auth-error")}
