@@ -359,3 +359,31 @@ button:disabled{opacity:.55;cursor:not-allowed}
  .top-navigation>.nav-more summary{padding:11px 8px;white-space:normal}
  .nav-more-menu{min-width:min(220px,90vw)}
 }
+
+
+/* Fast month navigation: arrows are the primary control, native picker remains optional. */
+.month-switcher{display:grid;gap:5px;min-width:255px;flex-shrink:0}
+.month-switcher-title{color:#adc4d1;font-size:12px;font-weight:650}
+.month-switcher-row{display:flex;align-items:stretch;gap:6px;direction:rtl}
+.month-switcher-arrow{display:grid;place-items:center;flex:0 0 44px;min-width:44px;min-height:46px;
+  border:1px solid #41687c;border-radius:12px;background:#19394c;color:#cff9ec;
+  font-weight:750;font-size:29px;line-height:1;cursor:pointer;padding:0}
+.month-switcher-arrow:not(:disabled):hover{background:#28586c;border-color:#67b8ab}
+.month-switcher-arrow:focus-visible,.month-switcher-display:focus-within{outline:3px solid #6de3c6;outline-offset:2px}
+.month-switcher-arrow:disabled{opacity:.36;cursor:not-allowed}
+.month-switcher-display{position:relative;isolation:isolate;display:flex;align-items:center;
+ justify-content:center;gap:9px;flex:1;min-width:152px;margin:0;min-height:46px;padding:0 10px;
+ border:1px solid #41687c;border-radius:12px;background:#102d42;color:#f1fffc;
+ font-size:15px;font-weight:750;cursor:pointer;white-space:nowrap}
+#month-readable{white-space:nowrap;text-align:center;pointer-events:none}
+.month-switcher-caret{font-size:16px;color:#8de7cd;pointer-events:none}
+.month-switcher-display input[type="month"]{position:absolute;inset:0;width:100%;height:100%;opacity:0;
+ cursor:pointer;margin:0;border:0;padding:0;min-height:0;max-width:none;z-index:1}
+@media(max-width:760px){
+ .heading-actions .month-switcher{flex:1 1 100%;max-width:340px}
+ .month-switcher-arrow{min-height:48px}
+}
+@media(max-width:410px){
+ .heading-actions .month-switcher{max-width:100%;min-width:0}
+ .month-switcher-display{min-width:135px;padding:0 7px;font-size:14px}
+}
