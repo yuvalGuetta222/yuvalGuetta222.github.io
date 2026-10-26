@@ -84,8 +84,9 @@ export function setupAICoach(runtime){
    }
    if(!data?.answer)throw Error(data?.error||"שירות ה-AI לא החזיר תשובה");
    message("ai",data.answer);
-   if(data.uncertain)status("התגובה כוללת הסתייגות: בחודש הנבחר קיימים פערים בין חלק ממקורות האשראי.");
-   else status("הניתוח הושלם. סכומי היסוד מחושבים במסד הנתונים, ה-AI מסביר אותם בלבד.");
+   if(data.uncertain)status("קיימת אי-התאמה בין חלק מדוחות המקור, לכן יש לתקן אותה לפני הסתמכות על השוואות.");
+   else if(data.partial)status("הניתוח מוצג בשקלים (₪). החודש עדיין בעיצומו ולכן השוואות לחודש מלא מוגבלות.");
+   else status("הניתוח הושלם בשקלים (₪). החישובים בוצעו בשרת וה-AI מסביר אותם.");
   }catch(error){
    status("הניתוח לא הושלם: "+String(error?.message||error).slice(0,230)+" הנתונים לא שונו.");
   }finally{setBusy(false)}
