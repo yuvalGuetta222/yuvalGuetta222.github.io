@@ -4,6 +4,7 @@ import {cardSpendingReport} from "./card-import.mjs";
 import {householdBalance} from "./household-ledger.mjs";
 import {setupCoach} from "./coach-view.js";
 import {setupAICoach} from "./ai-coach.js?v=20261026-preset-questions";
+import {formatReportMonth,shiftReportMonth} from "./month-navigation.mjs";
 import {setupDecisionCenter} from "./decision-center.js?v=20261026-four-phases";
 import {setupIncomeManagement} from "./income-view.js";
 import {setupCategoryDashboard} from "./category-view.js";
@@ -35,7 +36,13 @@ let household=null, user=null, signup=false, data={income:[],transactions:[],fix
 let reloadSequence=0;
 const view=id=>{for(const n of ["auth-view","pending-view","app-view"])$(n).classList.toggle("hidden",n!==id)};
 function notice(msg,target="app-error"){const el=$(target);el.textContent=msg??"";if(msg){el.scrollIntoView({block:"nearest",behavior:"smooth"})}}
-function defaultDates(){$("month").value=currentMonth();document.querySelector('input[name="occurred_on"]').value=today();document.querySelector('input[name="income_month"]').value=currentMonth()}
+function syncMonthNavigator(){
+ const selected=$("month").value;
+ $("month-readable").textContent=formatReportMonth(selected);
+ $("month-prev").disabled=!shiftReportMonth(selected,-1);
+ $("month-next").disabled=!shiftReportMonth(selected,1);
+}
+function defaultDates(){$("month").value=currentMonth();syncMonthNavigator();document.querySelector('input[name="occurred_on"]').value=today();document.querySelector('input[name="income_month"]').value=currentMonth()}
 function authError(err){const m=String(err?.message||err||"תקלה בלתי צפויה");
  if(/invalid login credentials/i.test(m))return "כתובת המייל או הסיסמה אינן נכונות";
  if(/email not confirmed/i.test(m))return "יש לאמת את כתובת המייל דרך ההודעה שקיבלת";
@@ -96,7 +103,20 @@ function switchScreen(name){
 }
 document.querySelectorAll("[data-screen]").forEach(btn=>btn.addEventListener("click",()=>switchScreen(btn.dataset.screen)));
 $("ledger-fixed-link").addEventListener("click",()=>switchScreen("fixed"));
-$("month").addEventListener("change",()=>{if($("recurring-income-form"))$("recurring-income-form").elements.start_month.value=$("month").value;if($("fixed-form"))$("fixed-form").elements.start_month.value=$("month").value;reload()});
+function navigateReportMonth(delta){
+ const next=shiftReportMonth($("month").value,delta);
+ if(!next)return;
+ $("month").value=next;
+ $("month").dispatchEvent(new Event("change",{bubbles:true}));
+}
+$("month-prev").addEventListener("click",()=>navigateReportMonth(-1));
+$("month-next").addEventListener("click",()=>navigateReportMonth(1));
+$("month").addEventListener("change",()=>{
+ syncMonthNavigator();
+ if($("recurring-income-form"))$("recurring-income-form").elements.start_month.value=$("month").value;
+ if($("fixed-form"))$("fixed-form").elements.start_month.value=$("month").value;
+ reload();
+});
 $("date-basis").addEventListener("change",reload);
 const cadenceMonths={monthly:1,bimonthly:2,quarterly:3,yearly:12};
 async function loadTransactions(start,next){
