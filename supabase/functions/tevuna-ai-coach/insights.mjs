@@ -2,7 +2,7 @@
 // The model-facing result is denominated entirely in ILS (shekels).
 const integer = x => {
   const value = Number(x);
-  if (!Number.isFinite(value) || !Number.isSafeInteger(value)) return 0;
+  if (x === null || x === undefined || !Number.isFinite(value) || !Number.isSafeInteger(value)) throw Error("Invalid financial amount");
   return value;
 };
 export const ils = agorot => Math.round(integer(agorot)) / 100;
@@ -47,9 +47,13 @@ export function buildFinancialInsights({
   const currentQuality = quality(source), previousQuality = quality(previousSource);
   const mismatch = currentQuality.mismatched_statement_count > 0 ||
     previousQuality.mismatched_statement_count > 0;
-  const missingComparison = current.length === 0 || previous.length === 0;
+  const missingComparison = current.length === 0 || previous.length === 0 ||
+    (basis === "statement" && (currentQuality.statement_count === 0 || previousQuality.statement_count === 0));
+  const unknownSourceTotals = currentQuality.no_source_total_count > 0 ||
+    previousQuality.no_source_total_count > 0;
   const comparisonStatus = mismatch ? "source_discrepancy" :
-    missingComparison ? "insufficient_data" : currentPartial ? "current_month_partial" : "available";
+    missingComparison ? "insufficient_data" : currentPartial ? "current_month_partial" :
+    unknownSourceTotals ? "unverified_source_totals" : "available";
   const comparisonReliable = comparisonStatus === "available";
   const groups = [...currentCats].sort((a,b) => b[1]-a[1]);
   const currentCategories = groups.slice(0, 12).map(([category, amount]) => ({
