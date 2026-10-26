@@ -350,3 +350,12 @@ button:disabled{opacity:.55;cursor:not-allowed}
  .decision-goal-actions button{flex:1}
  .decision-recurring-row{align-items:flex-start}
 }
+
+/* Keep the four primary tabs usable on iPhone without a horizontal page overflow. */
+@media(max-width:760px){
+ .top-navigation{max-width:100%;width:100%;flex-wrap:wrap}
+ .top-navigation>button,.top-navigation>.nav-more{flex:1 1 40%;min-width:0;text-align:center}
+ .top-navigation>button{padding:11px 8px;white-space:normal;line-height:1.45}
+ .top-navigation>.nav-more summary{padding:11px 8px;white-space:normal}
+ .nav-more-menu{min-width:min(220px,90vw)}
+}
