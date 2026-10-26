@@ -266,8 +266,12 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .ai-layout{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(280px,.85fr);gap:18px;align-items:start}
 .ai-layout .ai-main,.ai-layout .ai-side{min-width:0}
 .ai-main h2{font-size:clamp(22px,2.8vw,30px)}
-.ai-quick-actions{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}
-.ai-quick-actions button{flex:1;min-width:150px}
+.ai-presets{display:grid;gap:16px;margin:18px 0 22px}
+.ai-preset-group{min-width:0}
+.ai-preset-group h3{font-size:14px;font-weight:700;color:#8fe9cf;margin:0 0 8px}
+.ai-preset-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.ai-preset-grid button{text-align:center;min-width:0;min-height:46px;white-space:normal;line-height:1.55;padding:10px 12px}
+.ai-preset-grid button:focus-visible{outline:3px solid #58dab9;outline-offset:2px}
 .ai-question-form{display:grid;gap:9px;margin:18px 0}
 .ai-question-form textarea{display:block;width:100%;min-height:93px;resize:vertical;background:#102239;color:#f1fafc;border:1px solid #43647b;border-radius:12px;padding:13px;line-height:1.7;font:inherit}
 .ai-question-form textarea:focus-visible{outline:3px solid #58dab9;outline-offset:2px}
@@ -288,7 +292,9 @@ button:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:860px){.ai-layout{grid-template-columns:1fr}.ai-side{order:-1}}
 @media(max-width:650px){.ai-dashboard-teaser,.ai-history-teaser{flex-direction:column;align-items:stretch}
 .ai-dashboard-teaser button,.ai-history-teaser button{width:100%}.ai-message.from-user{max-width:100%}
-.ai-quick-actions button{width:100%}.ai-question-form button{width:100%}}
+.ai-question-form button{width:100%}}
 
 /* Keep answers readable without interpreting the model response as HTML. */
 .ai-message p { white-space: pre-line; }
+
+@media(max-width:430px){.ai-preset-grid{grid-template-columns:1fr}}
