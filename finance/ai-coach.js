@@ -97,12 +97,32 @@ export function setupAICoach(runtime){
  $("ai-test-connection").addEventListener("click",async()=>{
   const btn=$("ai-test-connection");
   if(btn.disabled)return;
+  const {user,household}=runtime.getContext();
+  if(!user||!household){status("התחברו למשק הבית כדי לבדוק את המודל.");return}
   btn.disabled=true;
-  status("בודק חיבור Supabase ו-Cloudflare בלי לשלוח נתונים פיננסיים.");
+  status("בודק שהמודל מחזיר תשובה אמיתית ללא שליחת מידע פיננסי. הבדיקה נחשבת לבקשת AI אחת.");
   try{
-   const ok=await refreshStatus();
-   status(ok?"פרטי החיבור נקלטו. פירוט הבדיקה מופיע באזור החיבור.":
-    "הבדיקה הסתיימה. פירוט התקלה מופיע באזור החיבור.");
+   const {data,error}=await runtime.supabase.functions.invoke("tevuna-ai-coach",{body:{type:"probe",household}});
+   let result=data;
+   if(error){
+    if(!result&&error?.context?.json)try{result=await error.context.json()}catch{}
+    throw Error(result?.error||"בדיקת המודל נכשלה; בדקו את הגדרות Supabase.");
+   }
+   if(result?.model_verified){
+    providerReady=true;
+    $("ai-connection-status").textContent="✓ המודל חובר בהצלחה והחזיר תשובת בדיקה.";
+    $("ai-key-setup").hidden=true;
+    status("המודל עונה! אפשר לסכם את החודש או לשאול שאלה. לא נשלחו נתונים פיננסיים בבדיקה.");
+   }else{
+    providerReady=false;
+    $("ai-connection-status").textContent="⚠ מודל Cloudflare עדיין לא אומת. "+String(result?.error||result?.code||"שגיאה לא ידועה");
+    $("ai-key-setup").hidden=false;
+    status("בדיקת חיבור נכשלה. נתוני התקציב לא נשלחו ולא שונו.");
+   }
+  }catch(error){
+   providerReady=false;
+   $("ai-connection-status").textContent="⚠ לא ניתן לאמת את המודל כרגע.";
+   status("בדיקת החיבור לא הושלמה: "+String(error?.message||error).slice(0,210));
   }finally{btn.disabled=false}
  });
  $("ai-dashboard-open").addEventListener("click",()=>open("summary"));
