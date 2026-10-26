@@ -72,12 +72,131 @@ const evidenceWarning=context=>{
   return "החודש עדיין לא הסתיים, ולכן ההוצאות אינן מייצגות בהכרח חודש מלא.";
  return "הנתונים משקפים רק תנועות שדווחו ונקלטו, ולא יתרת חשבון בנק.";
 };
+
+export const builtInQuestionPrompts=Object.freeze({
+ summary:"סכם בקצרה את מצב החודש שבחרתי, על בסיס סכומי ההכנסות וההוצאות שנרשמו, וציין מגבלות מהימנות.",
+ saving:"איפה יש הזדמנויות מעשיות לבדוק חיסכון החודש? השתמש רק בחריגות ונתונים מבוססים ואל תבטיח סכום חיסכון.",
+ compare:"מה השתנה בהוצאות לעומת החודש הקודם? התייחס לסכומים לפי קטגוריות רק אם ההשוואה אמינה; אם לא, הסבר למה.",
+ budget:"באילו קטגוריות חרגנו מהתקציב ומה גובה החריגה בשקלים? אם לא הוגדר תקציב, אמור זאת.",
+ remaining:"כמה נשאר מתקציבי הקטגוריות שהוגדרו לחודש הנבחר? ציין חריגות ואל תניח שהנתונים מלאים.",
+ top:"אילו שלוש קטגוריות אחראיות להוצאות הגבוהות ביותר בחודש ומה הסכומים שלהן?",
+ cashflow:"איך נראות ההכנסות שהתקבלו מול חיובי האשראי וההוצאות הידניות שנרשמו? הבהר שאין כאן יתרת בנק או הוצאות קבועות לא מקושרות.",
+ priorities:"איזה שלוש פעולות כדאי לבדוק ראשונות כדי לשפר את ההתנהלות הכלכלית, לפי הראיות שנאספו?",
+ data_quality:"עד כמה נתוני החודש אמינים? האם יש דוחות שלא אומתו, פערים או חודשים חלקיים שמגבילים את המסקנות?"
+});
+const lineItems=(items,max=4)=>items.slice(0,max).map((s,i)=>String(i+1)+". "+s);
+const differenceWarning=comparison=>{
+ const status=comparison?.status;
+ if(status==="source_discrepancy")return "לא ניתן להשוות באופן אמין: נמצאו הפרשים בבדיקת דוחות המקור.";
+ if(status==="unverified_source_totals")return "לא ניתן לאמת השוואה: לחלק מהדוחות לא קיים סכום מקור לבדיקה.";
+ if(status==="current_month_partial")return "החודש הנבחר עדיין בעיצומו; אין להשוות אותו כחודש מלא לחודש קודם.";
+ return "אין עדיין נתונים מלאים או מאומתים בשני החודשים כדי להשוות מגמה.";
+};
+
 export function builtInFallback(context,type){
- if(type!=="summary"&&type!=="saving")return null;
+ if(!Object.hasOwn(builtInQuestionPrompts,type))return null;
  const current=context.current||{},cats=current.largest_spending_categories||[];
  const comparisons=context.comparison||{},budgets=context.budgets||[];
  const month=context.selected_month||"החודש הנבחר";
  const warning=evidenceWarning(context);
+ if(type==="compare"){
+  const lines=["השוואת הוצאות עבור "+month+" לעומת "+(context.previous_month||"החודש הקודם")+":"];
+  if(!comparisons.reliable_full_month_comparison){
+   lines.push(differenceWarning(comparisons));
+  }else{
+   lines.push("ההוצאות שנרשמו בחודש הנבחר: "+money(current.recorded_card_and_manual_spending_ils)+
+    "; בחודש הקודם: "+money(context.previous?.recorded_card_and_manual_spending_ils)+".");
+   const delta=comparisons.spending_change_ils||0;
+   lines.push(delta===0?"לא נמצא שינוי בסכום ההוצאות המתועדות.":
+    (delta>0?"עלייה":"ירידה")+" של "+money(Math.abs(delta))+
+    (comparisons.spending_change_percent===null?"":" ("+Math.abs(comparisons.spending_change_percent)+"%)")+".");
+   const changes=(comparisons.category_changes_for_reference_only||[]).slice(0,3)
+    .map(x=>x.category+": "+(x.change_ils>0?"עלייה":"ירידה")+" של "+money(Math.abs(x.change_ils)));
+   lines.push(...changes);
+  }
+  lines.push(warning);
+  return lines.join("\n");
+ }
+ if(type==="budget"){
+  if(!budgets.length)return "לא הוגדרו תקציבי קטגוריות לחודש "+month+". הגדירו תקציבים כדי לזהות חריגות.\n"+warning;
+  const overruns=budgets.filter(b=>b.over_budget_ils>0);
+  const lines=["חריגות מתקציב עבור "+month+":"];
+  if(!overruns.length)lines.push("לא זוהו חריגות בתקציבים שהוגדרו, לפי החיובים שנקלטו.");
+  else lines.push(...lineItems(overruns.map(b=>b.category+": חריגה של "+money(b.over_budget_ils)+
+   " (תקציב "+money(b.limit_ils)+", הוצאות שנקלטו "+money(b.spent_ils)+").")));
+  lines.push(warning);
+  return lines.join("\n");
+ }
+ if(type==="remaining"){
+  if(!budgets.length)return "אין תקציבי קטגוריות מוגדרים לחודש "+month+", ולכן אי אפשר לחשב כמה נותר בכל קטגוריה.\n"+warning;
+  const lines=["מצב תקציבים לחודש "+month+":"];
+  lines.push(...lineItems(budgets.slice(0,5).map(b=>
+   b.category+": "+(b.remaining_ils<0?"חריגה של "+money(-b.remaining_ils):
+    "יתרה תקציבית מחושבת של "+money(b.remaining_ils))+
+   " מתוך תקציב של "+money(b.limit_ils)+"."
+  ),5));
+  lines.push("היתרות הן מול חיובים שנקלטו בלבד, ואינן כסף פנוי בבנק.",warning);
+  return lines.join("\n");
+ }
+ if(type==="top"){
+  if(!cats.length||!(current.transaction_count>0))return "אין מספיק עסקאות שנקלטו בחודש "+month+" כדי לזהות קטגוריות מובילות.\n"+warning;
+  const lines=["הקטגוריות עם סכומי ההוצאה הגבוהים ביותר בחודש "+month+":"];
+  lines.push(...lineItems(cats.filter(x=>x.spending_ils>0).slice(0,3).map(c=>
+   c.category+": "+money(c.spending_ils)+(c.share_percent===null?"":" ("+c.share_percent+"% מההוצאות המתועדות)"))));
+  lines.push(warning);return lines.join("\n");
+ }
+ if(type==="cashflow"){
+  const lines=["הכנסות מול הוצאות מתועדות עבור "+month+":"];
+  lines.push("הכנסות שסומנו כהתקבלו: "+money(current.received_income_ils)+".");
+  lines.push("חיובי אשראי והוצאות ידניות שנקלטו נטו לאחר זיכויים: "+money(current.recorded_card_and_manual_spending_ils)+".");
+  lines.push("אלו אינם כל הוצאות משק הבית: התחייבויות קבועות שלא קושרו לעסקאות אינן כלולות, ולכן אי אפשר להסיק מכך כמה כסף פנוי יש בחשבון.");
+  lines.push(warning);return lines.join("\n");
+ }
+ if(type==="data_quality"){
+  const a=context.evidence?.current||{},b=context.evidence?.previous||{};
+  const lines=["בדיקת איכות הנתונים עבור "+month+":"];
+  if(context.date_basis==="statement")lines.push("נקלטו "+(a.statement_count||0)+" דוחות עם חודש חיוב מזוהה.");
+  if(a.mismatched_statement_count>0)lines.push("זוהו "+a.mismatched_statement_count+" דוחות שבהם סכום המקור שונה מהעסקאות שנקלטו. סך ההפרשים המוחלטים: "+money(a.mismatch_total_absolute_ils)+".");
+  if(a.no_source_total_count>0)lines.push("ב-"+a.no_source_total_count+" דוחות אין סכום מקור זמין לאימות.");
+  if(!a.mismatched_statement_count&&!a.no_source_total_count&&a.statement_count>0)
+   lines.push("לא נמצאו פערים בדוחות שיש להם סכום מקור, אך אין בכך הוכחה שכל החשבונות דווחו.");
+  if(!current.transaction_count)lines.push("לא נקלטו עסקאות בחודש הנבחר. אין להסיק מכך שלא היו הוצאות.");
+  if(context.current_month_is_incomplete)lines.push("החודש עדיין לא הסתיים.");
+  if(!comparisons.reliable_full_month_comparison)lines.push("השוואה לחודש קודם אינה מאומתת: "+differenceWarning(comparisons));
+  if(b.mismatched_statement_count>0)lines.push("קיימים גם פערים בדוחות של החודש הקודם.");
+  if(lines.length===1)lines.push("אין מספיק מידע לבדיקת שלמות הדוחות.");
+  lines.push("אי אפשר להסיק מכך התאמה לחשבון הבנק.");
+  return lines.join("\n");
+ }
+ if(type==="priorities"){
+  const lines=["שלוש בדיקות בעדיפות עבור "+month+":"],actions=[];
+  const evidence=context.evidence?.current||{};
+  if(evidence.mismatched_statement_count>0)
+   actions.push("בדקו את פערי ההתאמה ב-"+evidence.mismatched_statement_count+" דוחות לפני קבלת החלטות.");
+  else if(evidence.no_source_total_count>0)
+   actions.push("השלימו אימות סכומי מקור ב-"+evidence.no_source_total_count+" דוחות.");
+  const over=budgets.filter(b=>b.over_budget_ils>0);
+  for(const b of over){
+   if(actions.length===3)break;
+   actions.push("בדקו את קטגוריית "+b.category+" שבה נרשמה חריגה של "+money(b.over_budget_ils)+".");
+  }
+  if(comparisons.reliable_full_month_comparison){
+   const used=new Set(over.map(b=>b.category));
+   for(const c of comparisons.category_changes_for_reference_only||[]){
+    if(actions.length===3)break;
+    if(c.change_ils>0&&c.previous_ils>0&&!used.has(c.category)){
+     actions.push("בדקו את הגידול בקטגוריית "+c.category+" ("+money(c.change_ils)+").");
+     used.add(c.category);
+    }
+   }
+  }
+  if(actions.length<3&&cats.length&&current.transaction_count>0)
+   actions.push("עברו על קטגוריית "+cats[0].category+" ("+money(cats[0].spending_ils)+"), שהיא מהגדולות בהוצאות המתועדות.");
+  if(actions.length<3&&!budgets.length)actions.push("הגדירו תקציבים לקטגוריות עיקריות לצורך מעקב.");
+  if(!actions.length)actions.push("השלימו נתוני הכנסות ודוחות לפני קביעת יעדי חיסכון.");
+  lines.push(...lineItems(actions,3));lines.push(warning,"אלו בדיקות מוצעות, לא חיסכון כספי מובטח.");
+  return lines.join("\n");
+ }
  if(type==="summary"){
   const fragments=[
    "סיכום נתונים מחושב עבור "+month+":",
