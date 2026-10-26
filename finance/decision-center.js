@@ -100,7 +100,9 @@ export function setupDecisionCenter({supabase,getContext}){
   if(hadGoalsError)holder.append(make("p","לא ניתן לקרוא את יעדי החיסכון מהענן. הנתונים הקיימים לא שונו.","decision-error"));
   if(!goals.length)holder.append(make("p","אין עדיין יעד חיסכון. צרו יעד ראשון ועקבו אחר ההתקדמות ידנית.","empty"));
   for(const goal of goals){
-   const result=goalProgress(goal,state.month);
+   const today=new Date();
+   const nowMonth=String(today.getFullYear())+"-"+String(today.getMonth()+1).padStart(2,"0");
+   const result=goalProgress(goal,nowMonth);
    const card=make("article",null,"decision-goal");
    const header=make("div",null,"decision-goal-head");
    header.append(make("strong",goal.title),
@@ -176,6 +178,15 @@ export function setupDecisionCenter({supabase,getContext}){
   }
   throw Error("היסטוריית העסקאות גדולה מדי לטעינה בטוחה.");
  }
+ document.addEventListener("tevuna:auth-cleared",()=>{
+  sequence++;state=null;history=[];goals=[];hadHistoryError=false;hadGoalsError=false;
+  $("decision-home-notes").replaceChildren(make("p","יש להתחבר כדי לראות תובנות.","empty"));
+  $("decision-alerts").replaceChildren();
+  $("decision-recurring").replaceChildren();
+  $("decision-forecast").replaceChildren();
+  $("decision-goals").replaceChildren();
+  setStatus("");
+ });
  document.addEventListener("tevuna:loaded",async event=>{
   const {data,month,household}=event.detail||{};
   if(!data||!household)return;
