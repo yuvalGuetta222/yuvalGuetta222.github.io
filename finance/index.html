@@ -4,7 +4,7 @@
 <meta name="theme-color" content="#102038">
 <meta name="referrer" content="no-referrer">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://esm.sh https://*.esm.sh; connect-src 'self' https://vimklcufkafrmkcfxxak.supabase.co https://esm.sh https://*.esm.sh; style-src 'self'; img-src 'self' data:; font-src 'self'; base-uri 'none'; form-action 'self'; object-src 'none'; worker-src 'self' blob:; frame-ancestors 'none'">
-<title>תבונה | כלכלת המשפחה</title><link rel="stylesheet" href="./style.css?v=20261026-four-phases">
+<title>תבונה | כלכלת המשפחה</title><link rel="stylesheet" href="./style.css?v=20261026-month-arrows">
 </head><body>
 <header class="site-top"><div class="brand"><div class="brand-mark">✦</div><div><b>תבונה</b><small>המרכז הכלכלי שלנו</small></div></div><span class="secure-tag">🔒 נתונים פרטיים • ₪</span></header>
 <main class="container">
@@ -26,7 +26,17 @@
 <p id="pending-email" class="mono"></p><button type="button" class="secondary" id="pending-refresh">בדיקת אישור מחדש</button>
 <button type="button" class="link logout">התנתקות</button><p class="feedback" id="pending-message" role="status"></p></div></section>
 <section id="app-view" class="hidden">
- <div class="heading"><div><span class="eyebrow">הנתונים שלכם • עדכון מהענן</span><h1 id="app-screen-title">התמונה הכלכלית שלנו</h1><p class="subtitle" id="app-screen-description">כל הסכומים בשקלים • המערכת מחשבת מנתונים שנשמרו בפועל</p></div><div class="heading-actions"><label class="month-label">בחירת חודש<input type="month" id="month" aria-label="בחירת חודש"></label>
+ <div class="heading"><div><span class="eyebrow">הנתונים שלכם • עדכון מהענן</span><h1 id="app-screen-title">התמונה הכלכלית שלנו</h1><p class="subtitle" id="app-screen-description">כל הסכומים בשקלים • המערכת מחשבת מנתונים שנשמרו בפועל</p></div><div class="heading-actions"><div class="month-switcher" aria-label="בחירת חודש">
+ <span class="month-switcher-title">חודש נבחר</span>
+ <div class="month-switcher-row" role="group" aria-label="מעבר בין חודשים">
+  <button type="button" id="month-prev" class="month-switcher-arrow" aria-label="חודש קודם" title="חודש קודם">›</button>
+  <label for="month" class="month-switcher-display" title="לחצו כדי לבחור חודש אחר">
+   <span id="month-readable" aria-live="polite">בחירת חודש</span><span class="month-switcher-caret" aria-hidden="true">⌄</span>
+   <input type="month" id="month" min="2000-01" max="2099-12" aria-label="בחירת חודש ישירה">
+  </label>
+  <button type="button" id="month-next" class="month-switcher-arrow" aria-label="חודש הבא" title="חודש הבא">‹</button>
+ </div>
+</div>
 <label class="month-label">הצגת הוצאות<select id="date-basis" aria-label="בחירה בין חודש הדוח, תאריך החיוב ותאריך העסקה"><option value="statement" selected>לפי חודש הדוח (מומלץ)</option><option value="billing">לפי חודש החיוב בפועל</option><option value="transaction">לפי תאריך העסקה</option></select></label><button class="secondary logout">התנתקות</button></div></div>
  <nav class="navigation top-navigation" aria-label="ניווט ראשי">
 <button data-screen="dashboard" class="active">סקירה</button>
@@ -437,5 +447,5 @@
 <button type="submit" class="primary">שמירת תיקון</button>
 </form><p id="edit-transaction-status" class="feedback" role="status"></p>
 </div></dialog></main><footer>תבונה • ניהול כלכלת משפחה • אין להזין מספרי כרטיסי אשראי או סיסמאות בנק</footer>
-<script type="module" src="./app.js?v=20261026-four-phases"></script>
+<script type="module" src="./app.js?v=20261026-month-arrows"></script>
 </body></html>
