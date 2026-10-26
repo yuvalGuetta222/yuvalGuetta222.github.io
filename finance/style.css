@@ -298,3 +298,55 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .ai-message p { white-space: pre-line; }
 
 @media(max-width:430px){.ai-preset-grid{grid-template-columns:1fr}}
+
+/* Tevuna 4-phase financial decision center. Mobile-first RTL and plain-language alerts. */
+.decision-home{margin:0 0 18px;border-color:#367b81;background:linear-gradient(115deg,#123946,#192c48)}
+.decision-home .section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.decision-home-list,.decision-stack{display:grid;gap:11px}
+.decision-home-list{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.decision-alert{display:flex;align-items:flex-start;justify-content:space-between;gap:13px;background:#13273c;border:1px solid #39546b;border-radius:14px;padding:14px;min-width:0}
+.decision-alert.warning{border-color:#d7a652;background:#332b29}
+.decision-alert>div{min-width:0;flex:1}
+.decision-alert strong{display:block;line-height:1.5}
+.decision-alert .note{margin:6px 0 0;line-height:1.7;font-size:13px}
+.decision-alert button{flex-shrink:0;align-self:center;font-size:12px;padding:9px 11px}
+.decision-layout{display:grid;gap:18px}
+.decision-layout .box{min-width:0}
+.decision-intro{background:linear-gradient(110deg,#173c4a,#1c2c48)}
+.decision-intro h2{font-size:clamp(24px,3vw,31px)}
+.decision-panels{gap:18px;align-items:stretch}
+.decision-panels>.box{min-width:0}
+.decision-title{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.decision-title h2{margin:0}
+.decision-count{font-size:12px;color:#a2e8d4}
+.decision-recurring-row{display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid #31536b;padding:12px 1px}
+.decision-recurring-row>div{min-width:0}
+.decision-recurring-row small{display:block;margin-top:5px;color:#a9c9d4;line-height:1.7}
+.decision-recurring-value{text-align:left;flex-shrink:0}
+.decision-recurring-value b{color:#99efd0}
+.decision-metric{background:#1b3347;border-radius:10px;padding:11px 13px}
+.decision-scenario,.decision-goal-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}
+.decision-scenario label,.decision-goal-form label,.decision-goal-actions label{display:grid;gap:6px;font-size:13px}
+.decision-scenario input,.decision-scenario select,.decision-goal-form input,
+.decision-goal-actions input{width:100%;min-width:0;min-height:43px;font:inherit;background:#102239;color:#f1fafc;
+ border:1px solid #43647b;border-radius:10px;padding:9px 11px}
+.decision-scenario-result{line-height:1.9;padding:14px;background:#173c43;border:1px solid #387f7a;border-radius:13px}
+.decision-goal-form button{align-self:end;min-height:43px}
+.decision-goal-list{display:grid;gap:13px}
+.decision-goal{border:1px solid #3f6070;background:#142f43;padding:16px;border-radius:15px;min-width:0}
+.decision-goal-head{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.decision-goal progress{display:block;width:100%;height:14px;margin-top:15px;accent-color:#5bd8b8}
+.decision-goal .note{line-height:1.8}
+.decision-goal-actions{display:flex;flex-wrap:wrap;align-items:end;gap:9px;margin-top:12px}
+.decision-goal-actions label{flex:1;min-width:130px}
+.decision-goal-actions button{min-height:42px}
+.decision-error{color:#ffd1d1}
+@media(max-width:900px){.decision-panels{grid-template-columns:1fr}}
+@media(max-width:620px){
+ .decision-home-list{grid-template-columns:1fr}
+ .decision-scenario,.decision-goal-form{grid-template-columns:1fr}
+ .decision-alert{flex-wrap:wrap}
+ .decision-alert button{width:100%}
+ .decision-goal-actions button{flex:1}
+ .decision-recurring-row{align-items:flex-start}
+}
