@@ -52,7 +52,7 @@ test("Builtin fallback clearly uses server-side values in shekels",()=>{
  assert.doesNotMatch(result,/אגורות/);
  const saving=builtInFallback(context,"saving");
  assert.match(saving,/30\.5/);
- assert.match(saving,/230\.5/);
+ assert.equal((saving.match(/• מזון/g)||[]).length,1); // No duplicate recommendation for the same category.
  assert.match(saving,/לא חיסכון מובטח/);
  assert.equal(builtInFallback(context,"question"),null);
 });
