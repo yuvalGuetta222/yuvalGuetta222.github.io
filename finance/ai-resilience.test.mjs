@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readWorkersAIAnswer,builtInFallback} from "../supabase/functions/tevuna-ai-coach/inference.mjs";
+const {Response,ReadableStream}=globalThis;
 const context={
  selected_month:"2026-09",current_month_is_incomplete:false,
  current:{transaction_count:3,recorded_card_and_manual_spending_ils:1234.56,
