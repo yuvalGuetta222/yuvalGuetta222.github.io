@@ -23,7 +23,6 @@ async function paged(makeQuery: (offset:number)=>PromiseLike<any>) {
  }
  throw Error("Too many transactions for safe summarization");
 }
-const total = (rows:any[])=>rows.reduce((s,t)=>s+(t.entry_kind==="refund"?-1:1)*n(t.amount_agorot),0);
 async function purchases(db:any,household:string,month:string,basis:string){
  const from=month+"-01",to=step(month,1)+"-01";
  if(basis==="transaction"){
@@ -60,9 +59,6 @@ async function snapshot(db:any,household:string,month:string,basis:string){
  ]);
  if([income,beforeIncome,budgets,source,previousSource].some(r=>r.error))throw Error("Budget data unavailable");
  const incomeTotal=(list:any[])=>list.filter(x=>x.received).reduce((sum,x)=>sum+n(x.amount_agorot),0);
- const incomplete=(list:any[])=>(list||[]).some((x:any)=>x.source_header_total_agorot!==null
-  &&n(x.source_header_total_agorot)!==n(x.net_amount_agorot));
- const uncertain=incomplete(source.data||[]),previousUncertain=incomplete(previousSource.data||[]);
  return buildFinancialInsights({
   month,previousMonth:before,basis,current,previous,
   currentIncome:incomeTotal(income.data||[]),
