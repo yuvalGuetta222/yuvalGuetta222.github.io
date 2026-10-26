@@ -3,13 +3,13 @@ let authenticated=false;
 let providerReady=false;
 let inFlight=false;
 const $=id=>document.getElementById(id);
-function message(who,content){
+function message(who,content,mode="cloudflare_ai"){
  const root=$("ai-conversation");
  if(root.querySelector(".empty"))root.replaceChildren();
  const wrap=document.createElement("article");
  wrap.className="ai-message "+(who==="ai"?"from-ai":"from-user");
  const head=document.createElement("strong");
- head.textContent=who==="ai"?"✦ תבונה AI":"שאלה";
+ head.textContent=who==="ai"?(mode==="computed_fallback"?"◈ ניתוח מחושב (ללא AI)":"✦ תבונה AI"):"שאלה";
  const body=document.createElement("p");body.textContent=String(content);
  wrap.append(head,body);root.append(wrap);
  wrap.scrollIntoView?.({behavior:"smooth",block:"nearest"});
@@ -83,12 +83,16 @@ export function setupAICoach(runtime){
     throw Error(actual?.error||getError({context:error?.context}));
    }
    if(!data?.answer)throw Error(data?.error||"שירות ה-AI לא החזיר תשובה");
-   message("ai",data.answer);
+   message("ai",data.answer,data.mode);
+   if(data.mode==="computed_fallback"){
+    status("המודל לא היה זמין או שמכסת השימוש הסתיימה. מוצג ניתוח שמבוסס על חישובי התקציב בלבד, לא תשובת AI. הנתונים לא שונו.");
+    return;
+   }
    if(data.uncertain)status("קיימת אי-התאמה בין חלק מדוחות המקור, לכן יש לתקן אותה לפני הסתמכות על השוואות.");
    else if(data.partial)status("הניתוח מוצג בשקלים (₪). החודש עדיין בעיצומו ולכן השוואות לחודש מלא מוגבלות.");
    else status("הניתוח הושלם בשקלים (₪). החישובים בוצעו בשרת וה-AI מסביר אותם.");
   }catch(error){
-   status("הניתוח לא הושלם: "+String(error?.message||error).slice(0,230)+" הנתונים לא שונו.");
+   status("הניתוח לא הושלם: "+String(error?.message||error).replace(/\s*לא שונו נתונים[.\s]*/g,"").slice(0,220)+". הנתונים לא שונו.");
   }finally{setBusy(false)}
  }
  function open(type){
