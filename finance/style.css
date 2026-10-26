@@ -289,3 +289,6 @@ button:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:650px){.ai-dashboard-teaser,.ai-history-teaser{flex-direction:column;align-items:stretch}
 .ai-dashboard-teaser button,.ai-history-teaser button{width:100%}.ai-message.from-user{max-width:100%}
 .ai-quick-actions button{width:100%}.ai-question-form button{width:100%}}
+
+/* Keep answers readable without interpreting the model response as HTML. */
+.ai-message p { white-space: pre-line; }
