@@ -4,6 +4,7 @@ import {cardSpendingReport} from "./card-import.mjs";
 import {householdBalance} from "./household-ledger.mjs";
 import {setupCoach} from "./coach-view.js";
 import {setupAICoach} from "./ai-coach.js?v=20261026-preset-questions";
+import {setupDecisionCenter} from "./decision-center.js?v=20261026-four-phases";
 import {setupIncomeManagement} from "./income-view.js";
 import {setupCategoryDashboard} from "./category-view.js";
 import {recurringIncomeSummary} from "./income-utils.mjs";
@@ -78,6 +79,7 @@ const screenTitles={
  budgets:["ניהול תקציב","מסגרת חודשית לכל קטגוריה לפי שמות הקטגוריות של חברת האשראי"],
  fixed:["הוצאות קבועות","התחייבויות חוזרות לתכנון משפחתי"],
  backup:["גיבוי וייצוא","שמירת עותק פרטי של נתוני המשפחה והעסקאות"],
+ planning:["תכנון וחיסכון","בקרה על הוצאות, מנויים, תחזית, תרחישים ויעדי חיסכון"],
  ai:["יועץ פיננסי AI","סיכום הוצאות, שאלות והצעות לחיסכון על נתונים מסוכמים ומוגנים"]
 };
 function switchScreen(name){
@@ -87,8 +89,8 @@ function switchScreen(name){
  $("app-screen-title").textContent=title;$("app-screen-description").textContent=description;
  const menu=$("nav-more");if(menu){
   const summary=menu.querySelector("summary");
-  summary.firstChild.textContent=(["dashboard","history","ai"].includes(name)?"ניהול נתונים":title)+" ";
-  menu.classList.toggle("current",!["dashboard","history","ai"].includes(name));menu.open=false;
+  summary.firstChild.textContent=(["dashboard","history","ai","planning"].includes(name)?"ניהול נתונים":title)+" ";
+  menu.classList.toggle("current",!["dashboard","history","ai","planning"].includes(name));menu.open=false;
  }
  document.dispatchEvent(new CustomEvent("tevuna:screen-changed",{detail:{screen:name}}));
 }
@@ -365,6 +367,7 @@ setupAnalysis({supabase,getContext:()=>({user,household})});
 setupHistory({supabase,getContext:()=>({user,household})});
 setupCoach({supabase,getContext:()=>({user,household})});
 setupAICoach({supabase,getContext:()=>({user,household})});
+setupDecisionCenter({supabase,getContext:()=>({user,household})});
 setupCategoryDashboard({supabase,reload,getContext:()=>({user,household})});
 setupIncomeManagement({supabase,notice,reload,getContext:()=>({user,household}),getData:()=>data});
 defaultDates();
