@@ -23,6 +23,7 @@ jobs:
           node --check finance/import-batches.js
           node --check finance/analysis.js
           node --check finance/coach-view.js
+          node --check finance/ai-coach.js
           node --check finance/coach-engine.mjs
           node --check finance/household-ledger.mjs
           node --check finance/category-view.js
