@@ -180,6 +180,59 @@ async function run(req:Request){
     model:workerModel,code:"CLOUDFLARE_UNREACHABLE",reason:classification,diagnostic:rootCause});
   }finally{clearTimeout(healthTimeout)}
  }
+
+ // A manual end-to-end check. No personal or financial information is sent.
+ // Count test inference against the same daily quota as a normal response.
+ if(body?.type==="probe"){
+  if(!configured||!/^[a-f0-9]{32}$/i.test(accountId))return send({
+   ready:false,model_verified:false,code:"MISSING_CLOUDFLARE_CONFIG",
+   error:"חסרים מזהה חשבון או טוקן Cloudflare בסודות Supabase."},503);
+  if(!tokenStructureOk)return send({ready:false,model_verified:false,
+   code:"CLOUDFLARE_TOKEN_FORMAT",error:"פורמט טוקן Cloudflare אינו תקין."},400);
+  const probeHousehold=body?.household;
+  if(typeof probeHousehold!=="string"||!/^[0-9a-f-]{36}$/i.test(probeHousehold))
+   return send({error:"מזהה משק בית אינו תקין."},400);
+  const {data:member,error:memberError}=await db.from("tevuna_members")
+   .select("household_id").eq("household_id",probeHousehold).eq("user_id",user.id).maybeSingle();
+  if(memberError||!member)return send({error:"אין הרשאה למשק בית זה."},403);
+  const {error:quotaError}=await db.rpc("tevuna_ai_claim_quota",{p_household:probeHousehold});
+  if(quotaError)return send({error:"מכסת בקשות AI היומית נוצלה. גם בדיקות חיבור נספרות במכסה.",code:"AI_DAILY_QUOTA"},429);
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),12000);
+  try{
+   const response=await fetch("https://api.cloudflare.com/client/v4/accounts/"+accountId+
+    "/ai/run/"+workerModel,{
+    method:"POST",signal:controller.signal,
+    headers:{"Authorization":"Bearer "+apiToken,"Content-Type":"application/json"},
+    body:JSON.stringify({max_tokens:24,temperature:0,
+     messages:[{role:"user",content:"Reply with the word OK only."}]})
+   });
+   if(!response.ok){
+    const code=response.status===401?"CLOUDFLARE_TOKEN_INVALID":
+      response.status===403?"CLOUDFLARE_MODEL_PERMISSION":
+      response.status===429||response.status===402?"CLOUDFLARE_QUOTA":
+      response.status===404?"CLOUDFLARE_MODEL_NOT_FOUND":"CLOUDFLARE_MODEL_ERROR";
+    const error=response.status===401?"טוקן Cloudflare נדחה.":
+      response.status===403?"אין לחשבון גישה למודל. בדקו הרשאות Workers AI או מגבלות התוכנית.":
+      response.status===429||response.status===402?"מכסת ה-AI נוצלה או קיימת מגבלת שימוש.":
+      response.status===404?"המודל אינו זמין בחשבון.":"מודל Cloudflare לא השיב בהצלחה.";
+    return send({ready:false,model_verified:false,code,error},200);
+   }
+   const result=await response.json();
+   const good=result?.success!==false&&typeof result?.result?.response==="string"
+    &&result.result.response.trim().length>0;
+   return send({ready:good,model_verified:good,
+    provider:"Cloudflare Workers AI",model:workerModel,
+    code:good?"CLOUDFLARE_MODEL_VERIFIED":"CLOUDFLARE_EMPTY_RESPONSE",
+    ...(!good?{error:"המודל לא החזיר תשובה תקינה."}:{})});
+  }catch(error){
+   console.error("Tevuna Cloudflare probe failure",safeNetworkError(error));
+   return send({ready:false,model_verified:false,
+    code:controller.signal.aborted?"CLOUDFLARE_TIMEOUT":"CLOUDFLARE_UNREACHABLE",
+    error:controller.signal.aborted?"בדיקת המודל חרגה מזמן ההמתנה.":"נכשל החיבור למודל Cloudflare. ייתכן שיש בעיית תקשורת בשרת."});
+  }finally{clearTimeout(timeout)}
+ }
+
  const month=body?.month,basis=body?.basis||"statement",type=body?.type||"summary";
  const household=body?.household;
  if(typeof month!=="string"||!/^20\d{2}-(0[1-9]|1[0-2])$/.test(month)
