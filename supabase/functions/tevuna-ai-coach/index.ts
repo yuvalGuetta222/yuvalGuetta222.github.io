@@ -2,6 +2,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.76.1";
 import { buildFinancialInsights } from "./insights.mjs";
+import { readWorkersAIAnswer, builtInFallback } from "./inference.mjs";
 
 const ORIGIN = "https://yuvalguetta222.github.io";
 const cors = {
@@ -233,45 +234,61 @@ async function run(req:Request){
  let context:any;
  try{context=await snapshot(db,household,month,basis)}
  catch{return send({error:"נתוני החודש לא נטענו במלואם. לא בוצע ניתוח AI."},422)}
+ const fallback=(code:string)=>{
+  const answer=builtInFallback(context,type);
+  if(!answer)return null;
+  return send({answer,mode:"computed_fallback",code,provider:"Tevuna local financial calculations",
+   month,basis,uncertain:context.evidence.current.mismatched_statement_count>0||
+    context.evidence.previous.mismatched_statement_count>0,
+   partial:context.current_month_is_incomplete});
+ };
  const {error:quotaError}=await db.rpc("tevuna_ai_claim_quota",{p_household:household});
- if(quotaError)return send({error:"מכסת 25 הבקשות היומית הגיעה לסיומה או שאין הרשאה."},429);
- const command=type==="summary"?"סכם את תמונת ההוצאות, ציין ממצא מרכזי ובדוק אם יש מגבלה בנתונים.":
-  type==="saving"?"הצע עד שלוש פעולות אפשריות לחיסכון על בסיס הנתונים, בלי להבטיח תוצאה.":
+ if(quotaError){
+  const substitute=fallback("AI_DAILY_QUOTA");
+  return substitute||send({error:"מכסת בקשות AI היומית נוצלה. ניתן לנסות שוב מחר.",code:"AI_DAILY_QUOTA"},429);
+ }
+ const command=type==="summary"?"סכם את נתוני התקציב בשקלים במשפטים קצרים, תוך ציון מגבלות האמינות.":
+  type==="saving"?"תן עד שלוש פעולות לבחינת חיסכון על בסיס קטגוריות וחריגות מאומתות בלבד.":
   "ענה לשאלה: "+question;
- const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),25000);
+ // Stream rather than waiting for a full synchronous completion. A brief, bounded
+ // timeout also protects the free tier from repeated long, unproductive calls.
+ const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),18000);
  let phase="connect";
  try{
   const response=await fetch("https://api.cloudflare.com/client/v4/accounts/"+accountId+
    "/ai/run/"+workerModel,{
    method:"POST",signal:abort.signal,
-   headers:{"Authorization":"Bearer "+apiToken,"Content-Type":"application/json"},
-   body:JSON.stringify({max_tokens:650,temperature:0.2,
+   headers:{"Authorization":"Bearer "+apiToken,"Content-Type":"application/json","Accept":"text/event-stream"},
+   body:JSON.stringify({stream:true,max_tokens:340,temperature:0.2,
     messages:[{role:"system",content:SYSTEM},{role:"user",content:
       "משימה: "+command+"\nנתוני תקציב מסוכמים בלבד: "+JSON.stringify(context)}]})
   });
-  if(!response.ok)return send({error:response.status===401||response.status===403?
-   "טוקן Cloudflare אינו תקין או חסרות הרשאות Workers AI.":
-   response.status===429||response.status===402?
-   "מכסת Cloudflare Workers AI החינמית נוצלה או חלה מגבלת בקשות. לא בוצע חיוב אוטומטי.":
-   "שירות Cloudflare AI לא השלים את הבקשה. לא שונו נתונים."},response.status===429?429:502);
-  phase="parse-response";
-  const result=await response.json();
-  if(result?.success===false)return send({error:"Cloudflare לא החזיר תשובה תקינה. בדקו הרשאות טוקן ומכסת Workers AI.",code:"CLOUDFLARE_RESPONSE_ERROR"},502);
-  const answer=String(result?.result?.response||"").trim().slice(0,3500);
-  if(!answer)return send({error:"לא התקבלה תשובה ממודל Cloudflare"},502);
-  return send({answer,provider:"Cloudflare Workers AI",model:workerModel,month,basis,
-   uncertain:context.evidence.current.mismatched_statement_count>0||context.evidence.previous.mismatched_statement_count>0,
+  if(!response.ok){
+   console.error("Tevuna AI upstream error",{status:response.status,phase});
+   const substitute=fallback("CLOUDFLARE_HTTP_"+response.status);
+   return substitute||send({error:response.status===401||response.status===403?
+    "טוקן Cloudflare אינו תקין או שחסרה הרשאת Workers AI.":
+    response.status===429||response.status===402?"מכסת Cloudflare AI נוצלה או הוטלה מגבלת שימוש.":
+    "מודל Cloudflare לא השיב בהצלחה.",code:"CLOUDFLARE_HTTP_"+response.status},502);
+  }
+  phase="stream";
+  const answer=await readWorkersAIAnswer(response,{maxChars:3500});
+  return send({answer,mode:"cloudflare_ai",provider:"Cloudflare Workers AI",model:workerModel,month,basis,
+   uncertain:context.evidence.current.mismatched_statement_count>0||
+    context.evidence.previous.mismatched_statement_count>0,
    partial:context.current_month_is_incomplete});
  }catch(error){
   const type=error instanceof Error?error.name:"unknown";
   const classification=safeNetworkError(error);
-  console.error("Tevuna Workers AI request failure",{phase,type,classification});
   const timedOut=abort.signal.aborted;
-  return send({error:timedOut?
-    "החיבור למודל Cloudflare חרג מזמן ההמתנה. לא שונו נתונים.":
-    "השרת לא הצליח להשלים את הקריאה ל-Cloudflare AI. לא שונו נתונים.",
-    code:timedOut?"CLOUDFLARE_TIMEOUT":"CLOUDFLARE_REQUEST_ERROR",step:phase,reason:classification},timedOut?504:502);
- }
- finally{clearTimeout(timer)}
+  const code=timedOut?"CLOUDFLARE_TIMEOUT":"CLOUDFLARE_REQUEST_ERROR";
+  console.error("Tevuna Workers AI request failure",{phase,type,classification,timedOut});
+  const substitute=fallback(code);
+  return substitute||send({error:timedOut?
+   "המודל לא השיב בזמן. לא בוצע ניתוח AI ולא שונו נתונים.":
+   "החיבור למודל Cloudflare נכשל. לא שונו נתונים.",
+   code,step:phase,reason:classification},timedOut?504:502);
+ }finally{clearTimeout(timer)}
+
 }
 Deno.serve(req=>run(req).catch(()=>send({error:"שירות ה-AI אינו זמין כעת. הנתונים נשארו ללא שינוי."},500)));
